@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Horahub",
-    "slug": "Horahub",
+    "name": "HoraHub-frontend",
+    "slug": "HoraHub-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "horahub",
+    "scheme": "horahubfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
