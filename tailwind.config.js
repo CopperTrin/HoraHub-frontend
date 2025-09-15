@@ -21,8 +21,7 @@ module.exports = {
         blackpearl: '#0D1C2B',
         alabaster: '#F8F8F8',
         
-      }
     },
   },
   plugins: [],
-}
+}}
