@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import {
-    Dimensions,
-    Image,
-    ImageSourcePropType,
-    NativeScrollEvent,
-    NativeSyntheticEvent,
-    ScrollView,
-    View,
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  View
 } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -17,6 +18,7 @@ type Props = {
   dotActiveClass?: string;         // tailwind class for active dot
   dotClass?: string;               // tailwind class for inactive dot
   onIndexChange?: (i: number) => void;
+  onImagePress?: (index: number) => void;
 };
 
 export default function HomeNews({
@@ -25,6 +27,7 @@ export default function HomeNews({
   dotActiveClass = "bg-accent-200",
   dotClass = "bg-alabaster",
   onIndexChange,
+  onImagePress,
 }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -47,12 +50,13 @@ export default function HomeNews({
         scrollEventThrottle={16}
       >
         {images.map((img, index) => (
-          <Image
-            key={index}
-            source={img}
-            style={{ width: screenWidth, height }}
-            resizeMode="cover"
-          />
+          <Pressable key={index} onPress={() => onImagePress?.(index)}>
+            <Image
+              source={img}
+              style={{ width: screenWidth, height }}
+              resizeMode="cover"
+            />
+          </Pressable>
         ))}
       </ScrollView>
 
@@ -61,9 +65,8 @@ export default function HomeNews({
         {images.map((_, index) => (
           <View
             key={index}
-            className={`w-2.5 h-2.5 mx-1 rounded-full ${
-              activeIndex === index ? dotActiveClass : dotClass
-            }`}
+            className={`w-2.5 h-2.5 mx-1 rounded-full ${activeIndex === index ? dotActiveClass : dotClass
+              }`}
           />
         ))}
       </View>
