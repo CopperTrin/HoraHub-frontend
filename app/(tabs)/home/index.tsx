@@ -68,7 +68,7 @@ export default function HomePage() {
   return (
     <ScreenWrapper>
       <ScrollView
-        className="mb-8"
+        className="mb-0"
       >
         <HomeNews
           images={images}
@@ -106,7 +106,6 @@ export default function HomePage() {
           </View>
           <RankingPodium background={ranking_bg} items={podiumItems} />
 
-          {/* Article list */}
           {/* Article list */}
           <View className="gap-2.5 mt-8">
             <Text className="text-white text-l font-semibold">บทความ</Text>
