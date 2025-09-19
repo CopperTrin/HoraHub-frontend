@@ -15,9 +15,9 @@ const IMAGE_BY_SLUG: Record<string, any> = {
     "how-to-tarot": article_2,
     "4-signs-promo": article_3,
     "4-signs-promo-extended": article_3,
-    "august-topup-promo": home_new_01,
+    "august-topup-promo": home_new_03,
     "why-people-like-horoscope": home_new_02,
-    "september-horoscope": home_new_03,
+    "september-horoscope": home_new_01,
 };
 
 export default function ArticleDetail() {
