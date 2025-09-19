@@ -1,24 +1,42 @@
+import {
+  NotoSansThai_300Light,
+  NotoSansThai_400Regular,
+  NotoSansThai_500Medium,
+  NotoSansThai_600SemiBold,
+  NotoSansThai_700Bold,
+  useFonts,
+} from "@expo-google-fonts/noto-sans-thai";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import './global.css';
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+
+import "./global.css";
+
+SplashScreen.preventAutoHideAsync(); // keep splash while fonts load
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    NotoSansThaiLight: NotoSansThai_300Light,
+    NotoSansThaiRegular: NotoSansThai_400Regular,
+    NotoSansThaiMedium: NotoSansThai_500Medium,
+    NotoSansThaiSemiBold: NotoSansThai_600SemiBold,
+    NotoSansThaiBold: NotoSansThai_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-  <>
-    <StatusBar style="light" />
-    <Stack
-      screenOptions={{ 
-        headerStyle: { backgroundColor: '#140E25'},
-        headerShadowVisible: false,
-        headerTitleStyle: { color: '#f8f8f8', fontSize: 20, fontWeight: 'bold'},
-        headerTintColor: '#f8f8f8'
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="review" options={{ headerTitle: "Review..."}} />
-      <Stack.Screen name="payment_success" options={{ headerTitle: "Payment Success"}} />
-      <Stack.Screen name="Not_found" options={{ headerTitle: "Oops!"}} />
-    </Stack>
-  </>
+    <SafeAreaProvider>
+      <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+    </SafeAreaProvider>
   );
 }

@@ -2,7 +2,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { navigate } from "expo-router/build/global-state/routing";
 import { Text, TouchableOpacity, View } from "react-native";
 import "./global.css";
- 
+
 export default function App() {
   return (
     <View className="flex-1 bg-primary-200 items-center p-5 justify-center">
