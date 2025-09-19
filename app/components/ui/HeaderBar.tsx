@@ -48,7 +48,9 @@ export default function HeaderBar({
             />
           )}
           <Text className="color-alabaster text-2xl font-semibold ml-2">
-            {title}
+            {Array.from(title).length > 20
+              ? `${Array.from(title).slice(0, 20).join("")}...`
+              : title}
           </Text>
         </View>
 
