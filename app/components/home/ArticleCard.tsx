@@ -16,7 +16,7 @@ export default function ArticleCard({
   author,
   onPress,
   width = 320,
-  height = 256,
+  height = 272,
 }: Props) {
   return (
     <Pressable onPress={onPress} style={{ width, height }}>

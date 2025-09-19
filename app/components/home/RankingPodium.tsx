@@ -23,7 +23,7 @@ export default function RankingPodium({ background, items, useGap = true }: Prop
   };
 
   return (
-    <View className="w-full h-48">
+    <View className="w-full h-60">
       <ImageBackground source={background} resizeMode="cover" className="w-full h-full">
         <View
           className={`flex-row w-full h-full items-end justify-center ${useGap ? "gap-2" : ""}`}
@@ -35,7 +35,7 @@ export default function RankingPodium({ background, items, useGap = true }: Prop
                 style={{ width: 48, height: 48, borderRadius: 32 }}
                 className="self-center mb-1"
               />
-              <Text className="text-white self-center mb-4 text-sm" numberOfLines={1} ellipsizeMode="tail">
+              <Text className="text-white text-center mb-4 mt-2 text-sm w-24" numberOfLines={2} ellipsizeMode="tail">
                 {item.name}
               </Text>
               <View

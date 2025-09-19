@@ -22,13 +22,13 @@ export default function ArticleCarousel({
   gap = 16,
   contentStyle,
   cardWidth = 320,
-  cardHeight = 256,
+  cardHeight = 272,
 }: Props) {
   // Use contentContainerClassName to apply gap + row layout
   return (
     <ScrollView
       horizontal
-      className="h-64"
+      className="h-80"
       contentContainerClassName="flex-row"
       contentContainerStyle={[{ columnGap: gap }, contentStyle]}
       showsHorizontalScrollIndicator={false}

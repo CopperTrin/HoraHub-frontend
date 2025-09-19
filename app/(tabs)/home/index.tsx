@@ -36,7 +36,7 @@ export default function HomePage() {
   const podiumItems = [
     {
       image: fortune_teller_1,
-      name: "หมอบี",
+      name: "หมอบีหมอบีหมอบีหมอบีหมอบีหมอบีหมอบีหมอบีหมอบี",
       rank: 2,
       color: "#C7C7C7",
     },
@@ -57,12 +57,13 @@ export default function HomePage() {
     { image: article_1, title: "6 ศาสตร์ดูดวงยอดนิยม", author: "อาจารย์ไม้ร่ม" },
     { image: article_2, title: "How to เปิดไพ่ทาโรต์", author: "อาจารย์แดง" },
     { image: article_3, title: "4 ราศีได้เลื่อนขั้น", author: "หมอบี" },
+    { image: article_3, title: "4 ราศีได้เลื่อนขั้น 4 ราศีได้เลื่อนขั้น 4 ราศีได้เลื่อนขั้น 4 ราศีได้เลื่อนขั้น 4 ราศีได้เลื่อนขั้น", author: "หมอบี" },
   ];
 
   return (
     <ScreenWrapper>
       <ScrollView
-        className="mb-12"
+        className="mb-8"
       >
         <HomeNews
           images={images}
