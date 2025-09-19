@@ -15,7 +15,7 @@ export default function FortuneTellerCard({ image, label }: Props) {
         className="w-full h-full rounded-lg"
       />
       <Text 
-        className="absolute text-white bottom-1 left-1 w-3/4 text-sm"
+        className="absolute text-white bottom-1 left-1 w-3/4 text-sm font-sans"
         numberOfLines={2}
         ellipsizeMode="tail"
         style={{

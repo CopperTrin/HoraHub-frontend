@@ -35,7 +35,7 @@ export default function RankingPodium({ background, items, useGap = true }: Prop
                 style={{ width: 48, height: 48, borderRadius: 32 }}
                 className="self-center mb-1"
               />
-              <Text className="text-white text-center mb-4 mt-2 text-sm w-24" numberOfLines={2} ellipsizeMode="tail">
+              <Text className="text-white text-center mb-4 mt-2 text-sm w-24 font-sans" numberOfLines={2} ellipsizeMode="tail">
                 {item.name}
               </Text>
               <View

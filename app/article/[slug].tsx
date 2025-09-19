@@ -38,6 +38,11 @@ export default function ArticleDetail() {
                     headerTintColor: "white",
                     headerStyle: { backgroundColor: "#0f0b1b" }, 
                     headerTransparent: false,
+                    headerTitleStyle: {
+                        fontFamily: "NotoSansThaiBold",
+                        fontSize: 18,
+                        color: "white",
+                      },
                 }}
             />
             
@@ -50,14 +55,14 @@ export default function ArticleDetail() {
                     />
                 ) : null}
 
-                <Text className="text-white text-2xl font-bold">{title ?? slug}</Text>
+                <Text className="text-white text-2xl font-sans-bold">{title ?? slug}</Text>
                 {author ? (
-                    <Text className="text-alabaster mt-2">โดย {author}</Text>
+                    <Text className="text-alabaster mt-2 font-sans-medium">โดย {author}</Text>
                 ) : null}
 
                 <ScrollView className="mt-4">
                     {content ?? (
-                        <Text className="text-white">{content}</Text>
+                        <Text className="text-white font-sans">{content}</Text>
                     )}
                 </ScrollView>
             </ScrollView>

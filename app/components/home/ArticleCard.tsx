@@ -23,14 +23,14 @@ export default function ArticleCard({
       <View className="w-full h-full">
         <Image source={image} className="w-full h-44 rounded-lg" resizeMode="cover" />
         <Text
-          className="text-white font-medium mt-2 text-base ml-2"
+          className="text-white font-sans-medium mt-2 text-base ml-2"
           numberOfLines={2}
           ellipsizeMode="tail"
         >
           {title}
         </Text>
         <Text
-          className="text-alabaster font-medium mt-2 text-sm ml-2"
+          className="text-alabaster font-sans-medium mt-2 text-sm ml-2"
           numberOfLines={1}
           ellipsizeMode="tail"
         >

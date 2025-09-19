@@ -90,25 +90,25 @@ export default function HomePage() {
 
           {/* Fortune teller recommendation */}
           <View className="flex-row items-center gap-2.5">
-            <Text className="text-white text-base font-semibold w-32">หมอดูออนไลน์</Text>
+            <Text className="text-white text-base font-sans-semibold w-32">หมอดูออนไลน์</Text>
             <View className="bg-secondary-100 rounded-md w-20 my-3 px-1">
-              <Text className="text-base text-white text-center py-2">ดูทั้งหมด</Text>
+              <Text className="text-base text-white text-center py-2 font-sans-medium">ดูทั้งหมด</Text>
             </View>
           </View>
           <FortuneCarousel items={fortuneTellers} />
 
           {/* Fortune teller ranking */}
           <View className="flex-row items-center gap-2.5 mt-4">
-            <Text className="text-white text-l font-semibold">อันดับหมอดู</Text>
+            <Text className="text-white text-l font-sans-semibold">อันดับหมอดู</Text>
             <View className="bg-secondary-100 rounded-md w-20 my-3 px-1">
-              <Text className="text-l text-white text-center py-2">ดูทั้งหมด</Text>
+              <Text className="text-l text-white text-center py-2 font-sans-medium">ดูทั้งหมด</Text>
             </View>
           </View>
           <RankingPodium background={ranking_bg} items={podiumItems} />
 
           {/* Article list */}
           <View className="gap-2.5 mt-8">
-            <Text className="text-white text-l font-semibold">บทความ</Text>
+            <Text className="text-white text-l font-sans-semibold">บทความ</Text>
             <ArticleCarousel
               items={articles.map(a => ({
                 image: a.image,
