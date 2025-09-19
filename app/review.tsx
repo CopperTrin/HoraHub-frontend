@@ -73,12 +73,15 @@ export default function ReviewScreen() {
       {/* Review */}
       <Text className="self-start text-alabaster text-sm mb-2 font-main">Write your review</Text>
       <TextInput
-        className="w-full min-h-[100px] border border-yellow-400 rounded-lg p-3 text-white mb-5"
+        className="w-full h-[150px] border border-yellow-400 rounded-lg p-3 text-white mb-5"
         placeholder="เขียนรีวิวของคุณที่นี่..."
         placeholderTextColor="#aaa"
         value={review}
         onChangeText={(text: string) => setReview(text)}
         multiline
+        scrollEnabled={true}
+        textAlign="left"
+        textAlignVertical="top"
       />
 
       {/* Submit */}
