@@ -14,7 +14,6 @@ import home_new_01 from "@/assets/images/home/home_new_01.png";
 import home_new_02 from "@/assets/images/home/home_new_02.jpg";
 import home_new_03 from "@/assets/images/home/home_new_03.jpg";
 import ranking_bg from "@/assets/images/home/ranking_bg.png";
-import { Asset } from "expo-asset";
 import { router } from "expo-router";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -79,7 +78,6 @@ export default function HomePage() {
           onIndexChange={(i) => { }}
           // NEW: handle image press by index (see step 3 for HomeNews change)
           onImagePress={(i) => {
-            const uri = Asset.fromModule(a.image).uri;
             const a = newsToArticle[i % newsToArticle.length];
             router.push({
               pathname: "/article/[slug]",
