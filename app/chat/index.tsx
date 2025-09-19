@@ -10,11 +10,11 @@ export default function ChatPage() {
     <ScreenWrapper>
       <HeaderBar
         title="Chat"
-        showBack={true}
-        rightIcons={[
-          { name: "search", onPress: () => console.log("Search tapped") },
-          { name: "chat-bubble-outline", onPress: () => router.push("/chat") },
-        ]}
+        showBack
+        showSearch
+        onSearchSubmit={(query) => {
+          console.log("ค้นหา:", query);
+        }}
       />
       <View className="flex-1 bg-primary-200 items-center justify-center">
         <Text className="text-accent-200 text-lg font-bold">Chat</Text>
