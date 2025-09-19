@@ -1,7 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import { Tabs } from "expo-router";
-import colors from "../constants/Colors";
 
 export default function TabLayout() {
   return (
@@ -10,7 +8,7 @@ export default function TabLayout() {
         headerShown: false,
 
         tabBarStyle: {
-          backgroundColor: colors.primary[100],
+          backgroundColor: '#211A3A',
           borderTopWidth: 0,         
           height: 84,                
           paddingBottom: 10,         
@@ -30,8 +28,8 @@ export default function TabLayout() {
           marginTop: 0,  
         },
 
-        tabBarActiveTintColor: colors.accent[200],
-        tabBarInactiveTintColor: colors.alabaster,
+        tabBarActiveTintColor: '#FFD824',
+        tabBarInactiveTintColor: '#F8F8F8',
       }}
     >
       <Tabs.Screen

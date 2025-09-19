@@ -3,6 +3,7 @@ import FortuneCarousel from "@/app/components/home/FortuneCarousel";
 import HomeNews from "@/app/components/home/HomeNews";
 import RankingPodium from "@/app/components/home/RankingPodium";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+
 import article_1 from "@/assets/images/home/article_1.png";
 import article_2 from "@/assets/images/home/article_2.png";
 import article_3 from "@/assets/images/home/article_3.jpg";

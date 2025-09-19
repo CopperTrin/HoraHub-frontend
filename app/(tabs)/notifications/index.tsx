@@ -1,12 +1,17 @@
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { View, Text} from "react-native";
+import HeaderBar from "../../components/ui/HeaderBar";
 
 export default function NotificationsPage() {
   return (
     <ScreenWrapper>
-      <View>
-        <Text>notifications</Text>
+      <HeaderBar
+        title="Notifications"
+        showChat
+      />
+      <View className="flex-1 bg-primary-200 items-center justify-center">
+        <Text className="text-accent-200 text-lg font-bold">Hello Notifications</Text>
       </View>
     </ScreenWrapper>
   );

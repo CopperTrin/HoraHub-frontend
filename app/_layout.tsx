@@ -11,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync(); // keep splash while fonts load
