@@ -16,11 +16,11 @@ export default function ProfilePage() {
 
         {/* ปุ่มไปหน้า fortune-teller */}
         <TouchableOpacity
-          onPress={() => router.push("/(fortune-teller)/dashboard")}
+          onPress={() => router.push("/(tabs)/home")}
           className="bg-accent-200 px-6 py-3 rounded-full"
         >
           <Text className="text-black text-lg font-bold">
-            ไปหน้า Fortune Teller
+            ไปหน้า customer
           </Text>
         </TouchableOpacity>
       </View>
