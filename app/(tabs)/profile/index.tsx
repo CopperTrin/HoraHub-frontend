@@ -1,7 +1,7 @@
 import ScreenWrapper from '@/app/components/ScreenWrapper';
+import horahub_logo from '@/assets/images/horahub.png';
 import {
   GoogleSignin,
-  GoogleSigninButton,
   isErrorWithCode,
   isSuccessResponse,
   statusCodes
@@ -10,10 +10,9 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
-import { Alert, Platform, ScrollView, Text, View } from 'react-native';
-
+import { Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 const getBaseURL = () => {
-  if (Platform.OS === "android") {    
+  if (Platform.OS === "android") {
     return "http://10.0.2.2:3456";
   }
   return "http://localhost:3456";
@@ -42,13 +41,16 @@ export default function HomeScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignInCustomer = async () => {
     try {
+      console.log("Sign in");
       await GoogleSignin.hasPlayServices();
+      console.log("hasPlayServices");
       const response = await GoogleSignin.signIn();
+      console.log("GoogleSignin.signIn response:");
       if (isSuccessResponse(response)) {
         const { idToken } = response.data;
-        //console.log(response.data);
+        console.log(response.data);
         setUserInfo(response.data);
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
@@ -60,7 +62,54 @@ export default function HomeScreen() {
         console.log('Server response:', res.data);
 
         // Navigate to the protected route
-        router.push('/(tabs)/profile');
+        router.push('/(tabs)/home');
+      } else {
+        console.log('Sign in cancelled or some other issue');
+      }
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+            // operation (eg. sign in) already in progress
+            Alert.alert('Sign in is in progress already');
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            // Android only, play services not available or outdated
+            Alert.alert('Play services not available or outdated');
+            break;
+          default:
+          // some other error happened
+        }
+      } else {
+        // an error that's not related to google sign in occurred
+        Alert.alert('An unknown error occurred during Google sign in');
+        console.error(error);
+      }
+    }
+  }
+
+  const handleGoogleSignInFortuneTeller = async () => {
+    try {
+      console.log("Sign in");
+      await GoogleSignin.hasPlayServices();
+      console.log("hasPlayServices");
+      const response = await GoogleSignin.signIn();
+      console.log("GoogleSignin.signIn response:");
+      if (isSuccessResponse(response)) {
+        const { idToken } = response.data;
+        console.log(response.data);
+        setUserInfo(response.data);
+        const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
+          idToken,
+          role: 'FORTUNE_TELLER', // or FORTUNE_TELLER
+        });
+        const token = res.data.access_token;
+        // Save token with SecureStore / AsyncStorage
+        await SecureStore.setItemAsync("access_token", token);
+        console.log('Server response:', res.data);
+
+        // Navigate to the protected route
+        router.push('/(tabs)/home');
       } else {
         console.log('Sign in cancelled or some other issue');
       }
@@ -100,11 +149,30 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         ) : (
-          <GoogleSigninButton
-            size={GoogleSigninButton.Size.Wide}
-            color={GoogleSigninButton.Color.Dark}
-            onPress={handleGoogleSignIn}
-          />
+          <View className='flex justify-center items-center w-full h-full gap-8'>
+            <View className='flex justify-center items-center'>
+              <Image
+                source={horahub_logo}
+                className='w-28 h-28 mb-8'
+              />
+              <Text className='text-white font-sans-semibold text-3xl'>ยินดีต้อนรับสู่ Horahub</Text>
+              <Text className='text-white font-sans-semibold text-xl'>เข้าสู่ระบบด้วยบัญชีของคุณ</Text>
+            </View>
+
+            <TouchableOpacity
+            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
+            onPress={handleGoogleSignInCustomer}
+          >
+            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Customer</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+            onPress={handleGoogleSignInFortuneTeller}
+          >
+            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
+          </TouchableOpacity>
+          </View>
         )}
       </View>
     </ScreenWrapper>
