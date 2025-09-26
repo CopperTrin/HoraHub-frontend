@@ -1,6 +1,7 @@
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
-import { View, Text} from "react-native";
+import { Link } from "expo-router";
+import { Text, View } from "react-native";
 import HeaderBar from "../../components/ui/HeaderBar";
 
 export default function P2pPage() {
@@ -19,6 +20,7 @@ export default function P2pPage() {
       />
       <View className="flex-1 bg-primary-200 items-center justify-center">
         <Text className="text-accent-200 text-lg font-bold">P2p</Text>
+        <Link href="../../payment_success" className="text-yellow-500 mt-4">Go to Review Screen</Link>
       </View>
     </ScreenWrapper>
   );
