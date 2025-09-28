@@ -3,7 +3,6 @@ import { FontAwesome } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "./components/ui/HeaderBar";
-import "./global.css";
 
 export default function ReviewScreen() {
   const [review, setReview] = useState<string>("");
@@ -78,7 +77,7 @@ export default function ReviewScreen() {
         </View>
 
         {/* Review */}
-        <Text className="self-start text-alabaster text-sm mb-2 font-main">Write your review</Text>
+        <Text className="self-start text-alabaster text-sm mb-2">Write your review</Text>
         <TextInput
           className="w-full h-[150px] border border-yellow-400 rounded-lg p-3 text-white mb-5"
           placeholder="เขียนรีวิวของคุณที่นี่..."
