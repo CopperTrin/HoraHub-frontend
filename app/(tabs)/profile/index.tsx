@@ -9,8 +9,8 @@ import {
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useState } from 'react';
-import { Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 const getBaseURL = () => {
   if (Platform.OS === "android") {
     return "http://10.0.2.2:3456";
@@ -19,8 +19,7 @@ const getBaseURL = () => {
 };
 
 GoogleSignin.configure({
-  //webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
-  webClientId: "733845121711-1q7mma5pp8rh1nsjpuoqngii7flon0uq.apps.googleusercontent.com",
+  webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
   // scopes: [
   //   /* what APIs you want to access on behalf of the user, default is email and profile
   //   this is just an example, most likely you don't need this option at all! */
@@ -42,7 +41,7 @@ export default function HomeScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
 
-  const handleGoogleSignInCustomer = async () => {
+  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
       console.log("Sign in");
       await GoogleSignin.hasPlayServices();
@@ -52,7 +51,7 @@ export default function HomeScreen() {
       if (isSuccessResponse(response)) {
         const { idToken } = response.data;
         console.log(response.data);
-        setUserInfo(response.data);
+        //setUserInfo(response.data);
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
           role: 'CUSTOMER', // or FORTUNE_TELLER
@@ -61,56 +60,12 @@ export default function HomeScreen() {
         // Save token with SecureStore / AsyncStorage
         await SecureStore.setItemAsync("access_token", token);
         console.log('Server response:', res.data);
-
-        // Navigate to the protected route
-        router.push('/(tabs)/home');
-      } else {
-        console.log('Sign in cancelled or some other issue');
-      }
-    } catch (error) {
-      if (isErrorWithCode(error)) {
-        switch (error.code) {
-          case statusCodes.IN_PROGRESS:
-            // operation (eg. sign in) already in progress
-            Alert.alert('Sign in is in progress already');
-            break;
-          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            // Android only, play services not available or outdated
-            Alert.alert('Play services not available or outdated');
-            break;
-          default:
-          // some other error happened
-        }
-      } else {
-        // an error that's not related to google sign in occurred
-        Alert.alert('An unknown error occurred during Google sign in');
-        console.error(error);
-      }
-    }
-  }
-
-  const handleGoogleSignInFortuneTeller = async () => {
-    try {
-      console.log("Sign in");
-      await GoogleSignin.hasPlayServices();
-      console.log("hasPlayServices");
-      const response = await GoogleSignin.signIn();
-      console.log("GoogleSignin.signIn response:");
-      if (isSuccessResponse(response)) {
-        const { idToken } = response.data;
-        console.log(response.data);
-        setUserInfo(response.data);
-        const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
-          idToken,
-          role: 'FORTUNE_TELLER', // or FORTUNE_TELLER
+        const profile = await axios.get(`${getBaseURL()}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const token = res.data.access_token;
-        // Save token with SecureStore / AsyncStorage
-        await SecureStore.setItemAsync("access_token", token);
-        console.log('Server response:', res.data);
-
+        setUserInfo(profile.data);
         // Navigate to the protected route
-        router.push('/(tabs)/home');
+        //router.push('/(tabs)/home');
       } else {
         console.log('Sign in cancelled or some other issue');
       }
@@ -135,6 +90,55 @@ export default function HomeScreen() {
       }
     }
   }
+
+  const googleSignOut = async () => {
+    try {
+      // 1) Sign out from Google SDK
+      await GoogleSignin.signOut();
+
+      // 2) Optional but recommended if you want to force account re-pick next time
+      // (removes granted scopes on Google side)
+      try { await GoogleSignin.revokeAccess(); } catch { }
+
+      // 3) Remove your backend token
+      await SecureStore.deleteItemAsync('access_token');
+
+      // 4) Clear local UI state and go to login
+      setUserInfo(null);
+      //router.replace('/'); // or your auth screen, e.g. '/(auth)/login'
+    } catch (e) {
+      console.error('Sign out error', e);
+      Alert.alert('Sign out failed', 'Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // 1. Get token from SecureStore
+        const token = await SecureStore.getItemAsync('access_token');
+        if (!token) {
+          console.log('No access token found');
+          setUserInfo(null);
+          return;
+        }
+
+        // 2. Fetch profile from backend
+        const res = await axios.get(`${getBaseURL()}/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // 3. Set user info
+        setUserInfo(res.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <ScreenWrapper>
@@ -142,13 +146,27 @@ export default function HomeScreen() {
         <Text>Google Sign In</Text>
         {userInfo ? (
           <View>
-            <Text>Welcome, {userInfo.user.name}!</Text>
-            <Text>Email: {userInfo.user.email}</Text>
-            <Text>Full Response:</Text>
+            <Text className='text-white'>Welcomes, {userInfo.FirstName} {userInfo.LastName}!</Text>
+            <Text className='text-white'>Email, {userInfo.Email}!</Text>
+            <Image
+              source={{ uri: userInfo.PictureURL }}
+              style={{ width: 100, height: 100, borderRadius: 50, marginVertical: 10 }}
+            />
+            <Text className='text-white'>Full Response:</Text>
             <ScrollView style={{ maxHeight: 200, backgroundColor: '#f0f0f0', padding: 10 }}>
               <Text style={{ fontSize: 12 }}>{JSON.stringify(userInfo, null, 2)}</Text>
             </ScrollView>
+            <Button title="Sign Out" onPress={googleSignOut} />
+            <TouchableOpacity
+              onPress={() => router.push("/(fortune-teller)/dashboard")}
+              className="bg-accent-200 px-6 py-3 rounded-full"
+            >
+              <Text className="text-black text-lg font-bold">
+                ไปหน้า Fortune Teller
+              </Text>
+            </TouchableOpacity>
           </View>
+
         ) : (
           <View className='flex justify-center items-center w-full h-full gap-8'>
             <View className='flex justify-center items-center'>
@@ -161,18 +179,18 @@ export default function HomeScreen() {
             </View>
 
             <TouchableOpacity
-            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
-            onPress={handleGoogleSignInCustomer}
-          >
-            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Customer</Text>
-          </TouchableOpacity>
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
+              onPress={() => handleGoogleSignIn('CUSTOMER')}
+            >
+              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Customer</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
-            onPress={handleGoogleSignInFortuneTeller}
-          >
-            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+              onPress={() => handleGoogleSignIn('FORTUNE_TELLER')}
+            >
+              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
