@@ -175,43 +175,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
           </View>
         )}
-      <View>
-        <Text>Google Sign In</Text>
-        {userInfo ? (
-          <View>
-            <Text>Welcome, {userInfo.user.name}!</Text>
-            <Text>Email: {userInfo.user.email}</Text>
-            <Text>Full Response:</Text>
-            <ScrollView style={{ maxHeight: 200, backgroundColor: '#f0f0f0', padding: 10 }}>
-              <Text style={{ fontSize: 12 }}>{JSON.stringify(userInfo, null, 2)}</Text>
-            </ScrollView>
-          </View>
-        ) : (
-          <View className='flex justify-center items-center w-full h-full gap-8'>
-            <View className='flex justify-center items-center'>
-              <Image
-                source={horahub_logo}
-                className='w-28 h-28 mb-8'
-              />
-              <Text className='text-white font-sans-semibold text-3xl'>ยินดีต้อนรับสู่ Horahub</Text>
-              <Text className='text-white font-sans-semibold text-xl'>เข้าสู่ระบบด้วยบัญชีของคุณ</Text>
-            </View>
-
-            <TouchableOpacity
-            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
-            onPress={handleGoogleSignInCustomer}
-          >
-            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Customer</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
-            onPress={handleGoogleSignInFortuneTeller}
-          >
-            <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
-          </TouchableOpacity>
-          </View>
-        )}
       </View>
     </ScreenWrapper>
   );
