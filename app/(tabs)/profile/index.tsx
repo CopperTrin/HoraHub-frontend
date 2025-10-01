@@ -19,7 +19,8 @@ const getBaseURL = () => {
 };
 
 GoogleSignin.configure({
-  webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
+  //webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
+  webClientId: "733845121711-1q7mma5pp8rh1nsjpuoqngii7flon0uq.apps.googleusercontent.com",
   // scopes: [
   //   /* what APIs you want to access on behalf of the user, default is email and profile
   //   this is just an example, most likely you don't need this option at all! */
