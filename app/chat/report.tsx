@@ -3,11 +3,11 @@ import HeadersBar from "@/app/components/ui/HeaderBar";
 import { navigate } from "expo-router/build/global-state/routing";
 import { useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity
 } from "react-native";
 
 const ReportChat = ({route}) => {

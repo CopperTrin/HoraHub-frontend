@@ -20,7 +20,7 @@ export default function P2pPage() {
       />
       <View className="flex-1 bg-primary-200 items-center justify-center">
         <Text className="text-accent-200 text-lg font-bold">P2p</Text>
-        <Link href="../../payment_success" className="text-yellow-500 mt-4">Go to Review Screen</Link>
+        <Link href="../p2p/podium" className="text-yellow-500 mt-4">Go to Review Screen</Link>
       </View>
     </ScreenWrapper>
   );
