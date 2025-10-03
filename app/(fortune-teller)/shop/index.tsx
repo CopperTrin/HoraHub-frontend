@@ -58,7 +58,7 @@ export default function ShopDashboardPage() {
         {/* เมนูปุ่มกด */}
         <TouchableOpacity
           className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4 mb-4"
-          onPress={() => router.push("/(fortune-teller)/shop/create-new-product")}
+          onPress={() => router.push("/(fortune-teller)/shop/create_product")}
         >
           <View className="flex-row items-center">
             <MaterialIcons name="add-box" size={20} color="white" />
