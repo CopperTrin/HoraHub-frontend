@@ -1,0 +1,160 @@
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import ScreenWrapper from "@/app/components/ScreenWrapper";
+import Feather from "@expo/vector-icons/Feather";
+import HeaderBar from "../../components/ui/HeaderBar";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+
+const initialProduct = {
+  name: "เครื่องรางศาลเจ้าตะไพุที",
+  price: "1000",
+  link: "https://shopee.co.th",
+  detail:
+    "ajwldkjawlkjdlkawjdkjawlkjdklawjdklawajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljjlkdjlakwjdkawjdklj...",
+  images: [
+    "https://static.thairath.co.th/media/dFQROr7oWzulq5Fa5LJPy5B4qNdayFGtRrSsdJInLYWvwGnX9BVjkAUMd0O7l7CLSTW.webp",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzGUJhtArs2QjqiSVkQI87EwNBuzKJ_YzzTQ&s"
+  ],
+};
+
+export default function EditProductDetailPage() {
+  const [product, setProduct] = useState(initialProduct);
+  const [images, setImages] = useState<string[]>(initialProduct.images);
+
+  // เลือกรูปเพิ่ม
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsMultipleSelection: true,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newUris]);
+    }
+  };
+
+  // ลบรูป
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+  };
+
+  return (
+    <ScreenWrapper>
+      <HeaderBar title="Edit Product" showChat showBack />
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 20,
+          paddingTop: 8,
+        }}
+      >
+        {/* Preview selected images */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {images.map((uri, idx) => (
+            <View key={idx} className="relative mr-2">
+              <Image source={{ uri }} className="w-24 h-24 rounded-2xl" />
+              {/* ปุ่มลบรูป */}
+              <TouchableOpacity
+                onPress={() => removeImage(idx)}
+                className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+              >
+                <Ionicons name="close" size={14} color="white" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity
+            onPress={pickImages}
+            className="w-24 h-24 bg-primary-100 rounded-2xl items-center justify-center"
+          >
+            <MaterialCommunityIcons
+              name="file-image-plus"
+              size={32}
+              color="#F8F8F8"
+            />
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Name */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Feather name="package" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Name</Text>
+        </View>
+        <TextInput
+          value={product.name}
+          onChangeText={(text) => setProduct({ ...product, name: text })}
+          placeholder="Enter product name"
+          placeholderTextColor="#aaa"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Price */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="pricetags" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Price</Text>
+        </View>
+        <TextInput
+          value={product.price}
+          onChangeText={(text) => setProduct({ ...product, price: text })}
+          placeholder="Enter price"
+          placeholderTextColor="#aaa"
+          keyboardType="numeric"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Link */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="link" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Link</Text>
+        </View>
+        <TextInput
+          value={product.link}
+          onChangeText={(text) => setProduct({ ...product, link: text })}
+          placeholder="Enter link"
+          placeholderTextColor="#aaa"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Detail */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="document-text" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Detail</Text>
+        </View>
+        <TextInput
+          value={product.detail}
+          onChangeText={(text) => setProduct({ ...product, detail: text })}
+          placeholder="Enter product details"
+          placeholderTextColor="#aaa"
+          multiline
+          numberOfLines={5}
+          className="bg-primary-100 text-alabaster rounded-2xl px-4 py-3 h-60"
+        />
+
+
+      </ScrollView>
+      <View
+        style={{
+          position: "absolute",
+          left: 12,
+          right: 12,
+          bottom: 84,
+          zIndex: 50,              
+          backgroundColor: "transparent", 
+        }}
+      >
+        <View className="py-3 flex-row gap-2">
+          <TouchableOpacity className="flex-1 bg-red-500 py-3 rounded-2xl items-center">
+            <Text className="font-semibold text-lg text-white">Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="flex-1 bg-accent-200 py-3 rounded-2xl items-center">
+            <Text className="font-semibold text-lg text-black">Save Changes</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScreenWrapper>
+  );
+}

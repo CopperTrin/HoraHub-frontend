@@ -1,53 +1,47 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { Tabs } from "expo-router";
-import '../global.css';
-export default function TabLayout() {
+
+export default function FortuneTellerLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-
         tabBarStyle: {
           backgroundColor: '#211A3A',
-          borderTopWidth: 0,         
-          height: 84,                
-          paddingBottom: 10,         
-          paddingTop: 8, 
-          // borderTopLeftRadius: 20,
-          // borderTopRightRadius: 20,   
+          borderTopWidth: 0,
+          height: 84,
+          paddingBottom: 10,
+          paddingTop: 8,
           position: "absolute",
           left: 0,
-          right: 0,     
-          paddingLeft :20 ,
-          paddingRight:20,     
+          right: 0,
+          paddingLeft: 20,
+          paddingRight: 20,
         },
-
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "400",
-          marginTop: 0,  
+          marginTop: 0,
         },
-
         tabBarActiveTintColor: '#FFD824',
         tabBarInactiveTintColor: '#F8F8F8',
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="dashboard"
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="home" color={color} size={size} />
+            <MaterialIcons name="dashboard" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
-        name="p2p"
+        name="booking"
         options={{
-          title: "P2P",
+          title: "Booking",
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="people-arrows" size={size-6} color={color} />
+            <MaterialIcons name="calendar-month" color={color} size={size} />
           ),
         }}
       />
@@ -78,13 +72,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="fortune_teller_profile"
-        options={{
-          href: null, 
-        }}
-      />
-      
     </Tabs>
   );
 }
