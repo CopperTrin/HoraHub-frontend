@@ -26,7 +26,7 @@ const product = {
   link: "https://shopee.co.th",
 };
 
-export default function ProductDetailPage() {
+export default function EditProductDetailPage() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
 
