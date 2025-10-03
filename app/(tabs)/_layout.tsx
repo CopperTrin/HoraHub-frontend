@@ -78,6 +78,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="fortune_teller_profile"
+        options={{
+          href: null, 
+        }}
+      />
+      
     </Tabs>
   );
 }

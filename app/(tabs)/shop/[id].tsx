@@ -105,7 +105,7 @@ export default function ProductDetailPage() {
 
         {/* ส่วนโปรไฟล์หมอดู */}
         <TouchableOpacity
-          // onPress={() => router.push(`/fortune-teller/${product.fortune_teller.id}`)}
+          onPress={() => router.push(`/fortune_teller_profile/${product.fortune_teller.id}`)}
           className="flex-row items-center bg-primary-100 p-3 rounded-full mb-4"
         >
           <View className="flex-row items-center justify-between gap-4">
