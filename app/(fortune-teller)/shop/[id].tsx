@@ -1,136 +1,160 @@
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
-import Entypo from "@expo/vector-icons/Entypo";
-import { useRouter } from "expo-router";
-import {Image,ScrollView,Text,TouchableOpacity,View,Linking,Dimensions,Pressable,} from "react-native";
-import { useState } from "react";
+import Feather from "@expo/vector-icons/Feather";
 import HeaderBar from "../../components/ui/HeaderBar";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-const { width: screenWidth } = Dimensions.get("window");
-
-const product = {
-  id: "2",
+const initialProduct = {
   name: "เครื่องรางศาลเจ้าตะไพุที",
-  price: 1000,
-  image: [
+  price: "1000",
+  link: "https://shopee.co.th",
+  detail:
+    "ajwldkjawlkjdlkawjdkjawlkjdklawjdklawajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdkljjlkdjlakwjdkawjdklj...",
+  images: [
     "https://static.thairath.co.th/media/dFQROr7oWzulq5Fa5LJPy5B4qNdayFGtRrSsdJInLYWvwGnX9BVjkAUMd0O7l7CLSTW.webp",
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzGUJhtArs2QjqiSVkQI87EwNBuzKJ_YzzTQ&s"
   ],
-  description:
-    "ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...ajwldkjawlkjdlkawjdkjawlkjdklawjdklawjlkdjlakwjdkawjdklj...",
-  fortune_teller: {
-    id: "1",
-    name: "อาจารย์ไม้รัม",
-    profile_img:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRfgSRfv0BYIwiTZpoQk3rKrDFnaSHimR1pvQ&s",
-  },
-  link: "https://shopee.co.th",
 };
 
 export default function EditProductDetailPage() {
-  const router = useRouter();
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [product, setProduct] = useState(initialProduct);
+  const [images, setImages] = useState<string[]>(initialProduct.images);
 
-  const handleBuy = () => {
-    if (product.link) Linking.openURL(product.link);
+  // เลือกรูปเพิ่ม
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsMultipleSelection: true,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newUris = result.assets.map((asset) => asset.uri);
+      setImages([...images, ...newUris]);
+    }
   };
 
-  const handleScroll = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / screenWidth);
-    setActiveIndex(newIndex);
+  // ลบรูป
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
   };
 
   return (
     <ScreenWrapper>
-      <HeaderBar title={product.name} showBack showChat />
-      <ScrollView contentContainerStyle={{ 
-          paddingHorizontal: 16, 
-          paddingBottom : 20
-        }}>
-        {/* รูปสินค้าแบบ Scroll ได้ */}
-        <View className="mb-4">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          >
-            {product.image.map((img, index) => (
-              <Pressable key={index}>
-                <Image
-                  source={{ uri: img }}
-                  style={{
-                    width: screenWidth - 32, 
-                    height: 250,
-                    borderRadius: 12,
-                    // marginRight: index === product.image.length - 1 ? 0 : 8,
-                  }}
-                  resizeMode="cover"
-                />
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          {/* Dot Indicator */}
-          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
-            {product.image.map((_, index) => (
-              <View
-                key={index}
-                className={`w-2.5 h-2.5 mx-1 rounded-full ${
-                  activeIndex === index ? "bg-accent-200" : "bg-gray-400"
-                }`}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* ชื่อ + ราคา */}
-        <Text className="text-alabaster text-xl font-bold mb-2">
-          {product.name}
-        </Text>
-        <Text className="text-accent-200 text-2xl font-bold mb-4">
-          ฿{product.price}
-        </Text>
-
-        {/* ปุ่มสั่งซื้อ ติดล่างหน้าจอ */}
-        <View className="mb-4 ">
+      <HeaderBar title="Edit Product" showChat showBack />
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 20,
+          paddingTop: 8,
+        }}
+      >
+        {/* Preview selected images */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {images.map((uri, idx) => (
+            <View key={idx} className="relative mr-2">
+              <Image source={{ uri }} className="w-24 h-24 rounded-2xl" />
+              {/* ปุ่มลบรูป */}
+              <TouchableOpacity
+                onPress={() => removeImage(idx)}
+                className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+              >
+                <Ionicons name="close" size={14} color="white" />
+              </TouchableOpacity>
+            </View>
+          ))}
           <TouchableOpacity
-            onPress={handleBuy}
-            className="bg-accent-200 rounded-full py-4 items-center"
+            onPress={pickImages}
+            className="w-24 h-24 bg-primary-100 rounded-2xl items-center justify-center"
           >
-            <Text className="text-black text-lg font-bold">สั่งซื้อสินค้า</Text>
+            <MaterialCommunityIcons
+              name="file-image-plus"
+              size={32}
+              color="#F8F8F8"
+            />
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Name */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Feather name="package" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Name</Text>
+        </View>
+        <TextInput
+          value={product.name}
+          onChangeText={(text) => setProduct({ ...product, name: text })}
+          placeholder="Enter product name"
+          placeholderTextColor="#aaa"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Price */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="pricetags" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Price</Text>
+        </View>
+        <TextInput
+          value={product.price}
+          onChangeText={(text) => setProduct({ ...product, price: text })}
+          placeholder="Enter price"
+          placeholderTextColor="#aaa"
+          keyboardType="numeric"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Link */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="link" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Link</Text>
+        </View>
+        <TextInput
+          value={product.link}
+          onChangeText={(text) => setProduct({ ...product, link: text })}
+          placeholder="Enter link"
+          placeholderTextColor="#aaa"
+          className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
+        />
+
+        {/* Detail */}
+        <View className="flex-row items-center mt-4 mb-1 gap-2">
+          <Ionicons name="document-text" size={16} color="#F8F8F8" />
+          <Text className="text-alabaster text-base">Detail</Text>
+        </View>
+        <TextInput
+          value={product.detail}
+          onChangeText={(text) => setProduct({ ...product, detail: text })}
+          placeholder="Enter product details"
+          placeholderTextColor="#aaa"
+          multiline
+          numberOfLines={5}
+          className="bg-primary-100 text-alabaster rounded-2xl px-4 py-3 h-60"
+        />
+
+
+      </ScrollView>
+      <View
+        style={{
+          position: "absolute",
+          left: 12,
+          right: 12,
+          bottom: 84,
+          zIndex: 50,              
+          backgroundColor: "transparent", 
+        }}
+      >
+        <View className="py-3 flex-row gap-2">
+          <TouchableOpacity className="flex-1 bg-red-500 py-3 rounded-2xl items-center">
+            <Text className="font-semibold text-lg text-white">Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="flex-1 bg-accent-200 py-3 rounded-2xl items-center">
+            <Text className="font-semibold text-lg text-black">Save Changes</Text>
           </TouchableOpacity>
         </View>
-
-        {/* ส่วนโปรไฟล์หมอดู */}
-        <TouchableOpacity
-          // onPress={() => router.push(`/fortune-teller/${product.fortune_teller.id}`)}
-          className="flex-row items-center bg-primary-100 p-3 rounded-full mb-4"
-        >
-          <View className="flex-row items-center justify-between gap-4">
-            <Image
-              source={{ uri: product.fortune_teller.profile_img }}
-              className="w-12 h-12 rounded-full"
-            />
-            <View className="flex-1">
-              <Text className="text-alabaster text-lg font-semibold">
-                {product.fortune_teller.name}
-              </Text>
-            </View>
-            <Entypo name="chevron-small-right" size={32} color="#F8F8F8" />
-          </View>
-        </TouchableOpacity>
-
-        {/* รายละเอียดสินค้า */}
-        <Text className="text-alabaster text-base leading-6 mb-20">
-          {product.description}
-        </Text>
-
-        
-
-        
-      </ScrollView>
+      </View>
     </ScreenWrapper>
   );
 }
