@@ -1,6 +1,8 @@
 // screens/ChatScreen.tsx
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from "expo-image-picker";
+import { navigate } from "expo-router/build/global-state/routing";
 import { useEffect, useState } from "react";
 import {
   FlatList,
@@ -24,7 +26,7 @@ interface Message {
 }
 
 // mock API base url
-const API_URL = "https://example.com/api";
+const API_URL = "http://localhost:3456/api/";
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -128,14 +130,14 @@ const ChatScreen = () => {
         />
       )}
         {item.text && (
-            <View className={`max-w-[70%] p-3 rounded-lg ${item.sender === "me" ? "bg-blue-500" : "bg-gray-700"}`}>
-                <Text className="text-white break-words">{item.text}</Text>
+            <View className={`max-w-[70%] p-3 rounded-lg ${item.sender === "me" ? "bg-accent-100" : "bg-secondary-100"}`}>
+                <Text className="text-blackpearl break-words">{item.text}</Text>
             </View>
         )}
         {item.image && (
           <Image
             source={{ uri: item.image }}
-            className="w-60 h-60 rounded-lg mt-2"
+            className="w-60 h-80 rounded-xl"
           />
         )}
       {item.sender === "me" && (
@@ -146,47 +148,67 @@ const ChatScreen = () => {
       )}
     </View>
   );
+  const [inputHeight, setInputHeight] = useState(36);
+  const handleSend = () => {
+    sendMessage();
+    setInputHeight(36);
+  };
 
    return (
     <ScreenWrapper>
-        <HeaderBar title="ลุงเริง"showBack/>
-        <KeyboardAvoidingView
-        className="flex-1 bg-primary-200 p-4"
+      <HeaderBar 
+        title="ลุงเริง"
+        showBack
+        rightIcons={[{ name: "error-outline", onPress: () => navigate("../chat/report") }]}/>
+      <KeyboardAvoidingView
+        className="flex-1 bg-primary-100"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-        <FlatList
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
+      >
+      <FlatList
+        className="p-4"
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMessage}
+      />
+
+      {/* Input bar */}
+      <View className="flex-row items-center border-t p-2 bg-primary-200">
+        <TouchableOpacity
+          onPress={sendImage}
+          className="bg-primary-200 p-2 mr-1 mb-2 mt-2">
+          <MaterialCommunityIcons name="image-plus" size={24} color='#FFD824'/>
+        </TouchableOpacity>
+
+        <TextInput
+          className="flex-1 bg-yellow-200 text-black px-3 py-2 rounded-lg mb-2 mt-2"
+          placeholder="พิมพ์ข้อความสูงสุดที่ 250 ตัวอักษร..."
+          placeholderTextColor="gray"
+          value={input}
+          onChangeText={(text) => setInput(text.slice(0, 250))}
+          multiline
+          scrollEnabled={inputHeight >= 96} // scroll เมื่อกล่องถึง max
+          textAlign="left"
+          textAlignVertical="top"
+          style={{
+            minHeight: 36,
+            maxHeight: 96,
+            height: inputHeight,
+          }}
+          onContentSizeChange={(e) => {
+            const newHeight = e.nativeEvent.contentSize.height;
+            setInputHeight(Math.min(newHeight, 96)); // สูงสุด 120px
+          }}
         />
 
-        {/* Input bar */}
-        <View className="flex-row items-center border-t border-gray-600 p-2 bg-[#0D0822]">
-            <TouchableOpacity
-            onPress={sendImage}
-            className="bg-gray-700 p-2 rounded-lg mr-2"
-            >
-            <Text className="text-white">📷</Text>
-            </TouchableOpacity>
-
-            <TextInput
-            className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg"
-            placeholder="พิมพ์ข้อความ..."
-            placeholderTextColor="#aaa"
-            value={input}
-            onChangeText={setInput}
-            multiline
-            />
-
-            <TouchableOpacity
-            onPress={sendMessage}
-            className="ml-2 bg-yellow-400 px-4 py-2 rounded-lg"
-            >
-            <Text className="text-black font-bold">ส่ง</Text>
-            </TouchableOpacity>
-        </View>
-        </KeyboardAvoidingView>
-    </ScreenWrapper>
+        <TouchableOpacity
+          onPress={handleSend}
+          className="ml-2 bg-primary-200 px-1 py-2 mb-2 mt-2"
+          >
+          <MaterialCommunityIcons name="send-variant-outline" size={26} color='#FFD824' />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  </ScreenWrapper>
   );
 }
 
