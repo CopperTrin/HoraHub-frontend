@@ -1,3 +1,4 @@
+// index.tsx
 import HistoryCardList from "@/app/components/profile/HistoryCardList";
 import ScreenWrapper from '@/app/components/ScreenWrapper';
 import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
@@ -12,10 +13,11 @@ import {
   statusCodes
 } from '@react-native-google-signin/google-signin';
 import axios from 'axios';
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const getBaseURL = () => {
   if (Platform.OS === "android") {
@@ -25,27 +27,25 @@ const getBaseURL = () => {
 };
 
 GoogleSignin.configure({
-  webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
-  // scopes: [
-  //   /* what APIs you want to access on behalf of the user, default is email and profile
-  //   this is just an example, most likely you don't need this option at all! */
-  //   'https://www.googleapis.com/auth/drive.readonly',
-  // ],
-  // offlineAccess: false, // if you want to access Google API on behalf of the user FROM YOUR SERVER
-  // hostedDomain: '', // specifies a hosted domain restriction
-  // forceCodeForRefreshToken: false, // [Android] related to `serverAuthCode`, read the docs link below *.
-  // accountName: '', // [Android] specifies an account name on the device that should be used
-  iosClientId: "797950834704-k6hgh7919oige4r5tmv6qbl1qg6s69o4.apps.googleusercontent.com", // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
-  // googleServicePlistPath: '', // [iOS] if you renamed your GoogleService-Info file, new name here, e.g. "GoogleService-Info-Staging"
-  // openIdRealm: '', // [iOS] The OpenID2 realm of the home web server. This allows Google to include the user's OpenID Identifier in the OpenID Connect ID token.
-  // profileImageSize: 120, // [iOS] The desired height (and width) of the profile image. Defaults to 120px
+  webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com",
+  iosClientId: "797950834704-k6hgh7919oige4r5tmv6qbl1qg6s69o4.apps.googleusercontent.com",
 });
 
 export default function HomeScreen() {
-
   const router = useRouter();
 
   const [userInfo, setUserInfo] = useState<any>(null);
+
+  // --- NEW: upload states ---
+  const [uploadKey, setUploadKey] = useState<string | null>(null);
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const withAuth = async () => {
+    const token = await SecureStore.getItemAsync("access_token");
+    if (!token) throw new Error("No access token");
+    return { Authorization: `Bearer ${token}` };
+  };
 
   const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
@@ -57,21 +57,19 @@ export default function HomeScreen() {
       if (isSuccessResponse(response)) {
         const { idToken } = response.data;
         console.log(response.data);
-        //setUserInfo(response.data);
+
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
-          role: 'CUSTOMER', // or FORTUNE_TELLER
+          role,
         });
         const token = res.data.access_token;
-        // Save token with SecureStore / AsyncStorage
         await SecureStore.setItemAsync("access_token", token);
         console.log('Server response:', res.data);
+
         const profile = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUserInfo(profile.data);
-        // Navigate to the protected route
-        //router.push('/(tabs)/home');
       } else {
         console.log('Sign in cancelled or some other issue');
       }
@@ -79,18 +77,14 @@ export default function HomeScreen() {
       if (isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.IN_PROGRESS:
-            // operation (eg. sign in) already in progress
             Alert.alert('Sign in is in progress already');
             break;
           case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            // Android only, play services not available or outdated
             Alert.alert('Play services not available or outdated');
             break;
           default:
-          // some other error happened
         }
       } else {
-        // an error that's not related to google sign in occurred
         Alert.alert('An unknown error occurred during Google sign in');
         console.error(error);
       }
@@ -99,19 +93,12 @@ export default function HomeScreen() {
 
   const googleSignOut = async () => {
     try {
-      // 1) Sign out from Google SDK
       await GoogleSignin.signOut();
-
-      // 2) Optional but recommended if you want to force account re-pick next time
-      // (removes granted scopes on Google side)
-      try { await GoogleSignin.revokeAccess(); } catch { }
-
-      // 3) Remove your backend token
+      try { await GoogleSignin.revokeAccess(); } catch {}
       await SecureStore.deleteItemAsync('access_token');
-
-      // 4) Clear local UI state and go to login
       setUserInfo(null);
-      //router.replace('/'); // or your auth screen, e.g. '/(auth)/login'
+      setUploadKey(null);
+      setImgUrl(null);
     } catch (e) {
       console.error('Sign out error', e);
       Alert.alert('Sign out failed', 'Please try again.');
@@ -121,7 +108,6 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // 1. Get token from SecureStore
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
           console.log('No access token found');
@@ -129,23 +115,117 @@ export default function HomeScreen() {
           return;
         }
 
-        // 2. Fetch profile from backend
         const res = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        // 3. Set user info
         setUserInfo(res.data);
         console.log('Fetched profile:', res.data);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+      } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          console.warn("Access token expired or invalid. Logging out...");
+          await SecureStore.deleteItemAsync("access_token");
+          setUserInfo(null);
+        } else {
+          console.error('Error fetching profile:', error);
+        }
       }
     };
 
     fetchProfile();
   }, []);
+
+  // --- NEW: pick image, upload, then get signed URL ---
+  const pickAndUpload = async () => {
+    try {
+      setBusy(true);
+
+      // 1) pick
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.9,
+      });
+      if (res.canceled) return;
+
+      const asset = res.assets[0];
+      const uri = asset.uri;
+      // prefer original filename if available; fall back to a generic name
+      const baseName = asset.fileName ?? "upload";
+      // preserve extension if present
+      const ext = (baseName.includes(".") ? baseName.substring(baseName.lastIndexOf(".")) : ".png");
+      const name = baseName.replace(/\s+/g, "_"); // avoid spaces in key
+      const type = asset.mimeType ?? (ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png");
+
+      // 2) upload with auth
+      const headers = await withAuth();
+      const form = new FormData();
+      form.append("files", { uri, name, type } as any);
+
+      const uploadResp = await axios.post(
+        `${getBaseURL()}/s3/upload`,
+        form,
+        {
+          headers: {
+            ...headers,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const first = Array.isArray(uploadResp.data) ? uploadResp.data[0] : uploadResp.data;
+      const key: string = first?.key;
+      if (!key) throw new Error("Upload response missing key");
+      setUploadKey(key);
+
+      // 3) get presigned URL from server
+      // Your GET endpoint expects just the filename (last segment of the key).
+      const fileName = key.split("/").pop()!;
+      const getResp = await axios.get(
+        `${getBaseURL()}/s3/single/${encodeURIComponent(fileName)}`,
+        { headers }
+      );
+      const signed = getResp.data?.url as string | undefined;
+      if (!signed) throw new Error("Signed URL not returned");
+      setImgUrl(signed);
+    } catch (err: any) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        await SecureStore.deleteItemAsync("access_token");
+        setUserInfo(null);
+        Alert.alert("Session expired", "Please sign in again.");
+      } else {
+        Alert.alert("Upload error", err?.message ?? "Unknown error");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // --- NEW: refresh presigned URL when it expires ---
+  const refreshSignedUrl = async () => {
+    if (!uploadKey) return;
+    try {
+      setBusy(true);
+      const headers = await withAuth();
+      const fileName = uploadKey.split("/").pop()!;
+      const getResp = await axios.get(
+        `${getBaseURL()}/s3/single/${encodeURIComponent(fileName)}`,
+        { headers }
+      );
+      setImgUrl(getResp.data?.url);
+    } catch (err: any) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        await SecureStore.deleteItemAsync("access_token");
+        setUserInfo(null);
+        Alert.alert("Session expired", "Please sign in again.");
+      } else {
+        Alert.alert("Fetch error", err?.message ?? "Unknown error");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const historyData = [
     {
@@ -176,9 +256,14 @@ export default function HomeScreen() {
 
   return (
     <ScreenWrapper>
-      <View>
+      {/* make root fill the screen so ScrollView can scroll fully */}
+      <View className="flex-1">
         {userInfo ? (
-          <ScrollView className="mb-20">
+          <ScrollView
+            className="mb-20"
+            contentContainerStyle={{ paddingBottom: 48 }}
+            showsVerticalScrollIndicator={false}
+          >
             <View className='relative h-64'>
               <Image
                 source={profile_background}
@@ -196,27 +281,52 @@ export default function HomeScreen() {
                 >
                   {userInfo.FirstName} {userInfo.LastName}
                 </Text>
-
               </View>
             </View>
 
             <View className='mx-4 my-5 flex-col gap-6'>
               <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-              <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
+              <Text className='text-white text-xl font-sans-medium'>Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
+
+              {/* --- NEW: upload controls --- */}
+              <View className="gap-3">
+                <Button title="Pick & Upload Image" onPress={pickAndUpload} />
+                {busy && <ActivityIndicator style={{ marginTop: 8 }} />}
+
+                {uploadKey && (
+                  <Text className="text-white" numberOfLines={1}>
+                    key: {uploadKey}
+                  </Text>
+                )}
+
+                {imgUrl && (
+                  <>
+                    <Image
+                      source={{ uri: imgUrl }}
+                      style={{ width: 240, height: 240, borderRadius: 12, marginTop: 12 }}
+                      resizeMode="cover"
+                    />
+                    <View style={{ height: 8 }} />
+                    <Button title="Refresh URL (if expired)" onPress={refreshSignedUrl} />
+                  </>
+                )}
+              </View>
+
               <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
               <HistoryCardList items={historyData} />
             </View>
+
             <Button title="Sign Out" onPress={googleSignOut} />
+
             <TouchableOpacity
               onPress={() => router.push("/(fortune-teller)/dashboard")}
-              className="bg-accent-200 px-6 py-3 rounded-full"
+              className="bg-accent-200 px-6 py-3 rounded-full mt-4"
             >
               <Text className="text-black text-lg font-bold">
                 ไปหน้า Fortune Teller
               </Text>
             </TouchableOpacity>
           </ScrollView>
-
         ) : (
           <View className='flex justify-center items-center w-full h-full gap-8'>
             <View className='flex justify-center items-center'>
