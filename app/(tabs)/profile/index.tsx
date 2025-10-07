@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import HeaderBar from "../../components/ui/HeaderBar";
 
 const getBaseURL = () => {
   if (Platform.OS === "android") {
@@ -48,7 +49,7 @@ export default function HomeScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
@@ -73,7 +74,12 @@ export default function HomeScreen() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUserInfo(profile.data);
+        // 3. Redirect if fortune teller
         setLoading(false);
+        if (role === 'FORTUNE_TELLER') {
+          router.replace("/(fortune-teller)/dashboard");
+        }
+        
         // Navigate to the protected route
         //router.push('/(tabs)/home');
       } else {
@@ -128,9 +134,11 @@ export default function HomeScreen() {
       try {
         // 1. Get token from SecureStore
         const token = await SecureStore.getItemAsync('access_token');
+        setUserInfo(null);
         if (!token) {
           console.log('No access token found');
           setUserInfo(null);
+          setLoading(false);
           return;
         }
 
@@ -145,9 +153,13 @@ export default function HomeScreen() {
         setUserInfo(res.data);
         console.log('Fetched profile:', res.data);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
+      } catch (error: any) {
+        if (error?.response) {
+          console.log('Error fetching profile:', error.response.status, error.response.data);
+        } else {
+          console.log('Error fetching profile:', error.message || error);
+        }
+      }r
     };
 
     fetchProfile();
@@ -194,6 +206,7 @@ export default function HomeScreen() {
         {userInfo ? (
           <View>
             <ScrollView className="mb-20" bounces={false} overScrollMode="never">
+              <HeaderBar title="Customer" showChat />
               <View className='relative h-64'>
                 <Image
                   source={profile_background}
@@ -231,20 +244,13 @@ export default function HomeScreen() {
                 <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
                 <HistoryCardList items={historyData} />
               </View>
-              <TouchableOpacity
-                onPress={() => router.push("/(fortune-teller)/dashboard")}
-                className="bg-accent-200 px-6 py-3 rounded-full"
-              >
-                <Text className="text-black text-lg font-bold">
-                  ไปหน้า Fortune Teller
-                </Text>
-              </TouchableOpacity>
+
             </ScrollView>
             <Modal
               visible={open}
               transparent
-              animationType="fade"    // or "slide"
-              onRequestClose={() => setOpen(false)} // Android back button
+              animationType="fade"
+              onRequestClose={() => setOpen(false)}
             >
               {/* Dimmed backdrop */}
               <Pressable
