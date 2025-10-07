@@ -1,5 +1,10 @@
+import HistoryCardList from "@/app/components/profile/HistoryCardList";
 import ScreenWrapper from '@/app/components/ScreenWrapper';
+import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
+import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
+import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import horahub_logo from '@/assets/images/horahub.png';
+import profile_background from '@/assets/images/profile_background.png';
 import {
   GoogleSignin,
   isErrorWithCode,
@@ -11,6 +16,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+
 const getBaseURL = () => {
   if (Platform.OS === "android") {
     return "http://10.0.2.2:3456";
@@ -132,6 +138,7 @@ export default function HomeScreen() {
 
         // 3. Set user info
         setUserInfo(res.data);
+        console.log('Fetched profile:', res.data);
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
@@ -140,22 +147,65 @@ export default function HomeScreen() {
     fetchProfile();
   }, []);
 
+  const historyData = [
+    {
+      fortuneTellerName: "อาจารย์ไม้ร่ม",
+      status: "จองคิวแล้ว",
+      profileImage: fortune_teller_3,
+      horoscopeType: "ดูดวงลายมือ",
+      dateTime: "วันที่ 11 ก.ย. 68 เวลา 13.00-13.20",
+      price: "120 บาท",
+    },
+    {
+      fortuneTellerName: "หมอบี",
+      status: "สำเร็จ",
+      profileImage: fortune_teller_1,
+      horoscopeType: "ดูดวงความรัก",
+      dateTime: "วันที่ 15 ส.ค. 68 เวลา 14.20-14.35",
+      price: "600 บาท",
+    },
+    {
+      fortuneTellerName: "อาจารย์แดง",
+      status: "ยกเลิก",
+      profileImage: fortune_teller_2,
+      horoscopeType: "ดูดวงวันเกิด",
+      dateTime: "วันที่ 10 ส.ค. 68 เวลา 10.10-10.40",
+      price: "321 บาท",
+    },
+  ];
+
   return (
     <ScreenWrapper>
       <View>
-        <Text>Google Sign In</Text>
         {userInfo ? (
-          <View>
-            <Text className='text-white'>Welcomes, {userInfo.FirstName} {userInfo.LastName}!</Text>
-            <Text className='text-white'>Email, {userInfo.Email}!</Text>
-            <Image
-              source={{ uri: userInfo.PictureURL }}
-              style={{ width: 100, height: 100, borderRadius: 50, marginVertical: 10 }}
-            />
-            <Text className='text-white'>Full Response:</Text>
-            <ScrollView style={{ maxHeight: 200, backgroundColor: '#f0f0f0', padding: 10 }}>
-              <Text style={{ fontSize: 12 }}>{JSON.stringify(userInfo, null, 2)}</Text>
-            </ScrollView>
+          <ScrollView className="mb-20">
+            <View className='relative h-64'>
+              <Image
+                source={profile_background}
+                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
+              />
+              <View className='absolute left-7 top-12'>
+                <Image
+                  source={{ uri: userInfo.PictureURL }}
+                  style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                />
+                <Text
+                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {userInfo.FirstName} {userInfo.LastName}
+                </Text>
+
+              </View>
+            </View>
+
+            <View className='mx-4 my-5 flex-col gap-6'>
+              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
+              <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
+              <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
+              <HistoryCardList items={historyData} />
+            </View>
             <Button title="Sign Out" onPress={googleSignOut} />
             <TouchableOpacity
               onPress={() => router.push("/(fortune-teller)/dashboard")}
@@ -165,7 +215,7 @@ export default function HomeScreen() {
                 ไปหน้า Fortune Teller
               </Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
 
         ) : (
           <View className='flex justify-center items-center w-full h-full gap-8'>

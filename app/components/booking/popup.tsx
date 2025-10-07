@@ -1,54 +1,43 @@
 import React, { useMemo, useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Calendar, LocaleConfig, DateObject } from "react-native-calendars";
+import { useRouter } from "expo-router";
 
+// ----- Thai locale -----
 LocaleConfig.locales.th = {
-  monthNames: [
-    "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
-  ],
-  monthNamesShort: [
-    "ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.",
-    "ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค.",
-  ],
-  dayNames: [
-    "อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์",
-  ],
-  dayNamesShort: ["อ", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
+  monthNames: ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"],
+  monthNamesShort: ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."],
+  dayNames: ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์"],
+  dayNamesShort: ["อ","จ","อ","พ","พฤ","ศ","ส"],
   today: "วันนี้",
 };
 LocaleConfig.defaultLocale = "th";
 
-const toISO = (y: number, m: number, d: number) =>
-  `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-
+// ----- helpers -----
 const toThaiDisplay = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
-  const be = y + 543;
-  return `${String(d).padStart(2, "0")} / ${String(m).padStart(2, "0")} / ${be}`;
+  return `${String(d).padStart(2,"0")} / ${String(m).padStart(2,"0")} / ${y + 543}`;
+};
+const monthThaiBE = (date: Date) =>
+  `${String(date.getMonth()+1).padStart(2,"0")} / ${date.getFullYear()+543}`;
+
+// ----- types -----
+type Teller = {
+  id: string;
+  name: string;
+  price?: number;    // บาท
+  minutes?: number;  // ระยะเวลา
+  detail?: string;   // คำอธิบายใต้ชื่อ
 };
 
-const monthThaiBE = (date: Date) => {
-  const m = date.getMonth() + 1;
-  const y = date.getFullYear() + 543;
-  return `${String(m).padStart(2, "0")} / ${y}`;
-};
-
-// ---------- Props ----------
 type BookingModalProps = {
   visible: boolean;
   onClose: () => void;
-  onSelect: (date: string, time: string) => void; // date = "DD / MM / YYYY(พ.ศ.)"
+  onSelect: (date: string, time: string) => void;
+  teller: Teller; // ต้องส่งเข้ามา
 };
 
-// ---------- Data ----------
+// ----- sample slots -----
 const availableTimes = [
   ["18:20", "18:40", "19:00"],
   ["19:20", "19:40", "20:00"],
@@ -56,34 +45,45 @@ const availableTimes = [
   ["21:20", "21:40", "22:00"],
 ];
 
-export default function BookingModal({
-  visible,
-  onClose,
-  onSelect,
-}: BookingModalProps) {
-  // default ให้เป็น 2025-09-12 (ตามภาพ 12/09/2568)
+export default function BookingModal({ visible, onClose, onSelect, teller }: BookingModalProps) {
+  const router = useRouter();
+
+  // default ตรงกับภาพตัวอย่าง
   const [selectedISO, setSelectedISO] = useState("2025-09-12");
   const [showCalendar, setShowCalendar] = useState(true);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const markedDates = useMemo(
-    () => ({
-      [selectedISO]: {
-        selected: true,
-        selectedColor: "#E7D3A3", // ทองอ่อน
-        selectedTextColor: "#1E1A2E",
-      },
-    }),
+    () => ({ [selectedISO]: { selected: true, selectedColor: "#E7D3A3", selectedTextColor: "#1E1A2E" } }),
     [selectedISO]
   );
 
-  const onDayPress = (day: DateObject) => {
-    setSelectedISO(day.dateString);   // YYYY-MM-DD
-  };
+  const onDayPress = (day: DateObject) => setSelectedISO(day.dateString);
 
+  // ---- กดปุ่ม Booking ใน popup แล้ว push ไปหน้า confirm ----
   const handleBooking = () => {
     if (!selectedTime) return;
-    onSelect(toThaiDisplay(selectedISO), selectedTime);
+    if (!teller) {
+      console.warn("BookingModal: 'teller' prop is missing");
+      return;
+    }
+
+    const dateDisplay = toThaiDisplay(selectedISO);
+    onSelect(dateDisplay, selectedTime); // เผื่อหน้าเดิมอยากเก็บ state
+
+    router.push({
+      pathname: "/(tabs)/p2p/confirm",
+      params: {
+        id: teller.id,
+        name: teller.name,
+        price: String(teller.price ?? 20),
+        minutes: String(teller.minutes ?? 10),
+        detail: teller.detail ?? "ดูดวงชะตาตามวันเดือนปีเกิด",
+        date: dateDisplay,
+        time: selectedTime,
+      },
+    });
+
     onClose();
   };
 
@@ -99,7 +99,7 @@ export default function BookingModal({
             </TouchableOpacity>
           </View>
 
-          {/* Selected date display + toggle calendar */}
+          {/* Selected date */}
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.dateBox}
@@ -120,8 +120,8 @@ export default function BookingModal({
                     {direction === "left" ? "‹" : "›"}
                   </Text>
                 )}
-                renderHeader={(date) => (
-                  <Text style={styles.calHeader}>{monthThaiBE(date as Date)}</Text>
+                renderHeader={(d) => (
+                  <Text style={styles.calHeader}>{monthThaiBE(d as unknown as Date)}</Text>
                 )}
                 theme={{
                   calendarBackground: "#151322",
@@ -151,25 +151,21 @@ export default function BookingModal({
                       style={[styles.timeBox, selected && styles.timeBoxSelected]}
                       onPress={() => setSelectedTime(t)}
                     >
-                      <Text
-                        style={[styles.timeText, selected && styles.timeTextSelected]}
-                      >
-                        {t}
-                      </Text>
+                      <Text style={[styles.timeText, selected && styles.timeTextSelected]}>{t}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             ))}
-            {/* last spacer */}
             <View style={{ height: 8 }} />
           </ScrollView>
 
-          {/* Booking Button */}
+          {/* Booking button */}
           <TouchableOpacity
             style={[styles.bookingBtn, !selectedTime && { opacity: 0.6 }]}
             disabled={!selectedTime}
             onPress={handleBooking}
+            activeOpacity={0.9}
           >
             <Text style={styles.bookingText}>Booking</Text>
           </TouchableOpacity>
@@ -179,88 +175,22 @@ export default function BookingModal({
   );
 }
 
-// ---------- Styles ----------
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  container: {
-    backgroundColor: "#1E1A2E",
-    borderRadius: 16,
-    width: "100%",
-    maxHeight: "88%",
-    padding: 16,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 16 },
+  container: { backgroundColor: "#1E1A2E", borderRadius: 16, width: "100%", maxHeight: "88%", padding: 16 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   title: { fontSize: 18, fontWeight: "700", color: "#FFD33D" },
   close: { fontSize: 20, color: "#fff" },
-
-  dateBox: {
-    backgroundColor: "#9b5de5",
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  dateText: {
-    fontSize: 16,
-    color: "#E9E7EF",
-    fontWeight: "600",
-  },
-
-  calendarWrapper: {
-    backgroundColor: "#151322",
-    borderRadius: 16,
-    padding: 10,
-    marginBottom: 12,
-  },
-  calendar: {
-    backgroundColor: "transparent",
-    borderRadius: 12,
-  },
-  calHeader: {
-    color: "#E7D3A3",
-    fontWeight: "700",
-    textAlign: "center",
-    fontSize: 16,
-    paddingVertical: 6,
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  timeBox: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    minWidth: 86,
-    alignItems: "center",
-  },
+  dateBox: { backgroundColor: "#9b5de5", borderRadius: 12, paddingVertical: 10, alignItems: "center", marginBottom: 12 },
+  dateText: { fontSize: 16, color: "#E9E7EF", fontWeight: "600" },
+  calendarWrapper: { backgroundColor: "#151322", borderRadius: 16, padding: 10, marginBottom: 12 },
+  calendar: { backgroundColor: "transparent", borderRadius: 12 },
+  calHeader: { color: "#E7D3A3", fontWeight: "700", textAlign: "center", fontSize: 16, paddingVertical: 6 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  timeBox: { backgroundColor: "#FFFFFF", paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14, minWidth: 86, alignItems: "center" },
   timeText: { color: "#1E1A2E", fontWeight: "700" },
-  timeBoxSelected: {
-    backgroundColor: "#E7D3A3", // ทองอ่อน เหมือนปุ่ม 19:00 ในภาพ
-  },
-  timeTextSelected: {
-    color: "#1E1A2E",
-  },
-
-  bookingBtn: {
-    backgroundColor: "#9b5de5",
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
-  },
+  timeBoxSelected: { backgroundColor: "#E7D3A3" },
+  timeTextSelected: { color: "#1E1A2E" },
+  bookingBtn: { backgroundColor: "#9b5de5", paddingVertical: 14, borderRadius: 12, marginTop: 8 },
   bookingText: { textAlign: "center", color: "#fff", fontWeight: "700" },
 });
