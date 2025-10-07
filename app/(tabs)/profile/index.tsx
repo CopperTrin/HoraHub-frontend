@@ -16,7 +16,7 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const getBaseURL = () => {
   if (Platform.OS === "android") {
@@ -48,6 +48,7 @@ export default function HomeScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
@@ -62,7 +63,7 @@ export default function HomeScreen() {
         //setUserInfo(response.data);
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
-          role, // or FORTUNE_TELLER
+          role, 
         });
         const token = res.data.access_token;
         // Save token with SecureStore / AsyncStorage
@@ -72,6 +73,7 @@ export default function HomeScreen() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUserInfo(profile.data);
+        setLoading(false);
         // Navigate to the protected route
         //router.push('/(tabs)/home');
       } else {
@@ -142,6 +144,7 @@ export default function HomeScreen() {
         // 3. Set user info
         setUserInfo(res.data);
         console.log('Fetched profile:', res.data);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
@@ -176,6 +179,14 @@ export default function HomeScreen() {
       price: "321 บาท",
     },
   ];
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-primary-200">
+        <ActivityIndicator size="large" color="#fff" />
+        <Text className="text-white font-sans-semibold mt-2.5">Loading…</Text>
+      </View>
+    );
+  }
 
   return (
     <ScreenWrapper>
