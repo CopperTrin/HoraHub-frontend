@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.HoraHubfrontend"
+      "bundleIdentifier": "com.anonymous.HorahubAuth"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.HoraHubfrontend"
+      "package": "com.anonymous.HorahubAuth"
     },
     "web": {
       "output": "static",
