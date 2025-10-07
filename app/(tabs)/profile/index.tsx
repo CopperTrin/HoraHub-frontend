@@ -5,6 +5,7 @@ import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
 import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import horahub_logo from '@/assets/images/horahub.png';
 import profile_background from '@/assets/images/profile_background.png';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   GoogleSignin,
   isErrorWithCode,
@@ -15,7 +16,7 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const getBaseURL = () => {
   if (Platform.OS === "android") {
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [open, setOpen] = useState(false);
 
   const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
@@ -60,7 +62,7 @@ export default function HomeScreen() {
         //setUserInfo(response.data);
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
-          role: 'CUSTOMER', // or FORTUNE_TELLER
+          role, // or FORTUNE_TELLER
         });
         const token = res.data.access_token;
         // Save token with SecureStore / AsyncStorage
@@ -111,6 +113,7 @@ export default function HomeScreen() {
 
       // 4) Clear local UI state and go to login
       setUserInfo(null);
+      setOpen(false);
       //router.replace('/'); // or your auth screen, e.g. '/(auth)/login'
     } catch (e) {
       console.error('Sign out error', e);
@@ -178,45 +181,105 @@ export default function HomeScreen() {
     <ScreenWrapper>
       <View>
         {userInfo ? (
-          <ScrollView className="mb-20">
-            <View className='relative h-64'>
-              <Image
-                source={profile_background}
-                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-              />
-              <View className='absolute left-7 top-12'>
+          <View>
+            <ScrollView className="mb-20" bounces={false} overScrollMode="never">
+              <View className='relative h-64'>
                 <Image
-                  source={{ uri: userInfo.PictureURL }}
-                  style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                  source={profile_background}
+                  style={{ width: '100%', height: 150, resizeMode: 'cover' }}
                 />
-                <Text
-                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
+                <Pressable
+                  onPress={() => setOpen(true)}
+                  style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+                  android_ripple={{ color: '#00000022', borderless: true }}
+                  className="self-end mr-4 mt-4"
                 >
-                  {userInfo.FirstName} {userInfo.LastName}
-                </Text>
+                  <MaterialIcons name="settings" size={28} color="white" />
+                </Pressable>
 
+
+                <View className='absolute left-7 top-12'>
+                  <Image
+                    source={{ uri: userInfo.PictureURL }}
+                    style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                  />
+                  <Text
+                    className='text-white font-sans-semibold text-2xl max-w-[256px]'
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {userInfo.FirstName} {userInfo.LastName}
+                  </Text>
+
+                </View>
               </View>
-            </View>
 
-            <View className='mx-4 my-5 flex-col gap-6'>
-              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-              <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
-              <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-              <HistoryCardList items={historyData} />
-            </View>
-            <Button title="Sign Out" onPress={googleSignOut} />
-            <TouchableOpacity
-              onPress={() => router.push("/(fortune-teller)/dashboard")}
-              className="bg-accent-200 px-6 py-3 rounded-full"
+              <View className='mx-4 my-5 flex-col gap-6'>
+                <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
+                <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
+                <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
+                <HistoryCardList items={historyData} />
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push("/(fortune-teller)/dashboard")}
+                className="bg-accent-200 px-6 py-3 rounded-full"
+              >
+                <Text className="text-black text-lg font-bold">
+                  ไปหน้า Fortune Teller
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+            <Modal
+              visible={open}
+              transparent
+              animationType="fade"    // or "slide"
+              onRequestClose={() => setOpen(false)} // Android back button
             >
-              <Text className="text-black text-lg font-bold">
-                ไปหน้า Fortune Teller
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
+              {/* Dimmed backdrop */}
+              <Pressable
+                onPress={() => setOpen(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.35)',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {/* Stop backdrop tap from closing when pressing content */}
+                <Pressable
+                  onPress={() => { }}
+                  className="bg-primary-200"
+                  style={{
+                    width: '85%',
+                    borderRadius: 16,
+                    padding: 16,
+                    gap: 12
+                  }}
+                >
+                  <View className="flex flex-row w-full justify-center relative  p-2">
+                    <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
+                    <Pressable
+                      onPress={() => setOpen(false)}
+                      className="absolute right-0 top-0 p-2"
+                    >
+                      <MaterialIcons name="close" size={24} color="white" />
+                    </Pressable>
+                  </View>
 
+                  {/* Your settings actions */}
+                  <Pressable onPress={() => { /* navigate / toggle */ }} className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
+                    <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
+                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
+                  </Pressable>
+                  <Pressable onPress={googleSignOut} className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24">
+                    <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
+                    <MaterialIcons name="logout" size={24} color="black" />
+                  </Pressable>
+
+                </Pressable>
+              </Pressable>
+            </Modal>
+          </View>
         ) : (
           <View className='flex justify-center items-center w-full h-full gap-8'>
             <View className='flex justify-center items-center'>
