@@ -7,57 +7,68 @@ import * as ImagePicker from "expo-image-picker";
 import { navigate } from "expo-router/build/global-state/routing";
 import { useEffect, useState } from "react";
 import {
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import HeaderBar from "../components/ui/HeaderBar";
 import fcomponent from "../fcomponent";
+import { ChatRoomInfo } from "./chatroom_info";
 import { Message } from "./message_info";
+import profile from "./my_profile";
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chat, setChat] = useState<ChatRoomInfo | null>(null);
   const [input, setInput] = useState("");
   const route = useRoute();
   const { chatId } = route.params as { chatId: string };
+  const API_URL = fcomponent.getBaseURL();
 
   // โหลดประวัติแชทเก่า
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await axios(`${fcomponent.getBaseURL}/messages`);
-
-        // สมมติ backend ส่งมาเป็น array ของ messages
+        const token = await fcomponent.getToken();
+        const response = await axios.get(`${API_URL}/chat-conversations/${chatId}`, {
+          headers: { Authorization: `Bearer ${token}` }});
+        setChat(response.data);
+        console.log("Fetched chat details:", response.data);
+        const res = await axios.get(`${API_URL}/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { conversationId: chatId },
+        });
+        console.log("Fetched messages:", res.data);
         setMessages(res.data);
       } catch (err) {
         console.error("Error fetching messages:", err);
-        setMessages([
-      {
-        id: "1",
-        sender: "other",
-        text: "สวัสดีครับ!",
-        avatar: "https://i.pravatar.cc/150?img=3",
-      },
-    ]);
       }
     };
 
     fetchMessages();
   }, []);
 
-  const sendMessage = async () => {
+  const myUsername = profile.myUsername();
+  const other = (item: ChatRoomInfo, myUsername: string) => {
+    if (!item?.Participants || !myUsername) return null;
+    const found = item.Participants.find(
+      (p) => p?.User?.Username?.toLowerCase() !== myUsername.toLowerCase()
+    );
+    return found ?? null;
+  };
+  const otherUser = other(chat!, myUsername || '');
+
+  const sendMessage = async () => { //ยังไม่เสร็จ
     if (input.trim().length === 0) return;
 
     const newMessage: Message = {
-      id: Date.now().toString(),
-      text: input.slice(0, 250), // จำกัดความยาวตัวอักษร
-      sender: "me",
-      avatar: "https://i.pravatar.cc/150?img=12", // 🔗 โหลดจาก backend จริงตอน login
+      ConversationID: chatId,
+      Content: input.slice(0, 250),
     };
 
     // อัปเดต local state
@@ -110,37 +121,64 @@ const ChatScreen = () => {
     }
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View
-      className={`flex-row items-end mb-3 ${
-        item.sender === "me" ? "justify-end" : "justify-start"
-      }`}
-    >
-      {item.sender === "other" && (
-        <Image
-          source={{ uri: item.avatar }}
-          className="w-8 h-8 rounded-full mr-2"
-        />
-      )}
-        {item.text && (
-            <View className={`max-w-[70%] p-3 rounded-lg ${item.sender === "me" ? "bg-accent-100" : "bg-secondary-100"}`}>
-                <Text className="text-blackpearl break-words">{item.text}</Text>
-            </View>
-        )}
-        {item.image && (
+  const ImageMessage = ({ fileURL }: { fileURL?: string }) => {
+    const [error, setError] = useState(false);
+
+    if (!fileURL) {
+      return (
+        <View className="items-center">
+          <Text className="text-center text-blackpearl mb-1">Photo Unavailable</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View className="items-center">
+        {error ? (
+          <Text className="text-center text-alabaster mb-1">Photo Expired</Text>
+        ) : (
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: fileURL }}
             className="w-60 h-80 rounded-xl"
+            onError={() => setError(true)}
+            resizeMode="contain"
           />
         )}
-      {item.sender === "me" && (
-        <Image
-          source={{ uri: item.avatar }}
-          className="w-8 h-8 rounded-full ml-2"
-        />
-      )}
-    </View>
-  );
+      </View>
+    );
+  };
+
+  const renderMessage = ({ item }: { item: Message }) => {
+    return (
+      <View
+        className={`flex-row items-end mb-3 ${
+          item.Sender.Username === myUsername ? "justify-end" : "justify-start"
+        }`}
+      >
+        {item.Sender?.Username !== myUsername && (
+          <Image
+            source={{ uri: otherUser?.User.UserInfo.PictureURL }}
+            className="w-8 h-8 rounded-full mr-2"
+          />
+        )}
+        {item.MessageType === 'TEXT' && (
+            <View className={`max-w-[70%] p-3 rounded-lg ${item.Sender.Username !== myUsername ? "bg-accent-100" : "bg-secondary-100"}`}>
+                <Text className="text-blackpearl break-words">{item.Content}</Text>
+            </View>
+        )}
+        {item.MessageType === 'IMAGE' && (
+          <ImageMessage fileURL={item.FileURL} />
+        )}
+        {item.Sender?.Username === myUsername && (
+          <Image
+            source={{ uri: profile.myProfile()?.PictureURL }}
+            className="w-8 h-8 rounded-full ml-2"
+          />
+        )}
+      </View>
+    );
+  };
+
   const [inputHeight, setInputHeight] = useState(36);
   const handleSend = () => {
     sendMessage();
@@ -150,7 +188,7 @@ const ChatScreen = () => {
    return (
     <ScreenWrapper>
       <HeaderBar 
-        title="ลุงเริง"
+        title={chat ? chat.Participants[0].User.Username : "Chat"}
         showBack
         rightIcons={[{ name: "error-outline", onPress: () => navigate("../chat/report") }]}/>
       <KeyboardAvoidingView
@@ -160,7 +198,7 @@ const ChatScreen = () => {
       <FlatList
         className="p-4"
         data={messages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.MessageID}
         renderItem={renderMessage}
       />
 
@@ -181,7 +219,7 @@ const ChatScreen = () => {
           multiline
           scrollEnabled={inputHeight >= 96} // scroll เมื่อกล่องถึง max
           textAlign="left"
-          textAlignVertical="top"
+          textAlignVertical="center"
           style={{
             minHeight: 36,
             maxHeight: 96,

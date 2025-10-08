@@ -34,9 +34,9 @@ const formatChatTime = (dateString: string) => {
   } else {
     // ถ้าไม่ใช่วันนี้ → แสดงวันที่ เช่น "8 ต.ค. 2025"
     return date.toLocaleDateString("th-TH", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
     });
   }
 };
