@@ -1,46 +1,39 @@
 // screens/ChatScreen.tsx
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useRoute } from "@react-navigation/native";
+import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { navigate } from "expo-router/build/global-state/routing";
 import { useEffect, useState } from "react";
 import {
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import HeaderBar from "../components/ui/HeaderBar";
-
-// message interface
-interface Message {
-  id: string;
-  text?: string;
-  image?: string;
-  sender: "me" | "other";
-  avatar: string; // avatar จาก backend
-}
-
-// mock API base url
-const API_URL = "http://localhost:3456/api/";
+import fcomponent from "../fcomponent";
+import { Message } from "./message_info";
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const route = useRoute();
+  const { chatId } = route.params as { chatId: string };
 
   // โหลดประวัติแชทเก่า
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`${API_URL}/messages`);
-        const data = await res.json();
+        const res = await axios(`${fcomponent.getBaseURL}/messages`);
 
         // สมมติ backend ส่งมาเป็น array ของ messages
-        setMessages(data);
+        setMessages(res.data);
       } catch (err) {
         console.error("Error fetching messages:", err);
         setMessages([
