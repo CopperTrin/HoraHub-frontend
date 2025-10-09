@@ -3,37 +3,41 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import axios from "axios";
 import { navigate } from "expo-router/build/global-state/routing";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlatList, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "../components/ui/HeaderBar";
 import fcomponent from "../fcomponent";
 import { ChatRoomInfo } from "./chatroom_info";
+import { Message } from "./message_info";
 import profile from "./my_profile";
 
 const ChatList = () => {
   const [search, setSearch] = useState("");
   const [chats, setChats] = useState<ChatRoomInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const chatListRef = useRef<[] | null>(null);
 
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const token = await fcomponent.getToken();
-        const response = await axios.get(`${fcomponent.getBaseURL()}/chat-conversations`, {headers: { Authorization: `Bearer ${token}` }});
-        console.log("Fetched chats:", response.data);
-        setChats(response.data);
+  const fetchChats = async () => {
+    try {
+      const token = await fcomponent.getToken();
+      const response = await axios.get(`${fcomponent.getBaseURL()}/chat-conversations`, {headers: { Authorization: `Bearer ${token}` }});
+      console.log("Fetched chats:", response.data);
+      if (chatListRef.current === response.data) {
+        return; // ไม่มีการเปลี่ยนแปลง
+      }
+      chatListRef.current = response.data;
+      setChats(response.data);
       } catch (error) {
         console.log("Error fetching chats:", error);
-      } finally {
-        setLoading(false);
       }
-    };
-
+  };
+  useEffect(() => {
     fetchChats();
+    const interval = setInterval(fetchChats, 5000); // 5 วินาที
+    return () => clearInterval(interval);
   }, []);
 
   // Filter chats by searching participant usernames (checks any participant's username)
-  const myUsername = profile.myUsername();
+  const myUsername = profile.useMyUsername();
   const filteredChats = chats.filter((c) => {
     if (!search) return true;
 
@@ -54,6 +58,12 @@ const ChatList = () => {
     return found ?? null;
   };
 
+  const renderMessage = (item: Message) => {
+    if (item.Content.length > 30)
+      return item.Content.slice(0, 30)+"..."
+    return item.Content
+  }
+
   const renderItem = ({ item }: {item:ChatRoomInfo}) => {
     const otherUser = other(item, myUsername || '');
     if (!otherUser) return null;
@@ -68,12 +78,12 @@ const ChatList = () => {
             className="w-16 h-16 rounded-full mr-3"
           />
           <View>
-            <Text className="text-alabaster text-xl font-semibold">{otherUser?.User.Username}</Text>
-            <Text className="text-gray-400 text-sm">
+            <Text className="text-alabaster text-xl font-semibold">{otherUser?.User.Username.slice(0, 25)}</Text>
+            <Text className="text-gray-400 text-sm" numberOfLines={1}>
               {item.Messages?.length > 0 ? (
               item.Messages[item.Messages.length - 1].MessageType === "IMAGE"
               ? "Sent a photo"
-              : item.Messages[item.Messages.length - 1].Content) : ("No messages yet")}
+              : renderMessage(item.Messages[item.Messages.length - 1])) : ("No messages yet")}
             </Text>
           </View>
         </View>

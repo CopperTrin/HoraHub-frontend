@@ -20,8 +20,7 @@ interface User {
   UserInfo: UserInfo;
 }
 
-// ✅ Hook ดึงโปรไฟล์ตัวเอง
-export const userProfile = () => {
+export const useUserProfile = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const API_URL = fcomponent.getBaseURL();
 
@@ -44,7 +43,7 @@ export const userProfile = () => {
   return userInfo;
 };
 
-export const user = (userId: string | undefined) => {
+export const useUser = (userId: string | undefined) => {
   const [user, setUser] = useState<User | null>(null);
   const API_URL = fcomponent.getBaseURL();
 
@@ -69,13 +68,13 @@ export const user = (userId: string | undefined) => {
   return user;
 };
 
-export const myUsername = () => {
-  const userInfo = user(userProfile()?.UserID);
+export const useMyUsername = () => {
+  const userInfo = useUser(useUserProfile()?.UserID);
   return userInfo?.Username || null;
 };
 
 export default {
-  myProfile: userProfile,
-  user,
-  myUsername: myUsername
+  useMyProfile: useUserProfile,
+  useUser,
+  useMyUsername: useMyUsername
 }

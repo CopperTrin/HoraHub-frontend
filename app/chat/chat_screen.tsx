@@ -5,7 +5,7 @@ import { useRoute } from "@react-navigation/native";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { navigate } from "expo-router/build/global-state/routing";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -29,31 +29,41 @@ const ChatScreen = () => {
   const route = useRoute();
   const { chatId } = route.params as { chatId: string };
   const API_URL = fcomponent.getBaseURL();
+  const lastMessageIdRef = useRef<string | null>(null);
+  const myProfile = profile.useMyProfile();
+  const [image, setImage] = useState<string | null>(null);
 
-  // โหลดประวัติแชทเก่า
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const token = await fcomponent.getToken();
-        const response = await axios.get(`${API_URL}/chat-conversations/${chatId}`, {
-          headers: { Authorization: `Bearer ${token}` }});
-        setChat(response.data);
-        console.log("Fetched chat details:", response.data);
-        const res = await axios.get(`${API_URL}/messages`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { conversationId: chatId },
-        });
-        console.log("Fetched messages:", res.data);
-        setMessages(res.data);
-      } catch (err) {
-        console.error("Error fetching messages:", err);
+  // โหลดแชทเก่า
+  const fetchMessages = async () => {
+    try {
+      const token = await fcomponent.getToken();
+      const response = await axios.get(`${API_URL}/chat-conversations/${chatId}`, {
+        headers: { Authorization: `Bearer ${token}` }});
+      const res = await axios.get(`${API_URL}/messages`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { conversationId: chatId },
+      });
+
+      const newMessages = res.data;
+      const lastMessageId = newMessages[newMessages.length - 1]?.MessageID;
+      if (lastMessageIdRef.current === lastMessageId) {
+        return; // ไม่มีข้อความใหม่
       }
-    };
+      lastMessageIdRef.current = lastMessageId;
+      setMessages(newMessages);
+      setChat(response.data);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  };
 
+  useEffect(() => {
     fetchMessages();
+    const interval = setInterval(fetchMessages, 5000); // 5 วินาที
+    return () => clearInterval(interval);
   }, []);
 
-  const myUsername = profile.myUsername();
+  const myUsername = profile.useMyUsername();
   const other = (item: ChatRoomInfo, myUsername: string) => {
     if (!item?.Participants || !myUsername) return null;
     const found = item.Participants.find(
@@ -63,24 +73,21 @@ const ChatScreen = () => {
   };
   const otherUser = other(chat!, myUsername || '');
 
-  const sendMessage = async () => { //ยังไม่เสร็จ
+  const sendMessage = async () => {
     if (input.trim().length === 0) return;
 
-    const newMessage: Message = {
-      ConversationID: chatId,
-      Content: input.slice(0, 250),
-    };
-
-    // อัปเดต local state
-    setMessages((prev) => [...prev, newMessage]);
     setInput("");
 
     try {
-      await fetch(`${API_URL}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMessage),
-      });
+      const token = await fcomponent.getToken();
+      await axios.post(`${API_URL}/messages`, 
+        {conversationId: chatId,
+        content: input.slice(0, 250)},
+        {headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json" }
+        })
+        .then(() => { fetchMessages(); });
     } catch (err) {
       console.error("Error sending message:", err);
     }
@@ -88,33 +95,26 @@ const ChatScreen = () => {
 
   const sendImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.7,
     });
 
     if (!result.canceled) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        image: result.assets[0].uri,
-        sender: "me",
-        avatar: "https://i.pravatar.cc/150?img=12", // 🔗 โหลดจาก backend จริง
-      };
-
-      setMessages((prev) => [...prev, newMessage]);
-
+      setImage(result.assets[0].uri);
+      console.log("Image:", image)
       // ส่งรูปไป backend
-      const formData = new FormData();
-      formData.append("image", {
-        uri: result.assets[0].uri,
-        type: "image/jpeg",
-        name: "upload.jpg",
-      } as any);
-
       try {
-        await fetch(`${API_URL}/messages/image`, {
-          method: "POST",
-          body: formData,
-        });
+        const token = await fcomponent.getToken();
+        await axios.post(`${API_URL}/messages/with-file`, 
+        {
+        conversationId: chatId,
+        file: image,
+        },
+        {headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data" }
+        })
+        .then(() => { fetchMessages(); console.log("success");});
       } catch (err) {
         console.error("Error uploading image:", err);
       }
@@ -139,7 +139,7 @@ const ChatScreen = () => {
         ) : (
           <Image
             source={{ uri: fileURL }}
-            className="w-60 h-80 rounded-xl"
+            className="w-80 h-80"
             onError={() => setError(true)}
             resizeMode="contain"
           />
@@ -151,7 +151,7 @@ const ChatScreen = () => {
   const renderMessage = ({ item }: { item: Message }) => {
     return (
       <View
-        className={`flex-row items-end mb-3 ${
+        className={`flex-row items-end mb-4 ${
           item.Sender.Username === myUsername ? "justify-end" : "justify-start"
         }`}
       >
@@ -171,7 +171,7 @@ const ChatScreen = () => {
         )}
         {item.Sender?.Username === myUsername && (
           <Image
-            source={{ uri: profile.myProfile()?.PictureURL }}
+            source={{ uri: myProfile?.PictureURL }}
             className="w-8 h-8 rounded-full ml-2"
           />
         )}
@@ -188,7 +188,7 @@ const ChatScreen = () => {
    return (
     <ScreenWrapper>
       <HeaderBar 
-        title={chat ? chat.Participants[0].User.Username : "Chat"}
+        title={otherUser?.User.Username || 'Chat'}
         showBack
         rightIcons={[{ name: "error-outline", onPress: () => navigate("../chat/report") }]}/>
       <KeyboardAvoidingView
@@ -200,6 +200,7 @@ const ChatScreen = () => {
         data={messages}
         keyExtractor={(item) => item.MessageID}
         renderItem={renderMessage}
+        removeClippedSubviews={true}
       />
 
       {/* Input bar */}
