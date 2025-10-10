@@ -17,7 +17,7 @@ import home_new_03 from "@/assets/images/home/home_new_03.jpg";
 import ranking_bg from "@/assets/images/home/ranking_bg.png";
 import { router } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
-
+import HeaderBar from "../../components/ui/HeaderBar";
 export default function HomePage() {
   const images = [home_new_03, home_new_02, home_new_01];
   const fortuneTellers = [
@@ -70,6 +70,7 @@ export default function HomePage() {
       <ScrollView
         className="mb-0"
       >
+        <HeaderBar title="Home" showChat />
         <HomeNews
           images={images}
           height={240}
