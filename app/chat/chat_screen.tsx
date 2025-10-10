@@ -95,26 +95,31 @@ const ChatScreen = () => {
 
   const sendImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
+      allowsEditing: false,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      console.log("Image:", image)
-      // ส่งรูปไป backend
+      const formdata = new FormData();
+      const uri = result.assets[0].uri;
+      const filename = uri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image';
+
+      formdata.append('conversationId', chatId);
+      formdata.append('file', { uri, name: filename, type } as any);
+      
       try {
         const token = await fcomponent.getToken();
         await axios.post(`${API_URL}/messages/with-file`, 
-        {
-        conversationId: chatId,
-        file: image,
-        },
-        {headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data" }
-        })
-        .then(() => { fetchMessages(); console.log("success");});
+          formdata,
+          {headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data" }
+          }
+        );
+        await fetchMessages();
       } catch (err) {
         console.error("Error uploading image:", err);
       }
@@ -190,7 +195,7 @@ const ChatScreen = () => {
       <HeaderBar 
         title={otherUser?.User.Username || 'Chat'}
         showBack
-        rightIcons={[{ name: "error-outline", onPress: () => navigate("../chat/report") }]}/>
+        rightIcons={[{ name: "error-outline", onPress: () => navigate(`../chat/report?otherId=${otherUser?.User.UserID}`) }]}/>
       <KeyboardAvoidingView
         className="flex-1 bg-primary-100"
         behavior={Platform.OS === "ios" ? "padding" : undefined}

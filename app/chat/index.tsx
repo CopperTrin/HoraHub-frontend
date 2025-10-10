@@ -20,14 +20,13 @@ const ChatList = () => {
     try {
       const token = await fcomponent.getToken();
       const response = await axios.get(`${fcomponent.getBaseURL()}/chat-conversations`, {headers: { Authorization: `Bearer ${token}` }});
-      console.log("Fetched chats:", response.data);
       if (chatListRef.current === response.data) {
         return; // ไม่มีการเปลี่ยนแปลง
       }
       chatListRef.current = response.data;
       setChats(response.data);
       } catch (error) {
-        console.log("Error fetching chats:", error);
+        console.error("Error fetching chats:", error);
       }
   };
   useEffect(() => {

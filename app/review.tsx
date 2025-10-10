@@ -1,50 +1,69 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { FontAwesome } from "@expo/vector-icons";
+import { useRoute } from "@react-navigation/native";
+import axios from "axios";
+import { navigate } from "expo-router/build/global-state/routing";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "./components/ui/HeaderBar";
+import fcomponent from "./fcomponent";
 
 export default function ReviewScreen() {
   const [review, setReview] = useState<string>("");
   const [rating, setRating] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState<string>("");
   const [userImage, setUserImage] = useState<string>("");
+  const route = useRoute();
+  const { serviceId } = route.params as { serviceId: string };
+  const API_URL = fcomponent.getBaseURL();
 
   useEffect(() => {
-    // mock API (รอเปลี่ยนเป็น backend จริง)
     const fetchData = async () => {
       try {
-        // สมมติว่า backend จะส่ง { name: "...", avatar: "..." }
-        const response = await fetch("https://mockapi.io/api/v1/user/1");
-        const data = await response.json();
-        setUserName(data.name);
-        setUserImage(data.avatar);
+        const token = await fcomponent.getToken();
+        const res = await axios.get(`${API_URL}/reviews/${serviceId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data
+        setUserName(data.Username);
+        setUserImage(data.Image); //แก้ด้วย
       } catch (error) {
         console.error("Error fetching user:", error);
-        // fallback เผื่อโหลดไม่ได้
-        setUserName("Bleach Ghost Ambassador");
-        setUserImage("https://i.imgur.com/9bK0n7C.png");
-      } finally {
-        setLoading(false);
+        Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
       }
     };
 
     fetchData();
   }, []);
 
+  const submitReview = async () => {
+    try {
+      const token = await fcomponent.getToken();
+      const response = await axios.post(`${API_URL}/reviews`,
+        {Star: rating,
+          Comment: review,
+          ServiceID: serviceId},
+        {headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json" }
+        });
+
+        if (response.status) {
+          Alert.alert("สำเร็จ", "รีวิวของคุณถูกส่งแล้ว");
+          navigate("./(tabs)");
+        } else {
+          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้");
+        }
+    }
+    catch(error){
+      console.error("Report error:", error);
+      Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    }
+  };
+
   const handleRating = (value: number) => {
     setRating(value);
   };
-
-  if (loading) {
-    return (
-      <View className="flex-1 bg-primary-200 justify-center items-center">
-        <ActivityIndicator size="large" color="#FFD700" />
-        <Text className="text-white mt-3">Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <ScreenWrapper>
@@ -93,7 +112,7 @@ export default function ReviewScreen() {
         {/* Submit */}
         <TouchableOpacity
           className="bg-accent-200 w-full py-3 rounded-lg items-center"
-          onPress={() => console.log("Rating:", rating, "Review:", review)}
+          onPress={() => submitReview()}
         >
           <Text className="font-bold text-blackpearl text-base">Submit</Text>
         </TouchableOpacity>
