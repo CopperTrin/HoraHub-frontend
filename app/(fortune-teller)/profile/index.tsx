@@ -199,7 +199,10 @@ export default function ProfilePage() {
                   </View>
 
                   {/* Your settings actions */}
-                  <Pressable onPress={() => { /* navigate / toggle */ }} className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
+                  <Pressable onPress={() => { 
+                    router.push("/(fortune-teller)/profile/edit-profile-fortune-teller");
+                    setOpen(false);}}
+                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
                     <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
                     <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
                   </Pressable>
