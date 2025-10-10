@@ -6,7 +6,7 @@ import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import profile_background from '@/assets/images/profile_background.png';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
-  GoogleSignin
+    GoogleSignin
 } from '@react-native-google-signin/google-signin';
 import axios from 'axios';
 import { useRouter } from "expo-router";
@@ -122,7 +122,7 @@ export default function ProfilePage() {
       {userInfo ? (
       <View>
             <ScrollView className="mb-20" bounces={false} overScrollMode="never">
-              <HeaderBar title="Fortune Teller" showChat />
+              <HeaderBar title="Admin"/>
               <View className='relative h-64'>
                 <Image
                   source={profile_background}
