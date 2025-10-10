@@ -29,9 +29,6 @@ const ReportChat = () => {
       Alert.alert("แจ้งเตือน", "กรุณากรอกเหตุผลก่อนส่งรายงาน");
       return;
     }
-    console.log("id", otherId)
-    console.log("reason", reason)
-    console.log("detail", details)
     try {
       const token = await fcomponent.getToken();
       const response = await axios.post(`${API_URL}/reports`,
