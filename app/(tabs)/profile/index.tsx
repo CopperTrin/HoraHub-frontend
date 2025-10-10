@@ -52,7 +52,7 @@ export default function HomeScreen() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
+  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN') => {
     try {
       console.log("Sign in");
       await GoogleSignin.hasPlayServices();
@@ -79,6 +79,9 @@ export default function HomeScreen() {
         setLoading(false);
         if (role === 'FORTUNE_TELLER') {
           router.replace("/(fortune-teller)/dashboard");
+        }
+        if (role === 'ADMIN') {
+          router.replace("/(admin)/profile/");
         }
         
         // Navigate to the protected route
@@ -314,10 +317,17 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
               onPress={() => handleGoogleSignIn('FORTUNE_TELLER')}
             >
               <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+              onPress={() => handleGoogleSignIn('ADMIN')}
+            >
+              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Admin</Text>
             </TouchableOpacity>
           </View>
         )}
