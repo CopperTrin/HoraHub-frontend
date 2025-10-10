@@ -5,17 +5,20 @@ import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
 import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import horahub_logo from '@/assets/images/horahub.png';
 import profile_background from '@/assets/images/profile_background.png';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   GoogleSignin,
   isErrorWithCode,
   isSuccessResponse,
   statusCodes
 } from '@react-native-google-signin/google-signin';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react';
-import { Alert, Button, Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import HeaderBar from "../../components/ui/HeaderBar";
 
 const getBaseURL = () => {
   if (Platform.OS === "android") {
@@ -46,8 +49,10 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
+  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN') => {
     try {
       console.log("Sign in");
       await GoogleSignin.hasPlayServices();
@@ -60,7 +65,7 @@ export default function HomeScreen() {
         //setUserInfo(response.data);
         const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
           idToken,
-          role: 'CUSTOMER', // or FORTUNE_TELLER
+          role, 
         });
         const token = res.data.access_token;
         // Save token with SecureStore / AsyncStorage
@@ -70,6 +75,15 @@ export default function HomeScreen() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUserInfo(profile.data);
+        // 3. Redirect if fortune teller
+        setLoading(false);
+        if (role === 'FORTUNE_TELLER') {
+          router.replace("/(fortune-teller)/dashboard");
+        }
+        if (role === 'ADMIN') {
+          router.replace("/(admin)/profile/");
+        }
+        
         // Navigate to the protected route
         //router.push('/(tabs)/home');
       } else {
@@ -111,6 +125,7 @@ export default function HomeScreen() {
 
       // 4) Clear local UI state and go to login
       setUserInfo(null);
+      setOpen(false);
       //router.replace('/'); // or your auth screen, e.g. '/(auth)/login'
     } catch (e) {
       console.error('Sign out error', e);
@@ -118,34 +133,36 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // 1. Get token from SecureStore
-        const token = await SecureStore.getItemAsync('access_token');
-        if (!token) {
-          console.log('No access token found');
-          setUserInfo(null);
-          return;
-        }
-
-        // 2. Fetch profile from backend
-        const res = await axios.get(`${getBaseURL()}/users/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // 3. Set user info
-        setUserInfo(res.data);
-        console.log('Fetched profile:', res.data);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+  const fetchProfile = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) {
+        console.log('No access token found');
+        setUserInfo(null);
+        setLoading(false);
+        return;
       }
-    };
-
-    fetchProfile();
+      const res = await axios.get(`${getBaseURL()}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserInfo(res.data);
+      console.log('Fetched profile:', res.data);
+      setLoading(false);
+    } catch (error: any) {
+      if (error?.response) {
+        console.log('Error fetching profile:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching profile:', error.message || error);
+      }
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchProfile();
+    }, [fetchProfile])
+  );
 
   const historyData = [
     {
@@ -173,50 +190,114 @@ export default function HomeScreen() {
       price: "321 บาท",
     },
   ];
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-primary-200">
+        <ActivityIndicator size="large" color="#fff" />
+        <Text className="text-white font-sans-semibold mt-2.5">Loading…</Text>
+      </View>
+    );
+  }
 
   return (
     <ScreenWrapper>
       <View>
         {userInfo ? (
-          <ScrollView className="mb-20">
-            <View className='relative h-64'>
-              <Image
-                source={profile_background}
-                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-              />
-              <View className='absolute left-7 top-12'>
+          <View>
+            <ScrollView className="mb-20" bounces={false} overScrollMode="never">
+              <HeaderBar title="Customer" showChat />
+              <View className='relative h-64'>
                 <Image
-                  source={{ uri: userInfo.PictureURL }}
-                  style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                  source={profile_background}
+                  style={{ width: '100%', height: 150, resizeMode: 'cover' }}
                 />
-                <Text
-                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
+                <Pressable
+                  onPress={() => setOpen(true)}
+                  style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+                  android_ripple={{ color: '#00000022', borderless: true }}
+                  className="self-end mr-4 mt-4"
                 >
-                  {userInfo.FirstName} {userInfo.LastName}
-                </Text>
+                  <MaterialIcons name="settings" size={28} color="white" />
+                </Pressable>
 
+
+                <View className='absolute left-7 top-12'>
+                  <Image
+                    source={{ uri: userInfo.PictureURL }}
+                    style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                  />
+                  <Text
+                    className='text-white font-sans-semibold text-2xl max-w-[256px]'
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {userInfo.FirstName} {userInfo.LastName}
+                  </Text>
+
+                </View>
               </View>
-            </View>
 
-            <View className='mx-4 my-5 flex-col gap-6'>
-              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-              <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
-              <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-              <HistoryCardList items={historyData} />
-            </View>
-            <Button title="Sign Out" onPress={googleSignOut} />
-            <TouchableOpacity
-              onPress={() => router.push("/(fortune-teller)/dashboard")}
-              className="bg-accent-200 px-6 py-3 rounded-full"
+              <View className='mx-4 my-5 flex-col gap-6'>
+                <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
+                <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
+                <HistoryCardList items={historyData} />
+              </View>
+
+            </ScrollView>
+            <Modal
+              visible={open}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setOpen(false)}
             >
-              <Text className="text-black text-lg font-bold">
-                ไปหน้า Fortune Teller
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
+              {/* Dimmed backdrop */}
+              <Pressable
+                onPress={() => setOpen(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.35)',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {/* Stop backdrop tap from closing when pressing content */}
+                <Pressable
+                  onPress={() => { }}
+                  className="bg-primary-200"
+                  style={{
+                    width: '85%',
+                    borderRadius: 16,
+                    padding: 16,
+                    gap: 12
+                  }}
+                >
+                  <View className="flex flex-row w-full justify-center relative  p-2">
+                    <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
+                    <Pressable
+                      onPress={() => setOpen(false)}
+                      className="absolute right-0 top-0 p-2"
+                    >
+                      <MaterialIcons name="close" size={24} color="white" />
+                    </Pressable>
+                  </View>
 
+                  {/* Your settings actions */}
+                  <Pressable onPress={() => { 
+                    router.push("/profile/edit-profile-customer");
+                    setOpen(false);}}
+                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
+                    <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
+                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
+                  </Pressable>
+                  <Pressable onPress={googleSignOut} className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24">
+                    <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
+                    <MaterialIcons name="logout" size={24} color="black" />
+                  </Pressable>
+
+                </Pressable>
+              </Pressable>
+            </Modal>
+          </View>
         ) : (
           <View className='flex justify-center items-center w-full h-full gap-8'>
             <View className='flex justify-center items-center'>
@@ -236,10 +317,17 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
               onPress={() => handleGoogleSignIn('FORTUNE_TELLER')}
             >
               <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
+              onPress={() => handleGoogleSignIn('ADMIN')}
+            >
+              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Admin</Text>
             </TouchableOpacity>
           </View>
         )}
