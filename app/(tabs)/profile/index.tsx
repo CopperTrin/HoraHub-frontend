@@ -12,10 +12,11 @@ import {
   isSuccessResponse,
   statusCodes
 } from '@react-native-google-signin/google-signin';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
@@ -49,7 +50,7 @@ export default function HomeScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER') => {
     try {
@@ -129,41 +130,36 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // 1. Get token from SecureStore
-        const token = await SecureStore.getItemAsync('access_token');
+  const fetchProfile = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) {
+        console.log('No access token found');
         setUserInfo(null);
-        if (!token) {
-          console.log('No access token found');
-          setUserInfo(null);
-          setLoading(false);
-          return;
-        }
-
-        // 2. Fetch profile from backend
-        const res = await axios.get(`${getBaseURL()}/users/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // 3. Set user info
-        setUserInfo(res.data);
-        console.log('Fetched profile:', res.data);
         setLoading(false);
-      } catch (error: any) {
-        if (error?.response) {
-          console.log('Error fetching profile:', error.response.status, error.response.data);
-        } else {
-          console.log('Error fetching profile:', error.message || error);
-        }
-      }r
-    };
-
-    fetchProfile();
+        return;
+      }
+      const res = await axios.get(`${getBaseURL()}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserInfo(res.data);
+      console.log('Fetched profile:', res.data);
+      setLoading(false);
+    } catch (error: any) {
+      if (error?.response) {
+        console.log('Error fetching profile:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching profile:', error.message || error);
+      }
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchProfile();
+    }, [fetchProfile])
+  );
 
   const historyData = [
     {
@@ -240,7 +236,6 @@ export default function HomeScreen() {
 
               <View className='mx-4 my-5 flex-col gap-6'>
                 <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-                <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
                 <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
                 <HistoryCardList items={historyData} />
               </View>
@@ -284,7 +279,10 @@ export default function HomeScreen() {
                   </View>
 
                   {/* Your settings actions */}
-                  <Pressable onPress={() => { /* navigate / toggle */ }} className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
+                  <Pressable onPress={() => { 
+                    router.push("/profile/edit-profile-customer");
+                    setOpen(false);}}
+                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
                     <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
                     <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
                   </Pressable>
