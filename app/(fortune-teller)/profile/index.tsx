@@ -14,6 +14,15 @@ export default function ProfilePage() {
           Hello Profile
         </Text>
 
+        <TouchableOpacity
+          onPress={() => router.push("/apply-verification")}
+          className="bg-accent-200 px-6 py-3 rounded-full  mb-6"
+        >
+          <Text className="text-black text-lg font-bold">
+            ไปหน้า verification หมอดู
+          </Text>
+        </TouchableOpacity>
+
         {/* ปุ่มไปหน้า fortune-teller */}
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/home")}
