@@ -2,7 +2,7 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeadersBar from "@/app/components/ui/HeaderBar";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { navigate } from "expo-router/build/global-state/routing";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     Alert,
@@ -49,7 +49,7 @@ const ReportDetail = () => {
 
       if (response.status) {
         Alert.alert("ยกคำร้องเรียบร้อย", "การรายงานไม่มีมูล");
-        navigate("../chat-report/index");
+        router.replace("/chat-report");
       } else {
         Alert.alert("ผิดพลาด", "ส่งข้อมูลไม่สำเร็จ");
       }
@@ -71,37 +71,37 @@ const ReportDetail = () => {
         showBack />
 
       {/* Content */}
-      <ScrollView className="flex-1 px-4 py-2">
-        <Text className="text-alabaster text-base mb-3">
+      <ScrollView className="flex-1 px-6 py-2">
+        <Text className="text-alabaster text-xl font-bold mb-2">
           เหตุผล
         </Text>
 
-        <Text className="w-full h-12 border border-accent-200 rounded-2xl p-3 text-alabaster mb-8">
+        <Text className="flex-1 text-alabaster mb-4">
             {reason}
         </Text>
 
-        <Text className="text-alabaster text-base mb-3">
+        <Text className="text-alabaster text-xl font-bold mb-2">
             รายละเอียดของการสนทนาที่ไม่เหมาะสม
         </Text>
 
-        <Text>
+        <Text className="flex-1 text-alabaster mb-12">
             {detail}
         </Text>
 
-        <View className="flex-row">
+        <View className="flex-row justify-center">
             <TouchableOpacity
-                className="bg-green-200 rounded-2xl py-3 mb-5"
+                className="bg-green-500 rounded-2xl p-6 m-8"
                 onPress={caseReasonable}
                 >
-                <Text className="text-blackpearl font-semibold text-center">
+                <Text className="text-blackpearl font-semibold text-xl text-center">
                     รับเรื่อง
                 </Text>
             </TouchableOpacity>
             <TouchableOpacity
-                className="bg-red-200 rounded-2xl py-3 mb-5"
+                className="bg-red-500 rounded-2xl p-6 m-8"
                 onPress={caseDismissed}
                 >
-                <Text className="text-alabaster font-semibold text-center">
+                <Text className="text-alabaster font-semibold text-xl text-center">
                     ไม่รับเรื่อง
                 </Text>
             </TouchableOpacity>

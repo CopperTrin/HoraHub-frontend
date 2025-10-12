@@ -2,7 +2,7 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeadersBar from "@/app/components/ui/HeaderBar";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { navigate } from "expo-router/build/global-state/routing";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -44,7 +44,7 @@ const ReportChat = () => {
         Alert.alert("สำเร็จ", "รายงานของคุณถูกส่งแล้ว");
         setReason("");
         setDetails("");
-        navigate("../chat/index");
+        router.replace("/chat");
       } else {
         Alert.alert("ผิดพลาด", "ไม่สามารถส่งรายงานได้");
       }
@@ -74,7 +74,7 @@ const ReportChat = () => {
           value={reason}
           onChangeText={setReason}
           textAlignVertical="top"
-          maxLength={40} // จำกัดจำนวนตัวอักษร
+          maxLength={45} // จำกัดจำนวนตัวอักษร
         />
 
         <Text className="text-alabaster text-base mb-3">
@@ -82,7 +82,7 @@ const ReportChat = () => {
         </Text>
 
         <TextInput
-          className="w-full min-h-[120px] max-h-[200px] border border-accent-200 rounded-2xl p-3 text-alabaster mb-2"
+          className="flex-1 w-full min-h-[120px] max-h-[200px] border border-accent-200 rounded-2xl p-3 text-alabaster mb-2"
           placeholder="เขียนรายละเอียดที่นี่..."
           placeholderTextColor="#aaa"
           value={details}

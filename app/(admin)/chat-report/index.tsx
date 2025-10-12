@@ -48,7 +48,7 @@ const ReportList = () => {
   const renderDescription = (item: Report) => {
     if (item.Description.length > 40)
       return item.Description.slice(0, 40)+"..."
-    return item.Description
+    else return item.Description
   }
 
   const renderItem = ({ item }: {item:Report}) => {
@@ -61,7 +61,7 @@ const ReportList = () => {
           <View>
             <Text className="text-alabaster text-xl font-semibold">{item.Reason.slice(0, 35)}</Text>
             <Text className="text-gray-400 text-sm" numberOfLines={1}>
-              renderMessage(item.Description)
+              {renderDescription(item)}
             </Text>
           </View>
         </View>
@@ -77,7 +77,6 @@ const ReportList = () => {
       {/* Header */}
       <HeaderBar
         title="Report List"
-        showBack
       />
 
       {/* Search */}
