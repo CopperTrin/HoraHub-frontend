@@ -8,10 +8,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import {
   GoogleSignin
 } from '@react-native-google-signin/google-signin';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useRouter } from "expo-router";
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
@@ -51,35 +52,36 @@ export default function ProfilePage() {
     }
   };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // 1. Get token from SecureStore
-        const token = await SecureStore.getItemAsync('access_token');
-        if (!token) {
-          console.log('No access token found');
-          setUserInfo(null);
-          return;
-        }
-
-        // 2. Fetch profile from backend
-        const res = await axios.get(`${getBaseURL()}/users/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // 3. Set user info
-        setUserInfo(res.data);
-        console.log('Fetched profile:', res.data);
+  const fetchProfile = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) {
+        console.log('No access token found');
+        setUserInfo(null);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+        return;
       }
-    };
-
-    fetchProfile();
+      const res = await axios.get(`${getBaseURL()}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserInfo(res.data);
+      console.log('Fetched profile:', res.data);
+      setLoading(false);
+    } catch (error: any) {
+      if (error?.response) {
+        console.log('Error fetching profile:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching profile:', error.message || error);
+      }
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(false);
+      fetchProfile();
+    }, [fetchProfile])
+  );
   const historyData = [
     {
       fortuneTellerName: "อาจารย์ไม้ร่ม",
@@ -200,7 +202,7 @@ export default function ProfilePage() {
 
                   {/* Your settings actions */}
                   <Pressable onPress={() => { 
-                    router.push("/profile/edit-profile");
+                    router.push("/(fortune-teller)/profile/edit-profile-fortune-teller");
                     setOpen(false);}}
                     className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
                     <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>

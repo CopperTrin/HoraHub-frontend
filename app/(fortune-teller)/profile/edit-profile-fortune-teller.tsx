@@ -1,3 +1,4 @@
+// app/(fortune-teller)/profile/edit-profile-fortune-teller.tsx
 import ScreenWrapper from '@/app/components/ScreenWrapper';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -33,31 +34,26 @@ export default function EditProfileFortuneTeller() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
 
+  // Bio (no preload)
+  const [bio, setBio] = useState('');
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
-          console.log('No access token — redirecting to /profile');
-          setLoading(false);
           router.replace('/profile');
           return;
         }
-
         const res = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         setUserInfo(res.data);
         setEmail(res.data?.Email ?? '');
         setFirstName(res.data?.FirstName ?? '');
         setLastName(res.data?.LastName ?? '');
       } catch (error: any) {
-        if (error?.response) {
-          console.log('Error fetching profile:', error.response.status, error.response.data);
-        } else {
-          console.log('Error fetching profile:', error.message || error);
-        }
+        console.log('Error fetching profile:', error?.response?.data || error?.message || error);
       } finally {
         setLoading(false);
       }
@@ -90,15 +86,11 @@ export default function EditProfileFortuneTeller() {
         return;
       }
 
-      const filename =
-        asset.fileName || uri.split('/').pop() || `avatar_${Date.now()}.jpg`;
-      let type = asset.mimeType || 'image/jpeg';
+      const filename = asset.fileName || uri.split('/').pop() || `avatar_${Date.now()}.jpg`;
+      const type = asset.mimeType || 'image/jpeg';
 
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
-
-      const form = new FormData();
-      form.append('file', { uri, name: filename, type } as any);
 
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) {
@@ -106,6 +98,9 @@ export default function EditProfileFortuneTeller() {
         router.replace('/profile');
         return;
       }
+
+      const form = new FormData();
+      form.append('file', { uri, name: filename, type } as any);
 
       await axios.patch(`${getBaseURL()}/users/profile/picture`, form, {
         headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
@@ -136,6 +131,7 @@ export default function EditProfileFortuneTeller() {
         return;
       }
 
+      // Save base user fields first
       const detailRes = await axios.get(`${getBaseURL()}/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -143,7 +139,7 @@ export default function EditProfileFortuneTeller() {
 
       const body = {
         Email: detail?.UserInfo?.Email ?? userInfo?.Email ?? '',
-        Username: detail?.Username ?? '', // kept for API compatibility
+        Username: detail?.Username ?? '',
         Password: detail?.Password ?? '',
         FirstName: firstName ?? detail?.UserInfo?.FirstName ?? '',
         LastName: lastName ?? detail?.UserInfo?.LastName ?? '',
@@ -159,6 +155,20 @@ export default function EditProfileFortuneTeller() {
           Accept: '*/*',
         },
       });
+
+      // Save fortune-teller Bio (no preload; just whatever is typed)
+      const payloadBio = (bio ?? '').trim().slice(0, 1000);
+      await axios.patch(
+        `${getBaseURL()}/fortune-teller/me`,
+        { Bio: payloadBio },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+          },
+        }
+      );
 
       Alert.alert('Saved', 'Your profile was updated.');
       router.back();
@@ -251,7 +261,26 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Save button */}
+            {/* Bio (no existing placeholder) */}
+            <View className="gap-1">
+              <Text className="text-white/80 font-sans-semibold">คำบรรยาย (Bio)</Text>
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="เล่าความเชี่ยวชาญ ประสบการณ์ และแนวทางการพยากรณ์ของคุณ"
+                placeholderTextColor="#BEBFC3"
+                className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                editable={!saving}
+              />
+              <Text className="text-white/50 text-xs self-end mt-1">
+                {bio?.length ?? 0}/1000
+              </Text>
+            </View>
+
+            {/* Save */}
             <Pressable
               onPress={saving ? undefined : handleSave}
               disabled={saving}
@@ -259,11 +288,7 @@ export default function EditProfileFortuneTeller() {
                 saving ? 'bg-accent-200/50' : 'bg-accent-200'
               }`}
             >
-              {saving ? (
-                <ActivityIndicator />
-              ) : (
-                <Text className="font-sans-semibold">ยืนยัน</Text>
-              )}
+              {saving ? <ActivityIndicator /> : <Text className="font-sans-semibold">ยืนยัน</Text>}
             </Pressable>
           </View>
         </ScrollView>

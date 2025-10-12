@@ -5,16 +5,16 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 
 import * as FileSystem from 'expo-file-system/legacy';
@@ -23,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 const getBaseURL = () =>
   Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
 
-export default function EditProfileCustomer() {
+export default function EditProfileAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
@@ -151,7 +151,6 @@ export default function EditProfileCustomer() {
         GoogleID: detail?.UserInfo?.GoogleID ?? userInfo?.GoogleID ?? '',
         Role: Array.isArray(detail?.Role) ? detail.Role : [],
       };
-      console.log('Saving profile with body:', body);
 
       await axios.patch(`${getBaseURL()}/users/me`, body, {
         headers: {
