@@ -159,7 +159,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
+      setLoading(false);
       fetchProfile();
     }, [fetchProfile])
   );

@@ -6,7 +6,7 @@ import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import profile_background from '@/assets/images/profile_background.png';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
-    GoogleSignin
+  GoogleSignin
 } from '@react-native-google-signin/google-signin';
 import axios from 'axios';
 import { useRouter } from "expo-router";
@@ -156,7 +156,6 @@ export default function ProfilePage() {
 
               <View className='mx-4 my-5 flex-col gap-6'>
                 <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-                <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
                 <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
                 <HistoryCardList items={historyData} />
               </View>
