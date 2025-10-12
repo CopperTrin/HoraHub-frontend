@@ -35,7 +35,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen name="role-redirect" />
       </Stack>
     </SafeAreaProvider>
   );

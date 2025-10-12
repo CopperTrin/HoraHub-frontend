@@ -5,9 +5,7 @@ import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
 import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import profile_background from '@/assets/images/profile_background.png';
 import { MaterialIcons } from '@expo/vector-icons';
-import {
-  GoogleSignin
-} from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useRouter } from "expo-router";
@@ -23,6 +21,9 @@ export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // NEW: store fortune-teller data (Bio, Status, etc.)
+  const [fortuneTeller, setFortuneTeller] = useState<any>(null);
+
   const getBaseURL = () => {
     if (Platform.OS === "android") {
       return "http://10.0.2.2:3456";
@@ -32,20 +33,15 @@ export default function ProfilePage() {
 
   const googleSignOut = async () => {
     try {
-      // 1) Sign out from Google SDK
       await GoogleSignin.signOut();
-
-      // 2) Optional but recommended if you want to force account re-pick next time
-      // (removes granted scopes on Google side)
-      try { await GoogleSignin.revokeAccess(); } catch { }
-
-      // 3) Remove your backend token
+      try { await GoogleSignin.revokeAccess(); } catch {}
       await SecureStore.deleteItemAsync('access_token');
-
-      // 4) Clear local UI state and go to login
       setUserInfo(null);
       setOpen(false);
-      router.replace('/(tabs)/profile'); // or your auth screen, e.g. '/(auth)/login'
+      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('user_role');
+      await SecureStore.deleteItemAsync('last_id_token');
+      router.replace('/(tabs)/profile');
     } catch (e) {
       console.error('Sign out error', e);
       Alert.alert('Sign out failed', 'Please try again.');
@@ -66,7 +62,6 @@ export default function ProfilePage() {
       });
       setUserInfo(res.data);
       console.log('Fetched profile:', res.data);
-      setLoading(false);
     } catch (error: any) {
       if (error?.response) {
         console.log('Error fetching profile:', error.response.status, error.response.data);
@@ -76,12 +71,36 @@ export default function ProfilePage() {
     }
   }, []);
 
+  // NEW: fetch /fortune-teller/me to get Bio
+  const fetchFortuneTellerMe = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      const res = await axios.get(`${getBaseURL()}/fortune-teller/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFortuneTeller(res.data);
+      // console.log('Fetched fortune-teller:', res.data);
+    } catch (error: any) {
+      if (error?.response) {
+        console.log('Error fetching fortune-teller:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching fortune-teller:', error.message || error);
+      }
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      setLoading(false);
-      fetchProfile();
-    }, [fetchProfile])
+      (async () => {
+        setLoading(true);
+        await fetchProfile();
+        await fetchFortuneTellerMe(); // NEW: also load Bio here
+        setLoading(false);
+      })();
+    }, [fetchProfile, fetchFortuneTellerMe])
   );
+
   const historyData = [
     {
       fortuneTellerName: "อาจารย์ไม้ร่ม",
@@ -118,117 +137,118 @@ export default function ProfilePage() {
     );
   }
 
-  
   return (
     <ScreenWrapper>
       {userInfo ? (
-      <View>
-            <ScrollView className="mb-20" bounces={false} overScrollMode="never">
-              <HeaderBar title="Fortune Teller" showChat />
-              <View className='relative h-64'>
-                <Image
-                  source={profile_background}
-                  style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-                />
-                <Pressable
-                  onPress={() => setOpen(true)}
-                  style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
-                  android_ripple={{ color: '#00000022', borderless: true }}
-                  className="self-end mr-4 mt-4"
-                >
-                  <MaterialIcons name="settings" size={28} color="white" />
-                </Pressable>
-
-
-                <View className='absolute left-7 top-12'>
-                  <Image
-                    source={{ uri: userInfo.PictureURL }}
-                    style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
-                  />
-                  <Text
-                    className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {userInfo.FirstName} {userInfo.LastName}
-                  </Text>
-
-                </View>
-              </View>
-
-              <View className='mx-4 my-5 flex-col gap-6'>
-                <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-                <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
-                <Pressable onPress={() => { 
-                    router.push("/apply-verification");
-                    setOpen(false);}}
-                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
-                    <Text className="text-white font-sans-semibold text-xl">ไป verification</Text>
-                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
-                  </Pressable>
-                <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-                <HistoryCardList items={historyData} />
-              </View>
-            </ScrollView>
-            <Modal
-              visible={open}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setOpen(false)}
-            >
-              {/* Dimmed backdrop */}
+        <View>
+          <ScrollView className="mb-20" bounces={false} overScrollMode="never">
+            <HeaderBar title="Fortune Teller" showChat />
+            <View className='relative h-64'>
+              <Image
+                source={profile_background}
+                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
+              />
               <Pressable
-                onPress={() => setOpen(false)}
+                onPress={() => setOpen(true)}
+                style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+                android_ripple={{ color: '#00000022', borderless: true }}
+                className="self-end mr-4 mt-4"
+              >
+                <MaterialIcons name="settings" size={28} color="white" />
+              </Pressable>
+
+              <View className='absolute left-7 top-12'>
+                <Image
+                  source={{ uri: userInfo.PictureURL }}
+                  style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
+                />
+                <Text
+                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {userInfo.FirstName} {userInfo.LastName}
+                </Text>
+              </View>
+            </View>
+
+            <View className='mx-4 my-5 flex-col gap-6'>
+              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">
+                อีเมล : {userInfo.Email}
+              </Text>
+
+              {/* NEW: Bio from /fortune-teller/me */}
+              <Text className='text-white text-xl font-sans-medium'>
+                Bio : {fortuneTeller?.Bio ? fortuneTeller.Bio : '—'}
+              </Text>
+
+              <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
+              <HistoryCardList items={historyData} />
+            </View>
+          </ScrollView>
+
+          <Modal
+            visible={open}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setOpen(false)}
+          >
+            {/* Dimmed backdrop */}
+            <Pressable
+              onPress={() => setOpen(false)}
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.35)',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {/* Stop backdrop tap from closing when pressing content */}
+              <Pressable
+                onPress={() => { }}
+                className="bg-primary-200"
                 style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.35)',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  width: '85%',
+                  borderRadius: 16,
+                  padding: 16,
+                  gap: 12
                 }}
               >
-                {/* Stop backdrop tap from closing when pressing content */}
+                <View className="flex flex-row w-full justify-center relative  p-2">
+                  <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
+                  <Pressable
+                    onPress={() => setOpen(false)}
+                    className="absolute right-0 top-0 p-2"
+                  >
+                    <MaterialIcons name="close" size={24} color="white" />
+                  </Pressable>
+                </View>
+
                 <Pressable
-                  onPress={() => { }}
-                  className="bg-primary-200"
-                  style={{
-                    width: '85%',
-                    borderRadius: 16,
-                    padding: 16,
-                    gap: 12
-                  }}
-                >
-                  <View className="flex flex-row w-full justify-center relative  p-2">
-                    <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
-                    <Pressable
-                      onPress={() => setOpen(false)}
-                      className="absolute right-0 top-0 p-2"
-                    >
-                      <MaterialIcons name="close" size={24} color="white" />
-                    </Pressable>
-                  </View>
-
-                  {/* Your settings actions */}
-                  <Pressable onPress={() => { 
+                  onPress={() => {
                     router.push("/(fortune-teller)/profile/edit-profile-fortune-teller");
-                    setOpen(false);}}
-                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
-                    <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
-                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
-                  </Pressable>
-                  <Pressable onPress={googleSignOut} className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24">
-                    <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
-                    <MaterialIcons name="logout" size={24} color="black" />
-                  </Pressable>
+                    setOpen(false);
+                  }}
+                  className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5"
+                >
+                  <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
+                  <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
+                </Pressable>
 
+                <Pressable
+                  onPress={googleSignOut}
+                  className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24"
+                >
+                  <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
+                  <MaterialIcons name="logout" size={24} color="black" />
                 </Pressable>
               </Pressable>
-            </Modal>
-          </View>
-        ) : (
-          <View>
-
-          </View>
-        )}
+            </Pressable>
+          </Modal>
+        </View>
+      ) : (
+        <View />
+      )}
     </ScreenWrapper>
   );
 }

@@ -1,4 +1,3 @@
-// app/(fortune-teller)/profile/edit-profile-fortune-teller.tsx
 import ScreenWrapper from '@/app/components/ScreenWrapper';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -33,18 +32,18 @@ export default function EditProfileFortuneTeller() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-
-  // Bio (no preload)
-  const [bio, setBio] = useState('');
+  const [bio, setBio] = useState(''); // now preload later
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndBio = async () => {
       try {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
           router.replace('/profile');
           return;
         }
+
+        // --- Fetch basic user profile ---
         const res = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -52,6 +51,16 @@ export default function EditProfileFortuneTeller() {
         setEmail(res.data?.Email ?? '');
         setFirstName(res.data?.FirstName ?? '');
         setLastName(res.data?.LastName ?? '');
+
+        // --- Fetch fortune-teller bio ---
+        try {
+          const ft = await axios.get(`${getBaseURL()}/fortune-teller/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (ft.data?.Bio) setBio(ft.data.Bio);
+        } catch (err) {
+          console.log('No fortune-teller bio yet');
+        }
       } catch (error: any) {
         console.log('Error fetching profile:', error?.response?.data || error?.message || error);
       } finally {
@@ -59,7 +68,7 @@ export default function EditProfileFortuneTeller() {
       }
     };
 
-    fetchProfile();
+    fetchProfileAndBio();
   }, []);
 
   const pickAndUploadPicture = async () => {
@@ -69,7 +78,7 @@ export default function EditProfileFortuneTeller() {
         Alert.alert('Permission required', 'Please allow photo library access.');
         return;
       }
-  
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -77,43 +86,40 @@ export default function EditProfileFortuneTeller() {
         quality: 0.9,
       });
       if (result.canceled || !result.assets?.length) return;
-  
+
       const asset = result.assets[0];
       let uri = asset.uri;
       if (uri && !uri.startsWith('file://') && !uri.startsWith('content://')) {
         uri = `file://${uri}`;
       }
-  
+
       const exists = await FileSystem.getInfoAsync(uri);
       if (!exists.exists) {
         Alert.alert('File error', 'Selected file not found.');
         return;
       }
-  
-      // filename + mime
+
       let filename = asset.fileName || (uri.split('/').pop() ?? '');
       if (!filename.includes('.')) filename += '.jpg';
       const ext = (filename.split('.').pop() || '').toLowerCase();
       const mime =
         asset.mimeType ||
         (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
-  
-      // optimistic preview
+
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
-  
+
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) {
         Alert.alert('Session expired', 'Please sign in again.');
         router.replace('/profile');
         return;
       }
-  
+
       const filePart = { uri, name: filename, type: mime } as any;
-  
       const form = new FormData();
       form.append('file', filePart);
-  
+
       const res = await fetch(`${getBaseURL()}/users/profile/picture`, {
         method: 'PATCH',
         headers: {
@@ -122,12 +128,12 @@ export default function EditProfileFortuneTeller() {
         },
         body: form,
       });
-  
+
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
       }
-  
+
       Alert.alert('Success', 'Profile picture updated.');
     } catch (e: any) {
       console.log('Upload error:', e?.message || e);
@@ -153,7 +159,6 @@ export default function EditProfileFortuneTeller() {
         return;
       }
 
-      // Save base user fields first
       const detailRes = await axios.get(`${getBaseURL()}/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -178,7 +183,7 @@ export default function EditProfileFortuneTeller() {
         },
       });
 
-      // Save fortune-teller Bio (no preload; just whatever is typed)
+      // Save fortune-teller Bio
       const payloadBio = (bio ?? '').trim().slice(0, 1000);
       await axios.patch(
         `${getBaseURL()}/fortune-teller/me`,
@@ -218,7 +223,6 @@ export default function EditProfileFortuneTeller() {
         className="flex-1"
       >
         <ScrollView contentContainerClassName="pb-10">
-          {/* Header */}
           <View className="bg-primary-200">
             <View className="flex flex-row h-auto items-center p-2.5">
               <Pressable onPress={() => router.back()} className="p-2">
@@ -229,7 +233,6 @@ export default function EditProfileFortuneTeller() {
               </Text>
             </View>
 
-            {/* Avatar */}
             <View className="relative w-32 h-32 self-center mt-6 mb-6">
               <Image source={{ uri: userInfo?.PictureURL }} className="w-32 h-32 rounded-full" />
               <Pressable
@@ -246,9 +249,7 @@ export default function EditProfileFortuneTeller() {
             </View>
           </View>
 
-          {/* Form */}
           <View className="px-4 gap-3 mt-4">
-            {/* First Name */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">ชื่อจริง</Text>
               <TextInput
@@ -260,7 +261,6 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Last Name */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">นามสกุล</Text>
               <TextInput
@@ -272,7 +272,6 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Email (read-only) */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">อีเมล</Text>
               <TextInput
@@ -283,7 +282,7 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Bio (no existing placeholder) */}
+            {/* Bio with preloaded value */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">คำบรรยาย (Bio)</Text>
               <TextInput
@@ -302,7 +301,6 @@ export default function EditProfileFortuneTeller() {
               </Text>
             </View>
 
-            {/* Save */}
             <Pressable
               onPress={saving ? undefined : handleSave}
               disabled={saving}
