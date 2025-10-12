@@ -125,6 +125,7 @@ export default function ProfileSignIn() {
             idToken,
             role: existingRole,
           });
+          console.log('Auto sign-in auth response:', resAuth.data);
           const accessToken = resAuth.data.access_token;
           await SecureStore.setItemAsync('access_token', accessToken);
           await SecureStore.setItemAsync('user_role', existingRole);
