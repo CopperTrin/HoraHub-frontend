@@ -172,7 +172,7 @@ export default function EditProfileCustomer() {
         GoogleID: detail?.UserInfo?.GoogleID ?? userInfo?.GoogleID ?? '',
         Role: Array.isArray(detail?.Role) ? detail.Role : [],
       };
-
+      console.log('Saving profile with body:', body);
       await axios.patch(`${getBaseURL()}/users/me`, body, {
         headers: {
           Authorization: `Bearer ${token}`,

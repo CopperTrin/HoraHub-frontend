@@ -45,6 +45,9 @@ export default function ProfilePage() {
       // 4) Clear local UI state and go to login
       setUserInfo(null);
       setOpen(false);
+      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('user_role');
+      await SecureStore.deleteItemAsync('last_id_token');
       router.replace('/(tabs)/profile'); // or your auth screen, e.g. '/(auth)/login'
     } catch (e) {
       console.error('Sign out error', e);

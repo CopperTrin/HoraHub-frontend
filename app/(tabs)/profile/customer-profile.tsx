@@ -127,7 +127,7 @@ export default function ProfilePage() {
       {userInfo ? (
       <View>
             <ScrollView className="mb-20" bounces={false} overScrollMode="never">
-              <HeaderBar title="Fortune Teller" showChat />
+              <HeaderBar title="Customer" showChat />
               <View className='relative h-64'>
                 <Image
                   source={profile_background}
