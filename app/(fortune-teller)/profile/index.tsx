@@ -159,6 +159,13 @@ export default function ProfilePage() {
               <View className='mx-4 my-5 flex-col gap-6'>
                 <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
                 <Text className='text-white text-xl font-sans-medium' >Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง</Text>
+                <Pressable onPress={() => { 
+                    router.push("/apply-verification");
+                    setOpen(false);}}
+                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
+                    <Text className="text-white font-sans-semibold text-xl">ไป verification</Text>
+                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
+                  </Pressable>
                 <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
                 <HistoryCardList items={historyData} />
               </View>
