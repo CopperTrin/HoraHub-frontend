@@ -81,7 +81,7 @@ export default function HomeScreen() {
           router.replace("/(fortune-teller)/dashboard");
         }
         if (role === 'ADMIN') {
-          router.replace("/(admin)/profile/");
+          router.replace("/(admin)/profile");
         }
         
         // Navigate to the protected route
@@ -154,6 +154,7 @@ export default function HomeScreen() {
       } else {
         console.log('Error fetching profile:', error.message || error);
       }
+      setLoading(false);
     }
   }, []);
 
