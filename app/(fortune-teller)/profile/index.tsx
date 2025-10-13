@@ -14,33 +14,47 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
+type WalletMe = {
+  AccountingID: string;
+  Balance_Number: number;
+  Label: string;
+  UserID: string;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
 
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [fortuneTeller, setFortuneTeller] = useState<any>(null);
+  const [wallet, setWallet] = useState<WalletMe | null>(null);
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // NEW: store fortune-teller data (Bio, Status, etc.)
-  const [fortuneTeller, setFortuneTeller] = useState<any>(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   const getBaseURL = () => {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:3456";
-    }
+    if (Platform.OS === "android") return "http://10.0.2.2:3456";
     return "http://localhost:3456";
+  };
+
+  const formatTHB = (num?: number) => {
+    if (typeof num !== "number") return "—";
+    try {
+      return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(num);
+    } catch {
+      return `${num.toLocaleString('th-TH')} บาท`;
+    }
   };
 
   const googleSignOut = async () => {
     try {
       await GoogleSignin.signOut();
-      try { await GoogleSignin.revokeAccess(); } catch {}
-      await SecureStore.deleteItemAsync('access_token');
-      setUserInfo(null);
-      setOpen(false);
+      try { await GoogleSignin.revokeAccess(); } catch { }
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_role');
       await SecureStore.deleteItemAsync('last_id_token');
+      setUserInfo(null);
+      setOpen(false);
       router.replace('/(tabs)/profile');
     } catch (e) {
       console.error('Sign out error', e);
@@ -51,27 +65,16 @@ export default function ProfilePage() {
   const fetchProfile = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        console.log('No access token found');
-        setUserInfo(null);
-        setLoading(false);
-        return;
-      }
+      if (!token) return;
       const res = await axios.get(`${getBaseURL()}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
-      console.log('Fetched profile:', res.data);
     } catch (error: any) {
-      if (error?.response) {
-        console.log('Error fetching profile:', error.response.status, error.response.data);
-      } else {
-        console.log('Error fetching profile:', error.message || error);
-      }
+      console.log('Error fetching profile:', error?.response?.data || error.message);
     }
   }, []);
 
-  // NEW: fetch /fortune-teller/me to get Bio
   const fetchFortuneTellerMe = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('access_token');
@@ -80,13 +83,26 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFortuneTeller(res.data);
-      // console.log('Fetched fortune-teller:', res.data);
     } catch (error: any) {
-      if (error?.response) {
-        console.log('Error fetching fortune-teller:', error.response.status, error.response.data);
-      } else {
-        console.log('Error fetching fortune-teller:', error.message || error);
-      }
+      console.log('Error fetching fortune teller:', error?.response?.data || error.message);
+    }
+  }, []);
+
+  /** NEW: Fetch fortune-teller wallet */
+  const fetchWallet = useCallback(async () => {
+    setWalletLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) return;
+      const res = await axios.get<WalletMe>(`${getBaseURL()}/accounting/fortune-teller/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setWallet(res.data);
+    } catch (error: any) {
+      console.log('Error fetching wallet:', error?.response?.data || error.message);
+      setWallet(null);
+    } finally {
+      setWalletLoading(false);
     }
   }, []);
 
@@ -94,11 +110,10 @@ export default function ProfilePage() {
     useCallback(() => {
       (async () => {
         setLoading(true);
-        await fetchProfile();
-        await fetchFortuneTellerMe(); // NEW: also load Bio here
+        await Promise.all([fetchProfile(), fetchFortuneTellerMe(), fetchWallet()]);
         setLoading(false);
       })();
-    }, [fetchProfile, fetchFortuneTellerMe])
+    }, [fetchProfile, fetchFortuneTellerMe, fetchWallet])
   );
 
   const historyData = [
@@ -144,10 +159,7 @@ export default function ProfilePage() {
           <ScrollView className="mb-20" bounces={false} overScrollMode="never">
             <HeaderBar title="Fortune Teller" showChat />
             <View className='relative h-64'>
-              <Image
-                source={profile_background}
-                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-              />
+              <Image source={profile_background} style={{ width: '100%', height: 150, resizeMode: 'cover' }} />
               <Pressable
                 onPress={() => setOpen(true)}
                 style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
@@ -162,22 +174,38 @@ export default function ProfilePage() {
                   source={{ uri: userInfo.PictureURL }}
                   style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
                 />
-                <Text
-                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
+                <Text className='text-white font-sans-semibold text-2xl max-w-[256px]' numberOfLines={1}>
                   {userInfo.FirstName} {userInfo.LastName}
                 </Text>
               </View>
             </View>
 
             <View className='mx-4 my-5 flex-col gap-6'>
-              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">
+
+              {/* Wallet Card */}
+              <Pressable
+                onPress={() => router.push("/wallet-fortune-teller")}
+                className="bg-accent-200 rounded-2xl p-4"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-2">
+                    <MaterialIcons name="account-balance-wallet" size={24} color="black" />
+                    <Text className="text-blackpearl font-sans-semibold text-xl">กระเป๋าเงิน</Text>
+                  </View>
+                  {walletLoading ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Text className="text-blackpearl font-sans-bold text-2xl">
+                      {formatTHB(wallet?.Balance_Number)}
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+
+              <Text className='text-white text-xl font-sans-medium' numberOfLines={1}>
                 อีเมล : {userInfo.Email}
               </Text>
 
-              {/* NEW: Bio from /fortune-teller/me */}
               <Text className='text-white text-xl font-sans-medium'>
                 Bio : {fortuneTeller?.Bio ? fortuneTeller.Bio : '—'}
               </Text>
@@ -187,39 +215,19 @@ export default function ProfilePage() {
             </View>
           </ScrollView>
 
-          <Modal
-            visible={open}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setOpen(false)}
-          >
-            {/* Dimmed backdrop */}
+          <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
             <Pressable
               onPress={() => setOpen(false)}
-              style={{
-                flex: 1,
-                backgroundColor: 'rgba(0,0,0,0.35)',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}
             >
-              {/* Stop backdrop tap from closing when pressing content */}
               <Pressable
                 onPress={() => { }}
                 className="bg-primary-200"
-                style={{
-                  width: '85%',
-                  borderRadius: 16,
-                  padding: 16,
-                  gap: 12
-                }}
+                style={{ width: '85%', borderRadius: 16, padding: 16, gap: 12 }}
               >
                 <View className="flex flex-row w-full justify-center relative  p-2">
                   <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
-                  <Pressable
-                    onPress={() => setOpen(false)}
-                    className="absolute right-0 top-0 p-2"
-                  >
+                  <Pressable onPress={() => setOpen(false)} className="absolute right-0 top-0 p-2">
                     <MaterialIcons name="close" size={24} color="white" />
                   </Pressable>
                 </View>
