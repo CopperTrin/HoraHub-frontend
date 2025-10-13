@@ -5,16 +5,16 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import * as FileSystem from 'expo-file-system/legacy';
@@ -94,7 +94,6 @@ export default function EditProfileAdmin() {
         return;
       }
   
-      // filename + mime
       let filename = asset.fileName || (uri.split('/').pop() ?? '');
       if (!filename.includes('.')) filename += '.jpg';
       const ext = (filename.split('.').pop() || '').toLowerCase();
@@ -102,7 +101,6 @@ export default function EditProfileAdmin() {
         asset.mimeType ||
         (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
   
-      // optimistic preview
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
   
@@ -164,7 +162,7 @@ export default function EditProfileAdmin() {
 
       const body = {
         Email: detail?.UserInfo?.Email ?? userInfo?.Email ?? '',
-        Username: detail?.Username ?? '', // kept for API compatibility
+        Username: detail?.Username ?? '', 
         Password: detail?.Password ?? '',
         FirstName: firstName ?? detail?.UserInfo?.FirstName ?? '',
         LastName: lastName ?? detail?.UserInfo?.LastName ?? '',

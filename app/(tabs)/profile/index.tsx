@@ -43,16 +43,13 @@ export default function ProfileSignIn() {
   const redirectFortuneTellerPending = () => router.replace('/apply-verification');
 
   const checkFortuneTellerAndRedirect = async (token: string) => {
-    // 1) get user profile to know UserID
     const me = await axios.get(`${getBaseURL()}/users/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const userId = me.data?.UserID;
     if (!userId) {
-      // safe fallback
       return redirectFortuneTellerPending();
     }
-    // 2) check fortune teller status
     const ft = await axios.get(`${getBaseURL()}/fortune-teller/user/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -67,7 +64,6 @@ export default function ProfileSignIn() {
       if (role === 'ADMIN') return redirectAdmin();
       if (role === 'FORTUNE_TELLER') {
         if (token) return checkFortuneTellerAndRedirect(token);
-        // If token wasn't passed, pull from storage (for the boot-time auto-redirect case)
         const stored = await SecureStore.getItemAsync('access_token');
         if (stored) return checkFortuneTellerAndRedirect(stored);
         return redirectFortuneTellerPending();
@@ -76,7 +72,6 @@ export default function ProfileSignIn() {
     []
   );
 
-  // Boot-time auto redirect if we already have token + role
   useEffect(() => {
     (async () => {
       const token = await SecureStore.getItemAsync('access_token');
@@ -90,25 +85,27 @@ export default function ProfileSignIn() {
   }, [redirectByRole]);
 
   const handleGoogleSignIn = async () => {
+    setSigningIn(true);
     try {
-      setSigningIn(true);
       await GoogleSignin.hasPlayServices();
+  
       const response = await GoogleSignin.signIn();
-      if (!isSuccessResponse(response)) return;
-
+  
+      if (!isSuccessResponse(response)) {
+        setSigningIn(false);
+        return;
+      }
+  
       const { idToken } = response.data;
-      if (!idToken) throw new Error('No idToken from Google');
-
-      // Store token for choose-role fallback
-      await SecureStore.setItemAsync('last_id_token', idToken);
-
-      // Extract Google ID / email for role lookup
+      if (!idToken) throw new Error("No idToken from Google");
+  
+      await SecureStore.setItemAsync("last_id_token", idToken);
+  
       const u: any = response.data?.user ?? {};
       const googleId = u?.id || u?.user?.id || null;
       const email = u?.email || u?.user?.email || null;
-      if (googleId) await SecureStore.setItemAsync('last_google_uid', String(googleId));
-
-      // Check /users for existing role
+      if (googleId) await SecureStore.setItemAsync("last_google_uid", String(googleId));
+  
       try {
         const resUsers = await axios.get(`${getBaseURL()}/users`);
         const list: any[] = resUsers.data || [];
@@ -117,42 +114,43 @@ export default function ProfileSignIn() {
             (googleId && x?.UserInfo?.GoogleID === String(googleId)) ||
             (email && x?.UserInfo?.Email?.toLowerCase() === String(email).toLowerCase())
         );
-
+  
         const existingRole: Role | undefined = found?.Role?.[0];
         if (existingRole) {
-          // Auto sign-in with existing role
           const resAuth = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
             idToken,
             role: existingRole,
           });
-          console.log('Auto sign-in auth response:', resAuth.data);
+  
           const accessToken = resAuth.data.access_token;
-          await SecureStore.setItemAsync('access_token', accessToken);
-          await SecureStore.setItemAsync('user_role', existingRole);
-
+          await SecureStore.setItemAsync("access_token", accessToken);
+          await SecureStore.setItemAsync("user_role", existingRole);
+  
           setSigningIn(false);
-          // ⬇️ NEW: if FORTUNE_TELLER, check status then route
           return redirectByRole(existingRole, accessToken);
         }
       } catch (err) {
-        console.log('User lookup error:', err?.message || err);
+        console.log("User lookup error:", err?.message || err);
       }
-
-      // No role found → go choose-role
+  
       setSigningIn(false);
-      router.replace('/(tabs)/profile/choose-role');
+      router.replace("/(tabs)/profile/choose-role");
     } catch (error: any) {
       setSigningIn(false);
+  
       if (isErrorWithCode(error)) {
+        if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
         if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-          Alert.alert('ไม่พบ Google Play Services', 'โปรดอัปเดตหรือเปิดใช้งานก่อน');
+          Alert.alert("ไม่พบ Google Play Services", "โปรดอัปเดตหรือเปิดใช้งานก่อน");
           return;
         }
       }
-      console.log('Google sign-in error:', error?.message || error);
-      Alert.alert('เข้าสู่ระบบล้มเหลว', 'โปรดลองอีกครั้ง');
+  
+      console.log("Google sign-in error:", error?.message || error);
+      Alert.alert("เข้าสู่ระบบล้มเหลว", "โปรดลองอีกครั้ง");
     }
   };
+  
 
   if (loading) {
     return (

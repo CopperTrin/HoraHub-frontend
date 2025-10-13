@@ -1,9 +1,8 @@
-import React from "react";
 import { ScrollView, ViewStyle } from "react-native";
 import ArticleCard from "./ArticleCard";
 
 type Item = {
-  image: any;      // ImageSourcePropType
+  image: any;     
   title: string;
   author: string;
   onPress?: () => void;
@@ -11,7 +10,7 @@ type Item = {
 
 type Props = {
   items: Item[];
-  gap?: number;      // tailwind gap-? via class below (default 16)
+  gap?: number;     
   contentStyle?: ViewStyle;
   cardWidth?: number;
   cardHeight?: number;
@@ -24,7 +23,6 @@ export default function ArticleCarousel({
   cardWidth = 320,
   cardHeight = 272,
 }: Props) {
-  // Use contentContainerClassName to apply gap + row layout
   return (
     <ScrollView
       horizontal

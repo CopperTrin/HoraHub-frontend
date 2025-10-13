@@ -32,7 +32,7 @@ export default function EditProfileFortuneTeller() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [bio, setBio] = useState(''); // now preload later
+  const [bio, setBio] = useState(''); 
 
   useEffect(() => {
     const fetchProfileAndBio = async () => {
@@ -43,7 +43,6 @@ export default function EditProfileFortuneTeller() {
           return;
         }
 
-        // --- Fetch basic user profile ---
         const res = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -52,7 +51,6 @@ export default function EditProfileFortuneTeller() {
         setFirstName(res.data?.FirstName ?? '');
         setLastName(res.data?.LastName ?? '');
 
-        // --- Fetch fortune-teller bio ---
         try {
           const ft = await axios.get(`${getBaseURL()}/fortune-teller/me`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -183,7 +181,6 @@ export default function EditProfileFortuneTeller() {
         },
       });
 
-      // Save fortune-teller Bio
       const payloadBio = (bio ?? '').trim().slice(0, 1000);
       await axios.patch(
         `${getBaseURL()}/fortune-teller/me`,

@@ -77,7 +77,6 @@ export default function HomePage() {
           dotActiveClass="bg-accent-200"
           dotClass="bg-alabaster"
           onIndexChange={(i) => { }}
-          // NEW: handle image press by index (see step 3 for HomeNews change)
           onImagePress={(i) => {
             const a = newsToArticle[i % newsToArticle.length];
             router.push({
