@@ -1,4 +1,4 @@
-// app/(admin)/fortune-teller-verify/index.tsx
+
 import ScreenWrapper from '@/app/components/ScreenWrapper';
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -44,14 +44,12 @@ type UserDetail = {
 const getBaseURL = () =>
   Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
 
-// แผนที่สถานะ -> ข้อความไทย
 const STATUS_TH: Record<FTStatus, string> = {
   PENDING: 'รอตรวจสอบ',
   ACTIVE: 'ใช้งาน',
   INACTIVE: 'ไม่อนุมัติ',
 };
 
-// ปุ่มตัวกรองแบบไทย
 const STATUS_FILTERS: Array<{ key: 'ALL' | FTStatus; label: string }> = [
   { key: 'ALL', label: 'ทั้งหมด' },
   { key: 'PENDING', label: STATUS_TH.PENDING },
@@ -77,7 +75,6 @@ export default function VerifyFortuneTellerIndex() {
       const list = res.data ?? [];
       setItems(list);
 
-      // ดึงข้อมูลผู้ใช้ (เพื่อรูป ชื่อ อีเมล)
       const ids = Array.from(new Set(list.map((x) => x.UserID))).filter(Boolean);
       if (!ids.length) return;
 

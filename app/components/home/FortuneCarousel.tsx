@@ -1,9 +1,8 @@
-import React from "react";
 import { ScrollView } from "react-native";
 import FortuneTellerCard from "./FortuneTellerCard";
 
 type Fortune = {
-  image: any; // ImageSourcePropType
+  image: any; 
   label: string;
 };
 

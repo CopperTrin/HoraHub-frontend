@@ -1,8 +1,8 @@
-// app/(tabs)/profile/choose-role.tsx
+
 import ScreenWrapper from '@/app/components/ScreenWrapper';
 import {
-    GoogleSignin,
-    isSuccessResponse,
+  GoogleSignin,
+  isSuccessResponse,
 } from '@react-native-google-signin/google-signin';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
@@ -38,7 +38,6 @@ export default function ChooseRole() {
     if (role === 'CUSTOMER') return redirectCustomer();
     if (role === 'ADMIN') return redirectAdmin();
     if (role === 'FORTUNE_TELLER') {
-      // check status via /fortune-teller/user/{userId}
       try {
         const me = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },

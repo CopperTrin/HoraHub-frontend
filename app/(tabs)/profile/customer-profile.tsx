@@ -17,8 +17,8 @@ import HeaderBar from "../../components/ui/HeaderBar";
 /** ---- Types ---- */
 type WalletMe = {
   AccountingID: string;
-  Balance_Number: number;  // wallet balance
-  Label: string;           // "CUSTOMER"
+  Balance_Number: number;  
+  Label: string;         
   UserID: string;
 };
 
@@ -29,7 +29,6 @@ export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Wallet state
   const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
 
@@ -45,7 +44,6 @@ export default function ProfilePage() {
     try {
       return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(num);
     } catch {
-      // Fallback if Intl not available
       return `${num.toLocaleString('th-TH')} บาท`;
     }
   };

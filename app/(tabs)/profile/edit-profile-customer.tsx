@@ -94,7 +94,6 @@ export default function EditProfileCustomer() {
         return;
       }
   
-      // filename + mime
       let filename = asset.fileName || (uri.split('/').pop() ?? '');
       if (!filename.includes('.')) filename += '.jpg';
       const ext = (filename.split('.').pop() || '').toLowerCase();
@@ -102,7 +101,6 @@ export default function EditProfileCustomer() {
         asset.mimeType ||
         (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
   
-      // optimistic preview
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
   
@@ -164,7 +162,7 @@ export default function EditProfileCustomer() {
 
       const body = {
         Email: detail?.UserInfo?.Email ?? userInfo?.Email ?? '',
-        Username: detail?.Username ?? '', // kept for API compatibility
+        Username: detail?.Username ?? '', 
         Password: detail?.Password ?? '',
         FirstName: firstName ?? detail?.UserInfo?.FirstName ?? '',
         LastName: lastName ?? detail?.UserInfo?.LastName ?? '',
