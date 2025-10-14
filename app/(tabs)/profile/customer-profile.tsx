@@ -265,7 +265,7 @@ export default function ProfilePage() {
 
                 <Pressable
                   onPress={() => {
-                    router.push("/(fortune-teller)/profile/edit-profile-fortune-teller");
+                    router.push("/(tabs)/profile/edit-profile-customer");
                     setOpen(false);
                   }}
                   className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5"
