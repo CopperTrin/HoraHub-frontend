@@ -1,336 +1,194 @@
-import HistoryCardList from "@/app/components/profile/HistoryCardList";
 import ScreenWrapper from '@/app/components/ScreenWrapper';
-import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
-import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
-import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import horahub_logo from '@/assets/images/horahub.png';
-import profile_background from '@/assets/images/profile_background.png';
-import { MaterialIcons } from '@expo/vector-icons';
 import {
   GoogleSignin,
   isErrorWithCode,
   isSuccessResponse,
-  statusCodes
+  statusCodes,
 } from '@react-native-google-signin/google-signin';
-import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import HeaderBar from "../../components/ui/HeaderBar";
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 
-const getBaseURL = () => {
-  if (Platform.OS === "android") {
-    return "http://10.0.2.2:3456";
-  }
-  return "http://localhost:3456";
-};
+type Role = 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN';
+
+const getBaseURL = () =>
+  Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
 
 GoogleSignin.configure({
-  webClientId: "797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com", // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
-  // scopes: [
-  //   /* what APIs you want to access on behalf of the user, default is email and profile
-  //   this is just an example, most likely you don't need this option at all! */
-  //   'https://www.googleapis.com/auth/drive.readonly',
-  // ],
-  // offlineAccess: false, // if you want to access Google API on behalf of the user FROM YOUR SERVER
-  // hostedDomain: '', // specifies a hosted domain restriction
-  // forceCodeForRefreshToken: false, // [Android] related to `serverAuthCode`, read the docs link below *.
-  // accountName: '', // [Android] specifies an account name on the device that should be used
-  iosClientId: "797950834704-k6hgh7919oige4r5tmv6qbl1qg6s69o4.apps.googleusercontent.com", // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
-  // googleServicePlistPath: '', // [iOS] if you renamed your GoogleService-Info file, new name here, e.g. "GoogleService-Info-Staging"
-  // openIdRealm: '', // [iOS] The OpenID2 realm of the home web server. This allows Google to include the user's OpenID Identifier in the OpenID Connect ID token.
-  // profileImageSize: 120, // [iOS] The desired height (and width) of the profile image. Defaults to 120px
+  webClientId:
+    '797950834704-ld6utko8v934u4666gntlao07basljus.apps.googleusercontent.com',
+  iosClientId:
+    '797950834704-k6hgh7919oige4r5tmv6qbl1qg6s69o4.apps.googleusercontent.com',
 });
 
-export default function HomeScreen() {
-
+export default function ProfileSignIn() {
   const router = useRouter();
-
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [signingIn, setSigningIn] = useState(false);
 
-  const handleGoogleSignIn = async (role: 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN') => {
-    try {
-      console.log("Sign in");
-      await GoogleSignin.hasPlayServices();
-      console.log("hasPlayServices");
-      const response = await GoogleSignin.signIn();
-      console.log("GoogleSignin.signIn response:");
-      if (isSuccessResponse(response)) {
-        const { idToken } = response.data;
-        console.log(response.data);
-        //setUserInfo(response.data);
-        const res = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
-          idToken,
-          role, 
-        });
-        const token = res.data.access_token;
-        // Save token with SecureStore / AsyncStorage
-        await SecureStore.setItemAsync("access_token", token);
-        console.log('Server response:', res.data);
-        const profile = await axios.get(`${getBaseURL()}/users/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUserInfo(profile.data);
-        // 3. Redirect if fortune teller
-        setLoading(false);
-        if (role === 'FORTUNE_TELLER') {
-          router.replace("/(fortune-teller)/dashboard");
-        }
-        if (role === 'ADMIN') {
-          router.replace("/(admin)/profile/");
-        }
-        
-        // Navigate to the protected route
-        //router.push('/(tabs)/home');
-      } else {
-        console.log('Sign in cancelled or some other issue');
-      }
-    } catch (error) {
-      if (isErrorWithCode(error)) {
-        switch (error.code) {
-          case statusCodes.IN_PROGRESS:
-            // operation (eg. sign in) already in progress
-            Alert.alert('Sign in is in progress already');
-            break;
-          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            // Android only, play services not available or outdated
-            Alert.alert('Play services not available or outdated');
-            break;
-          default:
-          // some other error happened
-        }
-      } else {
-        // an error that's not related to google sign in occurred
-        Alert.alert('An unknown error occurred during Google sign in');
-        console.error(error);
-      }
+  const redirectCustomer = () => router.replace('/(tabs)/profile/customer-profile');
+  const redirectAdmin = () => router.replace('/(admin)/profile');
+  const redirectFortuneTellerActive = () => router.replace('/(fortune-teller)/profile');
+  const redirectFortuneTellerPending = () => router.replace('/apply-verification');
+
+  const checkFortuneTellerAndRedirect = async (token: string) => {
+    const me = await axios.get(`${getBaseURL()}/users/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const userId = me.data?.UserID;
+    if (!userId) {
+      return redirectFortuneTellerPending();
     }
-  }
-
-  const googleSignOut = async () => {
-    try {
-      // 1) Sign out from Google SDK
-      await GoogleSignin.signOut();
-
-      // 2) Optional but recommended if you want to force account re-pick next time
-      // (removes granted scopes on Google side)
-      try { await GoogleSignin.revokeAccess(); } catch { }
-
-      // 3) Remove your backend token
-      await SecureStore.deleteItemAsync('access_token');
-
-      // 4) Clear local UI state and go to login
-      setUserInfo(null);
-      setOpen(false);
-      //router.replace('/'); // or your auth screen, e.g. '/(auth)/login'
-    } catch (e) {
-      console.error('Sign out error', e);
-      Alert.alert('Sign out failed', 'Please try again.');
-    }
+    const ft = await axios.get(`${getBaseURL()}/fortune-teller/user/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const status = ft?.data?.Status;
+    if (status === 'ACTIVE') return redirectFortuneTellerActive();
+    return redirectFortuneTellerPending();
   };
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        console.log('No access token found');
-        setUserInfo(null);
-        setLoading(false);
-        return;
+  const redirectByRole = useCallback(
+    async (role: Role, token?: string) => {
+      if (role === 'CUSTOMER') return redirectCustomer();
+      if (role === 'ADMIN') return redirectAdmin();
+      if (role === 'FORTUNE_TELLER') {
+        if (token) return checkFortuneTellerAndRedirect(token);
+        const stored = await SecureStore.getItemAsync('access_token');
+        if (stored) return checkFortuneTellerAndRedirect(stored);
+        return redirectFortuneTellerPending();
       }
-      const res = await axios.get(`${getBaseURL()}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUserInfo(res.data);
-      console.log('Fetched profile:', res.data);
-      setLoading(false);
-    } catch (error: any) {
-      if (error?.response) {
-        console.log('Error fetching profile:', error.response.status, error.response.data);
-      } else {
-        console.log('Error fetching profile:', error.message || error);
-      }
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      fetchProfile();
-    }, [fetchProfile])
+    },
+    []
   );
 
-  const historyData = [
-    {
-      fortuneTellerName: "อาจารย์ไม้ร่ม",
-      status: "จองคิวแล้ว",
-      profileImage: fortune_teller_3,
-      horoscopeType: "ดูดวงลายมือ",
-      dateTime: "วันที่ 11 ก.ย. 68 เวลา 13.00-13.20",
-      price: "120 บาท",
-    },
-    {
-      fortuneTellerName: "หมอบี",
-      status: "สำเร็จ",
-      profileImage: fortune_teller_1,
-      horoscopeType: "ดูดวงความรัก",
-      dateTime: "วันที่ 15 ส.ค. 68 เวลา 14.20-14.35",
-      price: "600 บาท",
-    },
-    {
-      fortuneTellerName: "อาจารย์แดง",
-      status: "ยกเลิก",
-      profileImage: fortune_teller_2,
-      horoscopeType: "ดูดวงวันเกิด",
-      dateTime: "วันที่ 10 ส.ค. 68 เวลา 10.10-10.40",
-      price: "321 บาท",
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      const token = await SecureStore.getItemAsync('access_token');
+      const role = (await SecureStore.getItemAsync('user_role')) as Role | null;
+      if (token && role) {
+        setLoading(false);
+        return redirectByRole(role, token);
+      }
+      setLoading(false);
+    })();
+  }, [redirectByRole]);
+
+  const handleGoogleSignIn = async () => {
+    setSigningIn(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+  
+      const response = await GoogleSignin.signIn();
+  
+      if (!isSuccessResponse(response)) {
+        setSigningIn(false);
+        return;
+      }
+  
+      const { idToken } = response.data;
+      if (!idToken) throw new Error("No idToken from Google");
+  
+      await SecureStore.setItemAsync("last_id_token", idToken);
+  
+      const u: any = response.data?.user ?? {};
+      const googleId = u?.id || u?.user?.id || null;
+      const email = u?.email || u?.user?.email || null;
+      if (googleId) await SecureStore.setItemAsync("last_google_uid", String(googleId));
+  
+      try {
+        const resUsers = await axios.get(`${getBaseURL()}/users`);
+        const list: any[] = resUsers.data || [];
+        const found = list.find(
+          (x) =>
+            (googleId && x?.UserInfo?.GoogleID === String(googleId)) ||
+            (email && x?.UserInfo?.Email?.toLowerCase() === String(email).toLowerCase())
+        );
+  
+        const existingRole: Role | undefined = found?.Role?.[0];
+        if (existingRole) {
+          const resAuth = await axios.post(`${getBaseURL()}/auth/google/mobile`, {
+            idToken,
+            role: existingRole,
+          });
+  
+          const accessToken = resAuth.data.access_token;
+          await SecureStore.setItemAsync("access_token", accessToken);
+          await SecureStore.setItemAsync("user_role", existingRole);
+  
+          setSigningIn(false);
+          return redirectByRole(existingRole, accessToken);
+        }
+      } catch (err) {
+        console.log("User lookup error:", err?.message || err);
+      }
+  
+      setSigningIn(false);
+      router.replace("/(tabs)/profile/choose-role");
+    } catch (error: any) {
+      setSigningIn(false);
+  
+      if (isErrorWithCode(error)) {
+        if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
+        if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          Alert.alert("ไม่พบ Google Play Services", "โปรดอัปเดตหรือเปิดใช้งานก่อน");
+          return;
+        }
+      }
+  
+      console.log("Google sign-in error:", error?.message || error);
+      Alert.alert("เข้าสู่ระบบล้มเหลว", "โปรดลองอีกครั้ง");
+    }
+  };
+  
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-primary-200">
         <ActivityIndicator size="large" color="#fff" />
-        <Text className="text-white font-sans-semibold mt-2.5">Loading…</Text>
+        <Text className="text-white font-sans-semibold mt-2.5">
+          กำลังโหลด...
+        </Text>
       </View>
     );
   }
 
   return (
     <ScreenWrapper>
-      <View>
-        {userInfo ? (
-          <View>
-            <ScrollView className="mb-20" bounces={false} overScrollMode="never">
-              <HeaderBar title="Customer" showChat />
-              <View className='relative h-64'>
-                <Image
-                  source={profile_background}
-                  style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-                />
-                <Pressable
-                  onPress={() => setOpen(true)}
-                  style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
-                  android_ripple={{ color: '#00000022', borderless: true }}
-                  className="self-end mr-4 mt-4"
-                >
-                  <MaterialIcons name="settings" size={28} color="white" />
-                </Pressable>
+      <View className="flex-1 justify-center items-center gap-8">
+        <View className="items-center">
+          <Image source={horahub_logo} className="w-28 h-28 mb-6" />
+          <Text className="text-white font-sans-semibold text-3xl">
+            ยินดีต้อนรับสู่ Horahub
+          </Text>
+          <Text className="text-white font-sans-semibold text-xl">
+            เข้าสู่ระบบด้วยบัญชี Google
+          </Text>
+        </View>
 
-
-                <View className='absolute left-7 top-12'>
-                  <Image
-                    source={{ uri: userInfo.PictureURL }}
-                    style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
-                  />
-                  <Text
-                    className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {userInfo.FirstName} {userInfo.LastName}
-                  </Text>
-
-                </View>
-              </View>
-
-              <View className='mx-4 my-5 flex-col gap-6'>
-                <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-                <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-                <HistoryCardList items={historyData} />
-              </View>
-
-            </ScrollView>
-            <Modal
-              visible={open}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setOpen(false)}
-            >
-              {/* Dimmed backdrop */}
-              <Pressable
-                onPress={() => setOpen(false)}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.35)',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                {/* Stop backdrop tap from closing when pressing content */}
-                <Pressable
-                  onPress={() => { }}
-                  className="bg-primary-200"
-                  style={{
-                    width: '85%',
-                    borderRadius: 16,
-                    padding: 16,
-                    gap: 12
-                  }}
-                >
-                  <View className="flex flex-row w-full justify-center relative  p-2">
-                    <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
-                    <Pressable
-                      onPress={() => setOpen(false)}
-                      className="absolute right-0 top-0 p-2"
-                    >
-                      <MaterialIcons name="close" size={24} color="white" />
-                    </Pressable>
-                  </View>
-
-                  {/* Your settings actions */}
-                  <Pressable onPress={() => { 
-                    router.push("/profile/edit-profile-customer");
-                    setOpen(false);}}
-                    className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5">
-                    <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>
-                    <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
-                  </Pressable>
-                  <Pressable onPress={googleSignOut} className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24">
-                    <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
-                    <MaterialIcons name="logout" size={24} color="black" />
-                  </Pressable>
-
-                </Pressable>
-              </Pressable>
-            </Modal>
-          </View>
-        ) : (
-          <View className='flex justify-center items-center w-full h-full gap-8'>
-            <View className='flex justify-center items-center'>
-              <Image
-                source={horahub_logo}
-                className='w-28 h-28 mb-8'
-              />
-              <Text className='text-white font-sans-semibold text-3xl'>ยินดีต้อนรับสู่ Horahub</Text>
-              <Text className='text-white font-sans-semibold text-xl'>เข้าสู่ระบบด้วยบัญชีของคุณ</Text>
-            </View>
-
-            <TouchableOpacity
-              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
-              onPress={() => handleGoogleSignIn('CUSTOMER')}
-            >
-              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Customer</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center"
-              onPress={() => handleGoogleSignIn('FORTUNE_TELLER')}
-            >
-              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Fortune teller</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-accent-200 px-6 py-3 rounded-lg w-96 h-16 flex justify-center items-center  mb-32"
-              onPress={() => handleGoogleSignIn('ADMIN')}
-            >
-              <Text className="text-blackpearl text-xl font-sans-semibold">เข้าสู่ระบบด้วย Admin</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <Pressable
+          disabled={signingIn}
+          onPress={handleGoogleSignIn}
+          className="bg-accent-200 px-6 py-3 rounded-lg w-80 h-14 items-center justify-center"
+        >
+          {signingIn ? (
+            <ActivityIndicator />
+          ) : (
+            <Text className="text-black text-lg font-sans-semibold">
+              เข้าสู่ระบบด้วย Google
+            </Text>
+          )}
+        </Pressable>
       </View>
     </ScreenWrapper>
   );

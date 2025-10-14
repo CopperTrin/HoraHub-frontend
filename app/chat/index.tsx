@@ -1,80 +1,97 @@
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import axios from "axios";
 import { navigate } from "expo-router/build/global-state/routing";
-import { useEffect, useState } from "react";
-import { FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { FlatList, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "../components/ui/HeaderBar";
-
-interface ChatItem {
-  id: string;
-  name: string;
-  avatar: string;
-  lastmessage: string;
-  lastdate: string;
-}
+import fcomponent from "../fcomponent";
+import { ChatRoomInfo } from "./chatroom_info";
+import { Message } from "./message_info";
+import profile from "./my_profile";
 
 const ChatList = () => {
   const [search, setSearch] = useState("");
-  const [chats, setChats] = useState<ChatItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [chats, setChats] = useState<ChatRoomInfo[]>([]);
+  const chatListRef = useRef<[] | null>(null);
 
-  // โหลดข้อมูลจาก backend
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const response = await fetch("https://api.example.com/chats"); // 👈 เปลี่ยนเป็น endpoint จริง
-        const data = await response.json();
-        setChats(data); // backend ควรส่ง { id, name, avatar, lastMessage, lastDate }
+  const fetchChats = async () => {
+    try {
+      const token = await fcomponent.getToken();
+      const response = await axios.get(`${fcomponent.getBaseURL()}/chat-conversations`, {headers: { Authorization: `Bearer ${token}` }});
+      if (chatListRef.current === response.data) {
+        return; // ไม่มีการเปลี่ยนแปลง
+      }
+      chatListRef.current = response.data;
+      setChats(response.data);
       } catch (error) {
         console.error("Error fetching chats:", error);
-      } finally {
-        setLoading(false);
-        setChats([
-  {
-    "id": "1",
-    "name": "หมอนี",
-    "avatar": "https://server.com/avatar1.png",
-    "lastmessage": "Sent an attachment",
-    "lastdate": "31/08"
-  },
-  {
-    "id": "1",
-    "name": "ลุงเจี๊ยบ",
-    "avatar": "https://server.com/avatar2.png",
-    "lastmessage": "สวัสดีครับ",
-    "lastdate": "16/08"
-  },
-]);
       }
-    };
-
+  };
+  useEffect(() => {
     fetchChats();
+    const interval = setInterval(fetchChats, 5000); // 5 วินาที
+    return () => clearInterval(interval);
   }, []);
 
-  const filteredChats = chats.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter chats by searching participant usernames (checks any participant's username)
+  const myUsername = profile.useMyUsername();
+  const filteredChats = chats.filter((c) => {
+    if (!search) return true;
 
-  const renderItem = ({ item }: {item:ChatItem}) => (
-    <TouchableOpacity
-      className="flex-row items-center justify-between px-4 py-3 border-b border-blackpearl"
-      //onPress={() => navigation.navigate("ChatRoom", { chatId: item.id })}
-      onPress={() => navigate("../chat/chat_screen")}
-    >
-      <View className="flex-row items-center">
-        <Image
-          source={{ uri: item.avatar }}
-          className="w-10 h-10 rounded-full mr-3"
-        />
-        <View>
-          <Text className="text-alabaster font-semibold">{item.name}</Text>
-          <Text className="text-gray-400 text-sm">{item.lastmessage}</Text>
+    const others = c?.Participants?.find((p) => p.User.Username !== myUsername)
+      ?? c?.Participants?.[1]
+      ?? c?.Participants?.[0];
+
+    const searchLower = search.toLowerCase();
+
+    return others?.User?.Username?.toLowerCase().includes(searchLower);
+  });
+
+  const other = (item: ChatRoomInfo, myUsername: string) => {
+    if (!item?.Participants || !myUsername) return null;
+    const found = item.Participants.find(
+      (p) => p?.User?.Username?.toLowerCase() !== myUsername.toLowerCase()
+    );
+    return found ?? null;
+  };
+
+  const renderMessage = (item: Message) => {
+    if (item.Content.length > 30)
+      return item.Content.slice(0, 30)+"..."
+    return item.Content
+  }
+
+  const renderItem = ({ item }: {item:ChatRoomInfo}) => {
+    const otherUser = other(item, myUsername || '');
+    if (!otherUser) return null;
+    return (
+      <TouchableOpacity
+        className="flex-row items-center justify-between px-4 py-3 border-b border-blackpearl"
+        onPress={() => navigate(`../chat/chat_screen?chatId=${item.ConversationID}`)}
+      >
+        <View className="flex-row items-center">
+          <Image
+            source={{ uri: otherUser?.User.UserInfo.PictureURL ?? "" }}
+            className="w-16 h-16 rounded-full mr-3"
+          />
+          <View>
+            <Text className="text-alabaster text-xl font-semibold">{otherUser?.User.Username.slice(0, 25)}</Text>
+            <Text className="text-gray-400 text-sm" numberOfLines={1}>
+              {item.Messages?.length > 0 ? (
+              item.Messages[item.Messages.length - 1].MessageType === "IMAGE"
+              ? "Sent a photo"
+              : renderMessage(item.Messages[item.Messages.length - 1])) : ("No messages yet")}
+            </Text>
+          </View>
         </View>
-      </View>
-      <Text className="text-gray-400 text-xs">{item.lastdate}</Text>
-    </TouchableOpacity>
-  );
+        <Text className="text-gray-400 text-s">
+          {fcomponent.formatChatTime(item.UpdatedAt)}
+        </Text>
+      </TouchableOpacity>
+    )
+  };
 
   return (
     <ScreenWrapper>
@@ -99,13 +116,11 @@ const ChatList = () => {
       </View>
 
       {/* Chat list */}
-      <ScrollView>
         <FlatList
           data={filteredChats}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.ConversationID}
         />
-      </ScrollView>
     </ScreenWrapper>
   );
 };

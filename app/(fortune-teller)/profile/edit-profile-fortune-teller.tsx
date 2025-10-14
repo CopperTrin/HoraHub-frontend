@@ -32,14 +32,13 @@ export default function EditProfileFortuneTeller() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [bio, setBio] = useState(''); 
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndBio = async () => {
       try {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
-          console.log('No access token — redirecting to /profile');
-          setLoading(false);
           router.replace('/profile');
           return;
         }
@@ -47,23 +46,27 @@ export default function EditProfileFortuneTeller() {
         const res = await axios.get(`${getBaseURL()}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         setUserInfo(res.data);
         setEmail(res.data?.Email ?? '');
         setFirstName(res.data?.FirstName ?? '');
         setLastName(res.data?.LastName ?? '');
-      } catch (error: any) {
-        if (error?.response) {
-          console.log('Error fetching profile:', error.response.status, error.response.data);
-        } else {
-          console.log('Error fetching profile:', error.message || error);
+
+        try {
+          const ft = await axios.get(`${getBaseURL()}/fortune-teller/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (ft.data?.Bio) setBio(ft.data.Bio);
+        } catch (err) {
+          console.log('No fortune-teller bio yet');
         }
+      } catch (error: any) {
+        console.log('Error fetching profile:', error?.response?.data || error?.message || error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchProfileAndBio();
   }, []);
 
   const pickAndUploadPicture = async () => {
@@ -75,7 +78,7 @@ export default function EditProfileFortuneTeller() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaType.Image],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.9,
@@ -83,22 +86,26 @@ export default function EditProfileFortuneTeller() {
       if (result.canceled || !result.assets?.length) return;
 
       const asset = result.assets[0];
-      const uri = asset.uri;
+      let uri = asset.uri;
+      if (uri && !uri.startsWith('file://') && !uri.startsWith('content://')) {
+        uri = `file://${uri}`;
+      }
+
       const exists = await FileSystem.getInfoAsync(uri);
       if (!exists.exists) {
         Alert.alert('File error', 'Selected file not found.');
         return;
       }
 
-      const filename =
-        asset.fileName || uri.split('/').pop() || `avatar_${Date.now()}.jpg`;
-      let type = asset.mimeType || 'image/jpeg';
+      let filename = asset.fileName || (uri.split('/').pop() ?? '');
+      if (!filename.includes('.')) filename += '.jpg';
+      const ext = (filename.split('.').pop() || '').toLowerCase();
+      const mime =
+        asset.mimeType ||
+        (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
 
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
-
-      const form = new FormData();
-      form.append('file', { uri, name: filename, type } as any);
 
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) {
@@ -107,14 +114,28 @@ export default function EditProfileFortuneTeller() {
         return;
       }
 
-      await axios.patch(`${getBaseURL()}/users/profile/picture`, form, {
-        headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
+      const filePart = { uri, name: filename, type: mime } as any;
+      const form = new FormData();
+      form.append('file', filePart);
+
+      const res = await fetch(`${getBaseURL()}/users/profile/picture`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: '*/*',
+        },
+        body: form,
       });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
+      }
 
       Alert.alert('Success', 'Profile picture updated.');
     } catch (e: any) {
-      console.log('Upload error:', e?.response?.data || e?.message || e);
-      Alert.alert('Upload failed', 'Please try a different image.');
+      console.log('Upload error:', e?.message || e);
+      Alert.alert('Upload failed', 'Network request failed. Try again.');
     } finally {
       setUploadingPic(false);
     }
@@ -143,7 +164,7 @@ export default function EditProfileFortuneTeller() {
 
       const body = {
         Email: detail?.UserInfo?.Email ?? userInfo?.Email ?? '',
-        Username: detail?.Username ?? '', // kept for API compatibility
+        Username: detail?.Username ?? '',
         Password: detail?.Password ?? '',
         FirstName: firstName ?? detail?.UserInfo?.FirstName ?? '',
         LastName: lastName ?? detail?.UserInfo?.LastName ?? '',
@@ -159,6 +180,19 @@ export default function EditProfileFortuneTeller() {
           Accept: '*/*',
         },
       });
+
+      const payloadBio = (bio ?? '').trim().slice(0, 1000);
+      await axios.patch(
+        `${getBaseURL()}/fortune-teller/me`,
+        { Bio: payloadBio },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: '*/*',
+          },
+        }
+      );
 
       Alert.alert('Saved', 'Your profile was updated.');
       router.back();
@@ -186,7 +220,6 @@ export default function EditProfileFortuneTeller() {
         className="flex-1"
       >
         <ScrollView contentContainerClassName="pb-10">
-          {/* Header */}
           <View className="bg-primary-200">
             <View className="flex flex-row h-auto items-center p-2.5">
               <Pressable onPress={() => router.back()} className="p-2">
@@ -197,7 +230,6 @@ export default function EditProfileFortuneTeller() {
               </Text>
             </View>
 
-            {/* Avatar */}
             <View className="relative w-32 h-32 self-center mt-6 mb-6">
               <Image source={{ uri: userInfo?.PictureURL }} className="w-32 h-32 rounded-full" />
               <Pressable
@@ -214,9 +246,7 @@ export default function EditProfileFortuneTeller() {
             </View>
           </View>
 
-          {/* Form */}
           <View className="px-4 gap-3 mt-4">
-            {/* First Name */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">ชื่อจริง</Text>
               <TextInput
@@ -228,7 +258,6 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Last Name */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">นามสกุล</Text>
               <TextInput
@@ -240,7 +269,6 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Email (read-only) */}
             <View className="gap-1">
               <Text className="text-white/80 font-sans-semibold">อีเมล</Text>
               <TextInput
@@ -251,7 +279,25 @@ export default function EditProfileFortuneTeller() {
               />
             </View>
 
-            {/* Save button */}
+            {/* Bio with preloaded value */}
+            <View className="gap-1">
+              <Text className="text-white/80 font-sans-semibold">คำบรรยาย (Bio)</Text>
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="เล่าความเชี่ยวชาญ ประสบการณ์ และแนวทางการพยากรณ์ของคุณ"
+                placeholderTextColor="#BEBFC3"
+                className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                editable={!saving}
+              />
+              <Text className="text-white/50 text-xs self-end mt-1">
+                {bio?.length ?? 0}/1000
+              </Text>
+            </View>
+
             <Pressable
               onPress={saving ? undefined : handleSave}
               disabled={saving}
@@ -259,11 +305,7 @@ export default function EditProfileFortuneTeller() {
                 saving ? 'bg-accent-200/50' : 'bg-accent-200'
               }`}
             >
-              {saving ? (
-                <ActivityIndicator />
-              ) : (
-                <Text className="font-sans-semibold">ยืนยัน</Text>
-              )}
+              {saving ? <ActivityIndicator /> : <Text className="font-sans-semibold">ยืนยัน</Text>}
             </Pressable>
           </View>
         </ScrollView>

@@ -1,21 +1,20 @@
-import React from "react";
 import { Image, ImageBackground, ImageSourcePropType, Text, View } from "react-native";
 
 type PodiumItem = {
   image: ImageSourcePropType;
   name: string;
-  rank: 1 | 2 | 3;  // tighten the type so we can map heights safely
+  rank: 1 | 2 | 3;  
   color: string;
 };
 
 type Props = {
   background: ImageSourcePropType;
-  items: PodiumItem[]; // [second, first, third] or any order — we’ll render in given order
-  useGap?: boolean;     // fallback if gap isn't supported in your setup
+  items: PodiumItem[]; 
+  useGap?: boolean;     
 };
 
 export default function RankingPodium({ background, items, useGap = true }: Props) {
-  // Map rank to a block height (adjust as you like)
+
   const heightByRank: Record<PodiumItem["rank"], string> = {
     1: "h-20",
     2: "h-16",

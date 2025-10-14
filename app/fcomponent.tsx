@@ -1,0 +1,44 @@
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from "react-native";
+
+const getBaseURL = () => {
+    if (Platform.OS === "android") {
+      return "http://10.0.2.2:3456";
+    }
+    return "http://localhost:3456";
+  };
+
+const getToken = async () => {
+    const token = await SecureStore.getItemAsync('access_token');
+    if (!token) {
+        console.log('No access token found');
+        return;
+    }
+    return token;}
+
+const formatChatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    // ถ้าเป็นวันนี้ → แสดงเวลา เช่น "14:30"
+    return date.toLocaleTimeString("th-TH", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else {
+    // ถ้าไม่ใช่วันนี้ → แสดงวันที่ เช่น "8 ต.ค. 2025"
+    return date.toLocaleDateString("th-TH", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
+  }
+};
+
+export default { getBaseURL, getToken, formatChatTime };

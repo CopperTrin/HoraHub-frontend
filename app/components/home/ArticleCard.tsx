@@ -1,4 +1,3 @@
-import React from "react";
 import { Image, ImageSourcePropType, Pressable, Text, View } from "react-native";
 
 type Props = {
@@ -6,8 +5,8 @@ type Props = {
   title: string;
   author: string;
   onPress?: () => void;
-  width?: number;  // default 320 (w-80)
-  height?: number; // default 256 (h-64)
+  width?: number;  
+  height?: number; 
 };
 
 export default function ArticleCard({
