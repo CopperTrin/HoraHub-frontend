@@ -14,10 +14,11 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
+/** ---- Types ---- */
 type WalletMe = {
   AccountingID: string;
-  Balance_Number: number;
-  Label: string;
+  Balance_Number: number;  
+  Label: string;         
   UserID: string;
 };
 
@@ -25,15 +26,16 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [fortuneTeller, setFortuneTeller] = useState<any>(null);
-  const [wallet, setWallet] = useState<WalletMe | null>(null);
-
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
 
   const getBaseURL = () => {
-    if (Platform.OS === "android") return "http://10.0.2.2:3456";
+    if (Platform.OS === "android") {
+      return "http://10.0.2.2:3456";
+    }
     return "http://localhost:3456";
   };
 
@@ -50,11 +52,11 @@ export default function ProfilePage() {
     try {
       await GoogleSignin.signOut();
       try { await GoogleSignin.revokeAccess(); } catch { }
+      setUserInfo(null);
+      setOpen(false);
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_role');
       await SecureStore.deleteItemAsync('last_id_token');
-      setUserInfo(null);
-      setOpen(false);
       router.replace('/(tabs)/profile');
     } catch (e) {
       console.error('Sign out error', e);
@@ -65,41 +67,48 @@ export default function ProfilePage() {
   const fetchProfile = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
+      if (!token) {
+        console.log('No access token found');
+        setUserInfo(null);
+        setLoading(false);
+        return;
+      }
       const res = await axios.get(`${getBaseURL()}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
+      console.log('Fetched profile:', res.data);
+      setLoading(false);
     } catch (error: any) {
-      console.log('Error fetching profile:', error?.response?.data || error.message);
+      if (error?.response) {
+        console.log('Error fetching profile:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching profile:', error.message || error);
+      }
+      setLoading(false);
     }
   }, []);
 
-  const fetchFortuneTellerMe = useCallback(async () => {
-    try {
-      const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      const res = await axios.get(`${getBaseURL()}/fortune-teller/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFortuneTeller(res.data);
-    } catch (error: any) {
-      console.log('Error fetching fortune teller:', error?.response?.data || error.message);
-    }
-  }, []);
-
-  /** NEW: Fetch fortune-teller wallet */
+  /** Fetch wallet balance: GET /accounting/customer/me */
   const fetchWallet = useCallback(async () => {
     setWalletLoading(true);
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) return;
-      const res = await axios.get<WalletMe>(`${getBaseURL()}/accounting/fortune-teller/me`, {
+      if (!token) {
+        setWallet(null);
+        setWalletLoading(false);
+        return;
+      }
+      const res = await axios.get<WalletMe>(`${getBaseURL()}/accounting/customer/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWallet(res.data);
     } catch (error: any) {
-      console.log('Error fetching wallet:', error?.response?.data || error.message);
+      if (error?.response) {
+        console.log('Error fetching wallet:', error.response.status, error.response.data);
+      } else {
+        console.log('Error fetching wallet:', error.message || error);
+      }
       setWallet(null);
     } finally {
       setWalletLoading(false);
@@ -108,12 +117,10 @@ export default function ProfilePage() {
 
   useFocusEffect(
     useCallback(() => {
-      (async () => {
-        setLoading(true);
-        await Promise.all([fetchProfile(), fetchFortuneTellerMe(), fetchWallet()]);
-        setLoading(false);
-      })();
-    }, [fetchProfile, fetchFortuneTellerMe, fetchWallet])
+      setLoading(true);
+      fetchProfile();
+      fetchWallet();
+    }, [fetchProfile, fetchWallet])
   );
 
   const historyData = [
@@ -157,9 +164,12 @@ export default function ProfilePage() {
       {userInfo ? (
         <View>
           <ScrollView className="mb-20" bounces={false} overScrollMode="never">
-            <HeaderBar title="Fortune Teller" showChat />
+            <HeaderBar title="Customer" showChat />
             <View className='relative h-64'>
-              <Image source={profile_background} style={{ width: '100%', height: 150, resizeMode: 'cover' }} />
+              <Image
+                source={profile_background}
+                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
+              />
               <Pressable
                 onPress={() => setOpen(true)}
                 style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
@@ -174,7 +184,11 @@ export default function ProfilePage() {
                   source={{ uri: userInfo.PictureURL }}
                   style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
                 />
-                <Text className='text-white font-sans-semibold text-2xl max-w-[256px]' numberOfLines={1}>
+                <Text
+                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {userInfo.FirstName} {userInfo.LastName}
                 </Text>
               </View>
@@ -184,7 +198,7 @@ export default function ProfilePage() {
 
               {/* Wallet Card */}
               <Pressable
-                onPress={() => router.push("/wallet-fortune-teller")}
+                onPress={() => router.push("/wallet-customer")}
                 className="bg-accent-200 rounded-2xl p-4"
               >
                 <View className="flex-row items-center justify-between">
@@ -202,12 +216,11 @@ export default function ProfilePage() {
                 </View>
               </Pressable>
 
-              <Text className='text-white text-xl font-sans-medium' numberOfLines={1}>
+              <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">
                 อีเมล : {userInfo.Email}
               </Text>
-
               <Text className='text-white text-xl font-sans-medium'>
-                Bio : {fortuneTeller?.Bio ? fortuneTeller.Bio : '—'}
+                Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง
               </Text>
 
               <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
@@ -215,26 +228,44 @@ export default function ProfilePage() {
             </View>
           </ScrollView>
 
-          <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+          <Modal
+            visible={open}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setOpen(false)}
+          >
             <Pressable
               onPress={() => setOpen(false)}
-              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.35)',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
               <Pressable
                 onPress={() => { }}
                 className="bg-primary-200"
-                style={{ width: '85%', borderRadius: 16, padding: 16, gap: 12 }}
+                style={{
+                  width: '85%',
+                  borderRadius: 16,
+                  padding: 16,
+                  gap: 12
+                }}
               >
                 <View className="flex flex-row w-full justify-center relative  p-2">
                   <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
-                  <Pressable onPress={() => setOpen(false)} className="absolute right-0 top-0 p-2">
+                  <Pressable
+                    onPress={() => setOpen(false)}
+                    className="absolute right-0 top-0 p-2"
+                  >
                     <MaterialIcons name="close" size={24} color="white" />
                   </Pressable>
                 </View>
 
                 <Pressable
                   onPress={() => {
-                    router.push("/(fortune-teller)/profile/edit-profile-fortune-teller");
+                    router.push("/(tabs)/profile/edit-profile-customer");
                     setOpen(false);
                   }}
                   className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5"
@@ -243,10 +274,7 @@ export default function ProfilePage() {
                   <MaterialIcons name="arrow-forward-ios" size={24} color="white" />
                 </Pressable>
 
-                <Pressable
-                  onPress={googleSignOut}
-                  className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24"
-                >
+                <Pressable onPress={googleSignOut} className="flex flex-row justify-center gap-2 bg-accent-200 w-full h-12 rounded-lg p-2.5 mt-24">
                   <Text className="text-blackpearl font-sans-semibold text-xl self-center">ออกจากระบบ</Text>
                   <MaterialIcons name="logout" size={24} color="black" />
                 </Pressable>

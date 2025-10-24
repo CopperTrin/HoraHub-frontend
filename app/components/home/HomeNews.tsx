@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Dimensions,
   Image,
@@ -14,9 +14,9 @@ const { width: screenWidth } = Dimensions.get("window");
 
 type Props = {
   images: ImageSourcePropType[];
-  height?: number;                 // default 240
-  dotActiveClass?: string;         // tailwind class for active dot
-  dotClass?: string;               // tailwind class for inactive dot
+  height?: number;                
+  dotActiveClass?: string;       
+  dotClass?: string;              
   onIndexChange?: (i: number) => void;
   onImagePress?: (index: number) => void;
 };

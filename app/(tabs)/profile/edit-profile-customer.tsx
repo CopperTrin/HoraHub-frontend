@@ -73,48 +73,67 @@ export default function EditProfileCustomer() {
         Alert.alert('Permission required', 'Please allow photo library access.');
         return;
       }
-
+  
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaType.Image],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.9,
       });
       if (result.canceled || !result.assets?.length) return;
-
+  
       const asset = result.assets[0];
-      const uri = asset.uri;
+      let uri = asset.uri;
+      if (uri && !uri.startsWith('file://') && !uri.startsWith('content://')) {
+        uri = `file://${uri}`;
+      }
+  
       const exists = await FileSystem.getInfoAsync(uri);
       if (!exists.exists) {
         Alert.alert('File error', 'Selected file not found.');
         return;
       }
-
-      const filename =
-        asset.fileName || uri.split('/').pop() || `avatar_${Date.now()}.jpg`;
-      let type = asset.mimeType || 'image/jpeg';
-
+  
+      let filename = asset.fileName || (uri.split('/').pop() ?? '');
+      if (!filename.includes('.')) filename += '.jpg';
+      const ext = (filename.split('.').pop() || '').toLowerCase();
+      const mime =
+        asset.mimeType ||
+        (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
+  
       setUserInfo((prev: any) => ({ ...prev, PictureURL: uri }));
       setUploadingPic(true);
-
-      const form = new FormData();
-      form.append('file', { uri, name: filename, type } as any);
-
+  
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) {
         Alert.alert('Session expired', 'Please sign in again.');
         router.replace('/profile');
         return;
       }
-
-      await axios.patch(`${getBaseURL()}/users/profile/picture`, form, {
-        headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
+  
+      const filePart = { uri, name: filename, type: mime } as any;
+  
+      const form = new FormData();
+      form.append('file', filePart);
+  
+      const res = await fetch(`${getBaseURL()}/users/profile/picture`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: '*/*',
+        },
+        body: form,
       });
-
+  
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} ${res.statusText} ${txt}`);
+      }
+  
       Alert.alert('Success', 'Profile picture updated.');
     } catch (e: any) {
-      console.log('Upload error:', e?.response?.data || e?.message || e);
-      Alert.alert('Upload failed', 'Please try a different image.');
+      console.log('Upload error:', e?.message || e);
+      Alert.alert('Upload failed', 'Network request failed. Try again.');
     } finally {
       setUploadingPic(false);
     }
@@ -143,7 +162,7 @@ export default function EditProfileCustomer() {
 
       const body = {
         Email: detail?.UserInfo?.Email ?? userInfo?.Email ?? '',
-        Username: detail?.Username ?? '', // kept for API compatibility
+        Username: detail?.Username ?? '', 
         Password: detail?.Password ?? '',
         FirstName: firstName ?? detail?.UserInfo?.FirstName ?? '',
         LastName: lastName ?? detail?.UserInfo?.LastName ?? '',
@@ -151,7 +170,7 @@ export default function EditProfileCustomer() {
         GoogleID: detail?.UserInfo?.GoogleID ?? userInfo?.GoogleID ?? '',
         Role: Array.isArray(detail?.Role) ? detail.Role : [],
       };
-
+      console.log('Saving profile with body:', body);
       await axios.patch(`${getBaseURL()}/users/me`, body, {
         headers: {
           Authorization: `Bearer ${token}`,
