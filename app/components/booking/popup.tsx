@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Calendar, LocaleConfig, DateObject } from "react-native-calendars";
-import { useRouter } from "expo-router";
 
 // ----- Thai locale -----
 LocaleConfig.locales.th = {
@@ -21,69 +20,42 @@ const toThaiDisplay = (iso: string) => {
 const monthThaiBE = (date: Date) =>
   `${String(date.getMonth()+1).padStart(2,"0")} / ${date.getFullYear()+543}`;
 
-// ----- types -----
-type Teller = {
-  id: string;
-  name: string;
-  price?: number;    // บาท
-  minutes?: number;  // ระยะเวลา
-  detail?: string;   // คำอธิบายใต้ชื่อ
-};
-
 type BookingModalProps = {
   visible: boolean;
   onClose: () => void;
+  // ส่งกลับวันที่แบบไทย (DD / MM / YYYY พ.ศ.) และ time = "" (ค่าว่าง)
   onSelect: (date: string, time: string) => void;
-  teller: Teller; // ต้องส่งเข้ามา
+  // เริ่มต้นที่วันไหน (ถ้าไม่ส่งมา จะเป็นวันนี้)
+  initialDateISO?: string; // รูปแบบ YYYY-MM-DD
 };
 
-// ----- sample slots -----
-const availableTimes = [
-  ["18:20", "18:40", "19:00"],
-  ["19:20", "19:40", "20:00"],
-  ["20:20", "20:40", "21:00"],
-  ["21:20", "21:40", "22:00"],
-];
-
-export default function BookingModal({ visible, onClose, onSelect, teller }: BookingModalProps) {
-  const router = useRouter();
-
-  // default ตรงกับภาพตัวอย่าง
-  const [selectedISO, setSelectedISO] = useState("2025-09-12");
+export default function BookingModal({
+  visible,
+  onClose,
+  onSelect,
+  initialDateISO,
+}: BookingModalProps) {
+  // default ISO วันนี้
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const [selectedISO, setSelectedISO] = useState(initialDateISO ?? todayISO);
   const [showCalendar, setShowCalendar] = useState(true);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const markedDates = useMemo(
-    () => ({ [selectedISO]: { selected: true, selectedColor: "#E7D3A3", selectedTextColor: "#1E1A2E" } }),
+    () => ({
+      [selectedISO]: {
+        selected: true,
+        selectedColor: "#E7D3A3",
+        selectedTextColor: "#1E1A2E",
+      },
+    }),
     [selectedISO]
   );
 
   const onDayPress = (day: DateObject) => setSelectedISO(day.dateString);
 
-  // ---- กดปุ่ม Booking ใน popup แล้ว push ไปหน้า confirm ----
-  const handleBooking = () => {
-    if (!selectedTime) return;
-    if (!teller) {
-      console.warn("BookingModal: 'teller' prop is missing");
-      return;
-    }
-
+  const handleConfirm = () => {
     const dateDisplay = toThaiDisplay(selectedISO);
-    onSelect(dateDisplay, selectedTime); // เผื่อหน้าเดิมอยากเก็บ state
-
-    router.push({
-      pathname: "/(tabs)/p2p/confirm",
-      params: {
-        id: teller.id,
-        name: teller.name,
-        price: String(teller.price ?? 20),
-        minutes: String(teller.minutes ?? 10),
-        detail: teller.detail ?? "ดูดวงชะตาตามวันเดือนปีเกิด",
-        date: dateDisplay,
-        time: selectedTime,
-      },
-    });
-
+    onSelect(dateDisplay, ""); // เวลาเป็นค่าว่าง
     onClose();
   };
 
@@ -93,13 +65,13 @@ export default function BookingModal({ visible, onClose, onSelect, teller }: Boo
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>เลือกเวลาที่ต้องการจอง</Text>
+            <Text style={styles.title}>เลือกวันที่</Text>
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.close}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Selected date */}
+          {/* Selected date (toggle calendar) */}
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.dateBox}
@@ -139,35 +111,9 @@ export default function BookingModal({ visible, onClose, onSelect, teller }: Boo
             </View>
           )}
 
-          {/* Time slots */}
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {availableTimes.map((row, idx) => (
-              <View key={idx} style={styles.row}>
-                {row.map((t) => {
-                  const selected = selectedTime === t;
-                  return (
-                    <TouchableOpacity
-                      key={t}
-                      style={[styles.timeBox, selected && styles.timeBoxSelected]}
-                      onPress={() => setSelectedTime(t)}
-                    >
-                      <Text style={[styles.timeText, selected && styles.timeTextSelected]}>{t}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
-            <View style={{ height: 8 }} />
-          </ScrollView>
-
-          {/* Booking button */}
-          <TouchableOpacity
-            style={[styles.bookingBtn, !selectedTime && { opacity: 0.6 }]}
-            disabled={!selectedTime}
-            onPress={handleBooking}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.bookingText}>Booking</Text>
+          {/* Confirm button */}
+          <TouchableOpacity onPress={handleConfirm} activeOpacity={0.9} style={styles.confirmBtn}>
+            <Text style={styles.confirmText}>ยืนยันวันที่</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -186,11 +132,6 @@ const styles = StyleSheet.create({
   calendarWrapper: { backgroundColor: "#151322", borderRadius: 16, padding: 10, marginBottom: 12 },
   calendar: { backgroundColor: "transparent", borderRadius: 12 },
   calHeader: { color: "#E7D3A3", fontWeight: "700", textAlign: "center", fontSize: 16, paddingVertical: 6 },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  timeBox: { backgroundColor: "#FFFFFF", paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14, minWidth: 86, alignItems: "center" },
-  timeText: { color: "#1E1A2E", fontWeight: "700" },
-  timeBoxSelected: { backgroundColor: "#E7D3A3" },
-  timeTextSelected: { color: "#1E1A2E" },
-  bookingBtn: { backgroundColor: "#9b5de5", paddingVertical: 14, borderRadius: 12, marginTop: 8 },
-  bookingText: { textAlign: "center", color: "#fff", fontWeight: "700" },
+  confirmBtn: { backgroundColor: "#9b5de5", paddingVertical: 14, borderRadius: 12, marginTop: 8 },
+  confirmText: { textAlign: "center", color: "#fff", fontWeight: "700" },
 });
