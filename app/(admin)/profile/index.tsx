@@ -68,6 +68,7 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
+      console.log(token)
       console.log('Fetched profile:', res.data);
       setLoading(false);
     } catch (error: any) {

@@ -1,34 +1,52 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
-import HeaderBar from "../../components/ui/HeaderBar";
-
-// --- Demo images ---
-import p2p_user_1 from "@/assets/images/p2p/ft2.png";
-import p2p_user_2 from "@/assets/images/p2p/ft2.png";
-import p2p_user_3 from "@/assets/images/p2p/ft2.png";
-import p2p_user_4 from "@/assets/images/p2p/ft2.png";
+import HeaderBar from "@/app/components/ui/HeaderBar";
 
 // ===== Types =====
-type Provider = {
-  id: string;
-  name: string;
-  imageUrl: any;
-  rating: number;
-  servicesOffered: string[];
+type Category = {
+  CategoryID: string;
+  Category_name: string;
+  Category_type: string;
 };
 
-// ===== Mock Data =====
-const providers: Provider[] = [
-  { id: "1", name: "Dr.ช้าง ทศพร", imageUrl: p2p_user_1, rating: 4.8, servicesOffered: ["โหราศาสตร์ไทย", "ไพ่ทาโรต์"] },
-  { id: "2", name: "Dr.ลักษณ์ ราชสีห์", imageUrl: p2p_user_2, rating: 5.0, servicesOffered: ["ดูดวงวันเดือนปีเกิด"] },
-  { id: "3", name: "Dr.ปลาย พรายกระซิบ", imageUrl: p2p_user_3, rating: 4.9, servicesOffered: ["ดูดวงเบอร์โทรศัพท์", "ไพ่ทาโรต์"] },
-  { id: "4", name: "Dr.คฑา ชินบัญชร", imageUrl: p2p_user_4, rating: 4.7, servicesOffered: ["ไพ่ทาโรต์"] },
-];
+type FortuneTeller = {
+  FortuneTellerID: string;
+  UserID: string;
+  Status: string;
+  Bio?: string | null;
+  CVURL?: string;
+};
 
-// ===== Chip (Filter) =====
-const FilterChip = ({
+type User = {
+  UserID: string;
+  Username: string;
+  Role: string[];
+  UserInfo?: {
+    FirstName: string;
+    LastName: string;
+    PictureURL?: string;
+    Email?: string;
+  };
+};
+
+type Service = {
+  ServiceID: string;
+  Service_name: string;
+  Service_Description: string;
+  Price: number;
+  Avg_Rating?: number | null;
+  ImageURLs?: string[];
+  Category?: Category;
+  FortuneTeller?: FortuneTeller;
+  // เติมฟิลด์นี้ตอน merge ข้อมูล users
+  FortuneTellerProfile?: User;
+};
+
+// ===== Components =====
+const CategoryChip = ({
   label,
   selected,
   onPress,
@@ -37,129 +55,215 @@ const FilterChip = ({
   selected: boolean;
   onPress: () => void;
 }) => (
-  <TouchableOpacity onPress={onPress} className="mr-2 mb-2 active:opacity-80">
+  <TouchableOpacity onPress={onPress} activeOpacity={0.9} className="mr-2 mb-2">
     <View
       className={`px-3 py-1.5 rounded-full border ${
-        selected ? "bg-yellow-400 border-yellow-400" : "bg-white/10 border-white/15"
+        selected ? "bg-yellow-400 border-yellow-400" : "bg-white/10 border-white/20"
       }`}
     >
-      <Text className={`font-bold ${selected ? "text-black" : "text-white"} text-xs`}>{label}</Text>
+      <Text className={`text-xs font-bold ${selected ? "text-black" : "text-white"}`}>{label}</Text>
     </View>
   </TouchableOpacity>
 );
 
-// ===== Badge: แท็กบริการ =====
-const SkillBadge = ({ text }: { text: string }) => (
-  <View className="px-2 py-1 mr-1.5 mt-1 rounded-full bg-white/10 border border-white/15">
-    <Text className="text-white text-[10px] font-semibold">{text}</Text>
-  </View>
-);
-
-// ===== Card: รูป + ชื่อ + เรตติ้ง + แท็กบริการ (1–2 อัน) =====
-const ProviderCard = ({
-  provider,
-  onPress,
+const ServiceCard = ({
+  item,
+  onPressCard,
+  onPressProfile,
 }: {
-  provider: Provider;
-  onPress: () => void;
+  item: Service;
+  onPressCard: () => void;
+  onPressProfile: () => void;
 }) => {
-  const specialties = provider.servicesOffered.slice(0, 2);
+  const image = item.ImageURLs?.[0];
+  const ft = item.FortuneTellerProfile;
+  const ftName = ft
+    ? `${ft.UserInfo?.FirstName || ""} ${ft.UserInfo?.LastName || ""}`.trim()
+    : "Fortune Teller";
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={onPressCard}
       activeOpacity={0.9}
-      className="bg-[#7431FA] border border-white/10 rounded-2xl p-2 mb-4"
+      className="bg-[#2D2A32] rounded-2xl overflow-hidden border border-white/10 mb-4"
     >
-      <View className="flex-row items-center">
-        <Image source={provider.imageUrl} className="w-16 h-16 rounded-full" />
-        <View className="ml-3">
-          <Text className="text-white font-bold text-base">{provider.name}</Text>
-          <Text className="text-yellow-400 text-xs mt-1">★ {provider.rating.toFixed(1)}</Text>
+      {image ? (
+        <Image source={{ uri: image }} className="w-full h-44" resizeMode="cover" />
+      ) : (
+        <View className="w-full h-44 items-center justify-center bg-white/5">
+          <Text className="text-white/40">ไม่มีรูปภาพ</Text>
         </View>
-      </View>
+      )}
 
-      <View className="mt-3 flex-row flex-wrap">
-        {specialties.length > 0 ? (
-          specialties.map((sp) => <SkillBadge key={sp} text={sp} />)
-        ) : (
-          <Text className="text-white/40 text-[11px]">—</Text>
-        )}
+      <View className="p-3">
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="text-white font-bold text-base flex-1 pr-2" numberOfLines={1}>
+            {item.Service_name}
+          </Text>
+        </View>
+
+        <View className="flex-row justify-between items-center mb-2">
+          <View className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15">
+            <Text className="text-[10px] text-white">
+              {item.Category?.Category_name || "Uncategorized"}
+            </Text>
+          </View>
+          <Text className="text-yellow-400 font-bold">฿{item.Price}</Text>
+        </View>
+
+        <Text className="text-gray-300 text-xs mb-3" numberOfLines={2}>
+          {item.Service_Description}
+        </Text>
+
+        {/* fortune teller profile area -> กดเพื่อไปหน้าโปรไฟล์ */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={onPressProfile}
+          className="flex-row items-center"
+        >
+          {ft?.UserInfo?.PictureURL ? (
+            <Image
+              source={{ uri: ft.UserInfo.PictureURL }}
+              className="w-8 h-8 rounded-full mr-2"
+            />
+          ) : (
+            <View className="w-8 h-8 rounded-full bg-white/10 mr-2" />
+          )}
+          <View className="flex-1">
+            <Text className="text-white text-sm font-semibold" numberOfLines={1}>
+              {ftName || "ไม่พบชื่อหมอดู"}
+            </Text>
+            <Text className="text-white/60 text-[11px]" numberOfLines={1}>
+              ดูโปรไฟล์หมอดู →
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 };
 
 // ===== Page =====
-export default function P2pListSimplePage() {
+export default function P2PServiceHome() {
   const router = useRouter();
-  const [selectedService, setSelectedService] = useState("ทั้งหมด");
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
 
-  const allServices = useMemo(
-    () => Array.from(new Set(["ทั้งหมด", ...providers.flatMap((p) => p.servicesOffered)])),
-    []
-  );
+  // เปลี่ยนเป็น IP ของเครื่องถ้ารันบนมือถือจริง
+  const API_BASE = "http://localhost:3456";
 
-  const filteredProviders = useMemo(() => {
-    if (selectedService === "ทั้งหมด") return providers;
-    return providers.filter((p) => p.servicesOffered.includes(selectedService));
-  }, [selectedService]);
+  // Fetch services + users แล้ว merge
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [svcRes, userRes] = await Promise.all([
+          axios.get(`${API_BASE}/services`),
+          axios.get(`${API_BASE}/users`),
+        ]);
+
+        const serviceList: Service[] = svcRes.data;
+        const userList: User[] = userRes.data;
+
+        const merged = serviceList.map((svc) => {
+          const ftUser = userList.find((u) => u.UserID === svc.FortuneTeller?.UserID);
+          return { ...svc, FortuneTellerProfile: ftUser };
+        });
+
+        setServices(merged);
+      } catch (err) {
+        console.error("โหลด services หรือ users ไม่ได้:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Category list
+  const categories = useMemo(() => {
+    const set = new Set<string>(["ทั้งหมด"]);
+    services.forEach((s) => {
+      if (s.Category?.Category_name) set.add(s.Category.Category_name);
+    });
+    return Array.from(set);
+  }, [services]);
+
+  // Filtered services
+  const filtered = useMemo(() => {
+    if (selectedCategory === "ทั้งหมด") return services;
+    return services.filter((s) => s.Category?.Category_name === selectedCategory);
+  }, [services, selectedCategory]);
+
+  // ✅ ไปหน้า service แบบใหม่: /(tabs)/p2p/service/[id].tsx ส่ง id = ServiceID
+  const goServiceDetail = (item: Service) => {
+    router.push({
+      pathname: "/(tabs)/p2p/service/[id]",
+      params: { id: item.ServiceID },
+    });
+  };
+
+  // ✅ ไปหน้าโปรไฟล์หมอดู /app/(tabs)/fortune_teller_profile/[id_fortune_teller].tsx
+  const goFortuneTellerProfile = (item: Service) => {
+    const ftId = item.FortuneTeller?.FortuneTellerID;
+    if (!ftId) return;
+    router.push({
+      pathname: "/(tabs)/fortune_teller_profile/[id_fortune_teller]",
+      params: { id_fortune_teller: ftId },
+    });
+  };
 
   return (
     <ScreenWrapper>
       <HeaderBar
-        title="P2P"
+        title="บริการดูดวง"
+        showSearch
+        onSearchSubmit={(q) => console.log("ค้นหา:", q)}
         rightIcons={[
           { name: "calendar-month", onPress: () => router.push("/p2p/mybooking") },
         ]}
-        showSearch
-        showChat
-        onSearchSubmit={(query) => {
-          console.log("ค้นหา:", query);
-        }}
       />
-      <FlatList
-        data={filteredProviders}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 12 }}
-        renderItem={({ item }) => {
-          // เลือก serviceName ตัวแรกของหมอดู เพื่อส่งไปหน้าหา slot
-          const firstService = item.servicesOffered[0] ?? "";
-          return (
-            <ProviderCard
-              provider={item}
-              onPress={() =>
-                router.push({
-                  pathname: `/p2p/timeslot/${item.id}`, // ← ไปหน้า [id] ที่สร้างไว้
-                  params: {
-                    id: item.id,
-                    serviceName: firstService, // ส่ง serviceName ไปให้หน้านั้น filter slot ได้เลย
-                  },
-                })
-              }
-            />
-          );
-        }}
-        ListHeaderComponent={
-          <View className="mb-4">
-            <Text className="text-white font-bold text-base mb-2">เลือกบริการที่คุณสนใจ</Text>
-            <View className="flex-row flex-wrap">
-              {allServices.map((service) => (
-                <FilterChip
-                  key={service}
-                  label={service}
-                  selected={selectedService === service}
-                  onPress={() => setSelectedService(service)}
-                />
-              ))}
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#fff" />
+          <Text className="text-white mt-3">กำลังโหลดข้อมูล...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(it) => it.ServiceID}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+          ListHeaderComponent={
+            <View className="mb-3">
+              <Text className="text-white font-bold mb-2">กรองตามหมวดหมู่</Text>
+              <View className="flex-row flex-wrap">
+                {categories.map((c) => (
+                  <CategoryChip
+                    key={c}
+                    label={c}
+                    selected={selectedCategory === c}
+                    onPress={() => setSelectedCategory(c)}
+                  />
+                ))}
+              </View>
             </View>
-          </View>
-        }
-        ListEmptyComponent={
-          <View className="items-center mt-10">
-            <Text className="text-white/60">ไม่พบหมอดู</Text>
-          </View>
-        }
-      />
+          }
+          renderItem={({ item }) => (
+            <ServiceCard
+              item={item}
+              onPressCard={() => goServiceDetail(item)}
+              onPressProfile={() => goFortuneTellerProfile(item)}
+            />
+          )}
+          ListEmptyComponent={
+            <View className="items-center mt-10">
+              <Text className="text-white/60">ไม่มีบริการในหมวดนี้</Text>
+            </View>
+          }
+        />
+      )}
     </ScreenWrapper>
   );
 }

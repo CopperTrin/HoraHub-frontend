@@ -70,6 +70,7 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
+      console.log(token)
     } catch (error: any) {
       console.log('Error fetching profile:', error?.response?.data || error.message);
     }
