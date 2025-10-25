@@ -73,7 +73,7 @@ export default function ShopPage() {
           </View>
         )}
 
-        <View className="flex-row flex-wrap justify-between mt-3">
+        <View className="flex-row flex-wrap justify-between mt-3  mb-10">
           {filteredProducts.length > 0 ? (
             filteredProducts.map((item) => (
               <TouchableOpacity
