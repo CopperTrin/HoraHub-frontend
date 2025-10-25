@@ -80,7 +80,7 @@ export default function EditProductDetailPage() {
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="Edit Product" showChat showBack />
+      <HeaderBar title="แก้ไขสินค้า" showChat showBack />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
@@ -119,7 +119,7 @@ export default function EditProductDetailPage() {
         {/* Name */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Feather name="package" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Name</Text>
+          <Text className="text-alabaster text-base">ชื่อสินค้า</Text>
         </View>
         <TextInput
           value={product.name}
@@ -132,7 +132,7 @@ export default function EditProductDetailPage() {
         {/* Price */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="pricetags" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Price</Text>
+          <Text className="text-alabaster text-base">ราคา</Text>
         </View>
         <TextInput
           value={String(product.price)}
@@ -148,7 +148,7 @@ export default function EditProductDetailPage() {
         {/* Link */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="link" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Link</Text>
+          <Text className="text-alabaster text-base">ลิงก์สินค้า</Text>
         </View>
         <TextInput
           value={product.link}
@@ -161,7 +161,7 @@ export default function EditProductDetailPage() {
         {/* Detail */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="document-text" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Detail</Text>
+          <Text className="text-alabaster text-base">รายละเอียด</Text>
         </View>
         <TextInput
           value={product.detail}
@@ -186,11 +186,11 @@ export default function EditProductDetailPage() {
       >
         <View className="py-3 flex-row gap-2">
           <TouchableOpacity className="flex-1 bg-red-500 py-3 rounded-2xl items-center">
-            <Text className="font-semibold text-lg text-white">Delete</Text>
+            <Text className="font-semibold text-lg text-white">ลบสินค้า</Text>
           </TouchableOpacity>
           <TouchableOpacity className="flex-1 bg-accent-200 py-3 rounded-2xl items-center">
             <Text className="font-semibold text-lg text-black">
-              Save Changes
+              บันทึกการเเก้ไข
             </Text>
           </TouchableOpacity>
         </View>

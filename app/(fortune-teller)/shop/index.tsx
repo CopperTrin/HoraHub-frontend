@@ -20,7 +20,7 @@ export default function ShopDashboardPage() {
     return (
     <ScreenWrapper>
       <HeaderBar
-        title="Fortune teller"
+        title="Shop"
         showChat
       />
       <ScrollView 
@@ -39,7 +39,7 @@ export default function ShopDashboardPage() {
         >
           <View className="flex-row items-center">
             <MaterialIcons name="add-box" size={20} color="white" />
-            <Text className="text-alabaster text-base font-semibold ml-3">Create new product</Text>
+            <Text className="text-alabaster text-base font-semibold ml-3">สร้างสินค้าใหม่</Text>
           </View>
           <MaterialIcons name="chevron-right" size={22} color="white" />
         </TouchableOpacity>
