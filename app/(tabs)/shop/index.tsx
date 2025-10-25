@@ -98,7 +98,7 @@ export default function ShopPage() {
               </TouchableOpacity>
             ))
           ) : (
-            <Text className="text-center text-gray-400 mt-10">
+            <Text className="text-center text-gray-400">
               ไม่พบสินค้าที่ค้นหา
             </Text>
           )}
