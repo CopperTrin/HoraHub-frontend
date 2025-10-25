@@ -4,37 +4,14 @@ import HeaderBar from "../../components/ui/HeaderBar";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons"
 
+import product_4 from "@/assets/images/product/4.png";
+import product_5 from "@/assets/images/product/5.png";
+import product_6 from "@/assets/images/product/6.png";
+
 const products = [
-  {
-    id: "2",
-    name: "เครื่องรางศาลเจ้าตะไพุที",
-    price: 1000,
-    image: "https://static.thairath.co.th/media/B6FtNKtgSqRqbnNsbKFwqziPTZ1PXtPv8BZeY1d7EqqiONujhKvl9ZY5ivzYt8hfl2U6l.jpg",
-  },
-  {
-    id: "3",
-    name: "องค์ท้าวเวสสุวรรณ ปัดเป่าสิ่งsgdrgdrgdrg",
-    price: 1000,
-    image: "https://static.thairath.co.th/media/B6FtNKtgSqRqbnNsbKFwqziPTZ1PXtPv8BZeY1d7EqqiONujhKvl9ZY5ivzYt8hfl2U6l.jpg",
-  },
-  {
-    id: "4",
-    name: "พระเครื่อง",
-    price: 1000,
-    image: "https://static.thairath.co.th/media/B6FtNKtgSqRqbnNsbKFwqziPTZ1PXtPv8BZeY1d7EqqiONujhKvl9ZY5ivzYt8hfl2U6l.jpg",
-  },
-  {
-    id: "5",
-    name: "พระเครื่อง",
-    price: 1000,
-    image: "https://static.thairath.co.th/media/B6FtNKtgSqRqbnNsbKFwqziPTZ1PXtPv8BZeY1d7EqqiONujhKvl9ZY5ivzYt8hfl2U6l.jpg",
-  },
-  {
-    id: "6",
-    name: "พระเครื่อง",
-    price: 1000,
-    image: "https://static.thairath.co.th/media/B6FtNKtgSqRqbnNsbKFwqziPTZ1PXtPv8BZeY1d7EqqiONujhKvl9ZY5ivzYt8hfl2U6l.jpg",
-  },
+  { id: "4", name: "เครื่องรางของต่างประเทศ รวมชุด", price: 1800, image: product_4 },
+  { id: "5", name: "น้ำเต้า", price: 299, image: product_5 },
+  { id: "6", name: "ปี่เซียะมงคล", price: 1000, image: product_6 },
 ];
 
 export default function ShopDashboardPage() {
@@ -77,7 +54,7 @@ export default function ShopDashboardPage() {
             >
               {/* รูปสินค้า */}
               <Image
-                source={{ uri: product.image }}
+                source={product.image}
                 className="w-24 h-24 rounded-xl"
                 resizeMode="cover"
               />
