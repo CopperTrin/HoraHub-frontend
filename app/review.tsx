@@ -11,8 +11,8 @@ import fcomponent from "./fcomponent";
 export default function ReviewScreen() {
   const [review, setReview] = useState<string>("");
   const [rating, setRating] = useState<number>(0);
-  const [userName, setUserName] = useState<string>("");
-  const [userImage, setUserImage] = useState<string>("");
+  const [serviceName, setServiceName] = useState<string>("");
+  const [serviceImage, setServiceImage] = useState<string>("");
   const route = useRoute();
   const { serviceId } = route.params as { serviceId: string };
   const API_URL = fcomponent.getBaseURL();
@@ -25,8 +25,8 @@ export default function ReviewScreen() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data
-        setUserName(data.Username);
-        setUserImage(data.Image); //แก้ด้วย
+        setServiceName(data.Service_name);
+        setServiceImage(data.ImageURLs[0]);
       } catch (error) {
         console.error("Error fetching user:", error);
         Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
@@ -74,12 +74,12 @@ export default function ReviewScreen() {
       <View className="flex-1 bg-primary-200 items-center p-5">
         {/* Avatar */}
         <Image
-          source={{ uri: userImage }}
+          source={{ uri: serviceImage }}
           className="w-[90px] h-[90px] rounded-full mt-5"
         />
 
         {/* Title */}
-        <Text className="text-alabaster text-lg font-bold my-4">{userName}</Text>
+        <Text className="text-alabaster text-lg font-bold my-4">{serviceName}</Text>
 
         {/* Stars */}
         <View className="flex-row mb-5">
@@ -96,7 +96,7 @@ export default function ReviewScreen() {
         </View>
 
         {/* Review */}
-        <Text className="self-start text-alabaster text-sm mb-2">Write your review</Text>
+        <Text className="self-start text-alabaster text-sm mb-2">เขียนรีวิวของคุณ</Text>
         <TextInput
           className="w-full h-[150px] border border-yellow-400 rounded-lg p-3 text-white mb-5"
           placeholder="เขียนรีวิวของคุณที่นี่..."

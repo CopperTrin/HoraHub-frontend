@@ -46,6 +46,15 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
+        name="systems"
+        options={{
+          title: "Systems",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="build" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
