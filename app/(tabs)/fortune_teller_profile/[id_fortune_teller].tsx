@@ -93,7 +93,7 @@ export default function FortuneTellerProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
 
-      if (!id_fortune_teller || id_fortune_teller === "null" || id_fortune_teller === "undefined") {
+      if (!id_fortune_teller || id_fortune_teller === "mock" || id_fortune_teller === "null" || id_fortune_teller === "undefined") {
         setProfile(mockProfile);
         setLoading(false);
         return;
