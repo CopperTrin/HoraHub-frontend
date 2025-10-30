@@ -1,4 +1,4 @@
-// app/service/[id].tsx
+// app/(fortune-teller)/booking/service/[id].tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -78,7 +78,7 @@ const TimeSlotCard = ({ slot }: { slot: TimeSlotItem }) => {
     BOOKED: { text: "จองแล้ว", color: "text-yellow-400", bg: "bg-yellow-500/20", border: "border-yellow-400/50" },
     CANCELLED: { text: "ยกเลิก", color: "text-red-400", bg: "bg-red-500/20", border: "border-red-400/50" },
   } as const;
-  const s = statusStyles[slot.Status];
+  const s = statusStyles[slot.Status] ?? statusStyles.AVAILABLE;
 
   return (
     <View className="bg-primary-100 rounded-2xl p-4 mb-3 border border-white/10">
@@ -97,7 +97,7 @@ const TimeSlotCard = ({ slot }: { slot: TimeSlotItem }) => {
   );
 };
 
-// ---------- Main Page ----------
+// ---------- Main ----------
 export default function ServiceDetailPage() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -116,15 +116,24 @@ export default function ServiceDetailPage() {
   const [imageInput, setImageInput] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // ---------- Fetch ----------
   const fetchAll = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
-      const [svcRes, catRes, tsMeRes] = await Promise.all([
+
+      const [svcRes, catRes] = await Promise.all([
         api.get<ServiceDetail>(`/services/${id}`),
         api.get<Category[]>(`/service-categories`),
-        api.get<TimeSlotItem[]>(`/time-slots/me`),
       ]);
+
+      let tsData: TimeSlotItem[] = [];
+      try {
+        const tsRes = await api.get<TimeSlotItem[]>(`/time-slots/me`);
+        tsData = tsRes.data || [];
+      } catch (err) {
+        console.log("time-slot fetch failed (unauthorized?)");
+      }
 
       const svc = svcRes.data;
       setService(svc);
@@ -133,14 +142,14 @@ export default function ServiceDetailPage() {
       setDesc(svc.Service_Description ?? "");
       setPrice(String(svc.Price ?? ""));
       setCategoryId(svc.CategoryID ?? "");
-      setImages(Array.isArray(svc.ImageURLs) ? (svc.ImageURLs.filter(Boolean) as string[]) : []);
+      setImages(Array.isArray(svc.ImageURLs) ? svc.ImageURLs.filter(Boolean) : []);
       setCategories(catRes.data ?? []);
 
-      const onlyMine = (tsMeRes.data || []).filter((t) => t.ServiceID === id);
+      const onlyMine = (tsData || []).filter((t) => t.ServiceID === id);
       onlyMine.sort((a, b) => new Date(a.StartTime).getTime() - new Date(b.StartTime).getTime());
       setServiceTimeSlots(onlyMine);
     } catch (e: any) {
-      console.log("Load service error:", e?.message || e);
+      console.error("Load service error:", e?.response?.data ?? e);
       Alert.alert("ดึงข้อมูลไม่สำเร็จ", e?.response?.data?.message || "โปรดลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
@@ -151,31 +160,22 @@ export default function ServiceDetailPage() {
     fetchAll();
   }, [fetchAll]);
 
-  const addImage = () => {
-    const url = imageInput.trim();
-    if (!url) return;
-    setImages((prev) => [...prev, url]);
-    setImageInput("");
-  };
-  const removeImage = (url: string) => setImages((prev) => prev.filter((u) => u !== url));
-
+  // ---------- CRUD ----------
   const onSave = async () => {
-    if (!service) return;
+    if (!service?.ServiceID) return Alert.alert("ยังโหลดข้อมูลไม่เสร็จ");
     if (!name.trim()) return Alert.alert("กรอกไม่ครบ", "กรุณาใส่ชื่อบริการ");
     if (!categoryId) return Alert.alert("กรอกไม่ครบ", "กรุณาเลือกหมวดหมู่");
 
-    const payload = {
-      Service_name: name.trim(),
-      Service_Description: desc.trim(),
-      Price: Number(price || 0),
-      ImageURLs: images,
-      CategoryID: categoryId,
-    };
-
     try {
       setSaving(true);
-      await api.patch(`/services/${service.ServiceID}`, payload);
-      Alert.alert("บันทึกสำเร็จ", "อัปเดตบริการเรียบร้อย");
+      await api.patch(`/services/${service.ServiceID}`, {
+        Service_name: name.trim(),
+        Service_Description: desc.trim(),
+        Price: Number(price || 0),
+        ImageURLs: images,
+        CategoryID: categoryId,
+      });
+      Alert.alert("สำเร็จ", "อัปเดตบริการเรียบร้อย");
       setShowEdit(false);
       fetchAll();
     } catch (e: any) {
@@ -186,43 +186,39 @@ export default function ServiceDetailPage() {
     }
   };
 
-  // ✅ เพิ่มฟังก์ชันลบ Service
   const onDelete = async () => {
-    if (!service) return;
-    Alert.alert(
-      "ยืนยันการลบ",
-      "คุณต้องการลบบริการนี้หรือไม่?",
-      [
-        { text: "ยกเลิก", style: "cancel" },
-        {
-          text: "ลบ",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setSaving(true);
-              await api.delete(`/services/${service.ServiceID}`);
-              Alert.alert("ลบสำเร็จ", "บริการนี้ถูกลบเรียบร้อยแล้ว");
-              router.replace("/(fortune-teller)/booking"); // กลับไปหน้า home หลังลบ
-            } catch (e: any) {
-              console.log("Delete service error:", e?.message || e);
-              Alert.alert("ลบไม่สำเร็จ", e?.response?.data?.message || e?.message || "โปรดลองใหม่");
-            } finally {
-              setSaving(false);
-            }
-          },
+    if (!service?.ServiceID) return;
+    Alert.alert("ยืนยันการลบ", "คุณต้องการลบบริการนี้หรือไม่?", [
+      { text: "ยกเลิก", style: "cancel" },
+      {
+        text: "ลบ",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setSaving(true);
+            await api.delete(`/services/${service.ServiceID}`);
+            Alert.alert("ลบสำเร็จ", "บริการนี้ถูกลบเรียบร้อยแล้ว");
+            router.replace("/(fortune-teller)/booking");
+          } catch (e: any) {
+            console.log("Delete service error:", e?.message || e);
+            Alert.alert("ลบไม่สำเร็จ", e?.response?.data?.message || e?.message || "โปรดลองใหม่");
+          } finally {
+            setSaving(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const onCreateTimeSlot = () => {
-    if (!service) return;
+    if (!service?.ServiceID) return;
     router.push({
       pathname: "/(fortune-teller)/booking/[id]",
       params: { id: "new", serviceId: service.ServiceID, serviceName: service.Service_name },
     });
   };
 
+  // ---------- Render ----------
   const title = useMemo(() => service?.Service_name ?? "Service Detail", [service]);
 
   if (loading) {
@@ -253,7 +249,7 @@ export default function ServiceDetailPage() {
       <HeaderBar title={title} showBack />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 8 }}>
-        {/* ✅ ปุ่ม Create Time Slot */}
+        {/* Create Slot */}
         <TouchableOpacity
           onPress={onCreateTimeSlot}
           className="bg-yellow-400 rounded-full items-center justify-center py-4 mb-3"
@@ -261,7 +257,7 @@ export default function ServiceDetailPage() {
           <Text className="text-black font-extrabold text-base">Create Time Slot</Text>
         </TouchableOpacity>
 
-        {/* ✅ ปุ่ม Edit + Delete */}
+        {/* Edit / Delete */}
         <View className="flex-row justify-between mb-6">
           <TouchableOpacity
             onPress={() => setShowEdit((v) => !v)}
@@ -279,29 +275,39 @@ export default function ServiceDetailPage() {
           </TouchableOpacity>
         </View>
 
-        {/* ---- ข้อมูลบริการ ---- */}
+        {/* Service Info */}
         {!showEdit && (
           <View className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6">
             <Text className="text-white/85 font-semibold text-lg">{service.Service_name}</Text>
             {!!service.Service_Description && (
               <Text className="text-white/70 mt-2">{service.Service_Description}</Text>
             )}
-            <Text className="text-white/75 mt-2">ราคา: <Text className="font-semibold">{service.Price}</Text></Text>
-            <Text className="text-white/75 mt-1">หมวดหมู่: <Text className="font-semibold">{service.Category?.Category_name || "-"}</Text></Text>
+            <Text className="text-white/75 mt-2">
+              ราคา: <Text className="font-semibold">{service.Price}</Text>
+            </Text>
+            <Text className="text-white/75 mt-1">
+              หมวดหมู่:{" "}
+              <Text className="font-semibold">
+                {service?.Category?.Category_name ?? service?.CategoryID ?? "-"}
+              </Text>
+            </Text>
+
             {!!images?.length && (
               <View className="mt-3">
                 <Text className="text-white/70 mb-1">รูปภาพ:</Text>
                 {images.map((u) => (
-                  <Text key={u} className="text-white/60" numberOfLines={1}>• {u}</Text>
+                  <Text key={u} className="text-white/60" numberOfLines={1}>
+                    • {u}
+                  </Text>
                 ))}
               </View>
             )}
           </View>
         )}
 
-        {/* ---- Time Slots ---- */}
+        {/* Time Slots */}
         <Text className="text-white/80 font-bold mb-3 text-base">Time Slots ของบริการนี้</Text>
-        {serviceTimeSlots.length > 0 ? (
+        {Array.isArray(serviceTimeSlots) && serviceTimeSlots.length > 0 ? (
           serviceTimeSlots.map((t) => <TimeSlotCard key={t.TimeSlotID} slot={t} />)
         ) : (
           <View className="items-center justify-center bg-primary-100/50 p-6 rounded-2xl mb-6">
@@ -309,9 +315,10 @@ export default function ServiceDetailPage() {
           </View>
         )}
 
-        {/* ---- โหมดแก้ไข ---- */}
+        {/* Edit Mode */}
         {showEdit && (
           <>
+            {/* Name */}
             <Text className="text-white/70 mb-2 mt-2">Service name</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -323,6 +330,7 @@ export default function ServiceDetailPage() {
               />
             </View>
 
+            {/* Desc */}
             <Text className="text-white/70 mb-2">Description</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -335,6 +343,7 @@ export default function ServiceDetailPage() {
               />
             </View>
 
+            {/* Price */}
             <Text className="text-white/70 mb-2">Price</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -347,28 +356,31 @@ export default function ServiceDetailPage() {
               />
             </View>
 
+            {/* Category */}
             <Text className="text-white/70 mb-2">Category</Text>
             <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10">
               <View className="flex-row flex-wrap gap-2">
-                {categories.map((c) => {
-                  const active = categoryId === c.CategoryID;
-                  return (
-                    <TouchableOpacity
-                      key={c.CategoryID}
-                      onPress={() => setCategoryId(c.CategoryID)}
-                      className={`px-3 py-2 rounded-xl border ${
-                        active ? "bg-yellow-400/20 border-yellow-400" : "bg-white/5 border-white/10"
-                      }`}
-                    >
-                      <Text className={`${active ? "text-yellow-300" : "text-white/80"} font-medium`}>
-                        {c.Category_name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                {Array.isArray(categories) &&
+                  categories.map((c) => {
+                    const active = categoryId === c.CategoryID;
+                    return (
+                      <TouchableOpacity
+                        key={c.CategoryID}
+                        onPress={() => setCategoryId(c.CategoryID)}
+                        className={`px-3 py-2 rounded-xl border ${
+                          active ? "bg-yellow-400/20 border-yellow-400" : "bg-white/5 border-white/10"
+                        }`}
+                      >
+                        <Text className={`${active ? "text-yellow-300" : "text-white/80"} font-medium`}>
+                          {c.Category_name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
               </View>
             </View>
 
+            {/* Images */}
             <Text className="text-white/70 mb-2">Image URLs</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-3 mb-2 border border-white/10">
               <View className="flex-row">
@@ -379,7 +391,16 @@ export default function ServiceDetailPage() {
                   placeholderTextColor="#9CA3AF"
                   className="text-alabaster text-base py-2 flex-1"
                 />
-                <TouchableOpacity onPress={addImage} className="bg-yellow-400 rounded-xl px-3 justify-center ml-2">
+                <TouchableOpacity
+                  onPress={() => {
+                    const url = imageInput.trim();
+                    if (url) {
+                      setImages((prev) => [...prev, url]);
+                      setImageInput("");
+                    }
+                  }}
+                  className="bg-yellow-400 rounded-xl px-3 justify-center ml-2"
+                >
                   <Text className="text-black font-bold">Add</Text>
                 </TouchableOpacity>
               </View>
@@ -389,8 +410,10 @@ export default function ServiceDetailPage() {
               <View className="flex-row flex-wrap gap-2 mb-6">
                 {images.map((u) => (
                   <View key={u} className="flex-row items-center bg-white/10 border border-white/10 rounded-full px-3 py-1">
-                    <Text className="text-white/85 mr-2" numberOfLines={1} style={{ maxWidth: 210 }}>{u}</Text>
-                    <TouchableOpacity onPress={() => removeImage(u)}>
+                    <Text className="text-white/85 mr-2" numberOfLines={1} style={{ maxWidth: 210 }}>
+                      {u}
+                    </Text>
+                    <TouchableOpacity onPress={() => setImages((prev) => prev.filter((x) => x !== u))}>
                       <Text className="text-red-400 font-bold">✕</Text>
                     </TouchableOpacity>
                   </View>
@@ -403,9 +426,7 @@ export default function ServiceDetailPage() {
               onPress={onSave}
               className="bg-yellow-400 rounded-full items-center justify-center py-4 mb-10"
             >
-              <Text className="text-black font-extrabold text-base">
-                {saving ? "Saving..." : "Save Service"}
-              </Text>
+              <Text className="text-black font-extrabold text-base">{saving ? "Saving..." : "Save Service"}</Text>
             </TouchableOpacity>
           </>
         )}

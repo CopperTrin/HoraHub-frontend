@@ -41,8 +41,7 @@ type Service = {
   ImageURLs?: string[];
   Category?: Category;
   FortuneTeller?: FortuneTeller;
-  // เติมฟิลด์นี้ตอน merge ข้อมูล users
-  FortuneTellerProfile?: User;
+  FortuneTellerProfile?: User; // เติมตอน merge
 };
 
 // ===== Components =====
@@ -148,9 +147,11 @@ export default function P2PServiceHome() {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
 
-  // เปลี่ยนเป็น IP ของเครื่องถ้ารันบนมือถือจริง
+  // กรอง
+  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
+  const [searchQuery, setSearchQuery] = useState(""); // ✅ เก็บคำค้นจาก HeaderBar
+
   const API_BASE = "http://localhost:3456";
 
   // Fetch services + users แล้ว merge
@@ -181,7 +182,7 @@ export default function P2PServiceHome() {
     fetchData();
   }, []);
 
-  // Category list
+  // หมวดหมู่ทั้งหมด
   const categories = useMemo(() => {
     const set = new Set<string>(["ทั้งหมด"]);
     services.forEach((s) => {
@@ -190,13 +191,39 @@ export default function P2PServiceHome() {
     return Array.from(set);
   }, [services]);
 
-  // Filtered services
-  const filtered = useMemo(() => {
-    if (selectedCategory === "ทั้งหมด") return services;
-    return services.filter((s) => s.Category?.Category_name === selectedCategory);
-  }, [services, selectedCategory]);
+  // ฟังก์ชันตรวจสอบว่าตรงกับคำค้นไหม (ไม่สนตัวพิมพ์เล็กใหญ่)
+  const matchSearch = (item: Service, q: string) => {
+    if (!q) return true;
+    const needle = q.trim().toLowerCase();
 
-  // ✅ ไปหน้า service แบบใหม่: /(tabs)/p2p/service/[id].tsx ส่ง id = ServiceID
+    const ftName = item.FortuneTellerProfile
+      ? `${item.FortuneTellerProfile.UserInfo?.FirstName || ""} ${item.FortuneTellerProfile.UserInfo?.LastName || ""}`
+      : "";
+
+    const haystacks = [
+      item.Service_name,
+      item.Service_Description,
+      item.Category?.Category_name,
+      ftName,
+      String(item.Price),
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+
+    return haystacks.some((h) => h.includes(needle));
+  };
+
+  // กรองตามหมวดหมู่ + คำค้น
+  const filtered = useMemo(() => {
+    const byCategory =
+      selectedCategory === "ทั้งหมด"
+        ? services
+        : services.filter((s) => s.Category?.Category_name === selectedCategory);
+
+    return byCategory.filter((s) => matchSearch(s, searchQuery));
+  }, [services, selectedCategory, searchQuery]);
+
+  // ไปหน้ารายละเอียด service
   const goServiceDetail = (item: Service) => {
     router.push({
       pathname: "/(tabs)/p2p/service/[id]",
@@ -204,7 +231,7 @@ export default function P2PServiceHome() {
     });
   };
 
-  // ✅ ไปหน้าโปรไฟล์หมอดู /app/(tabs)/fortune_teller_profile/[id_fortune_teller].tsx
+  // ไปหน้าโปรไฟล์หมอดู
   const goFortuneTellerProfile = (item: Service) => {
     const ftId = item.FortuneTeller?.FortuneTellerID;
     if (!ftId) return;
@@ -219,7 +246,8 @@ export default function P2PServiceHome() {
       <HeaderBar
         title="บริการดูดวง"
         showSearch
-        onSearchSubmit={(q) => console.log("ค้นหา:", q)}
+        // ✅ ใช้ onSearchSubmit จาก HeaderBar เพื่ออัปเดต query
+        onSearchSubmit={(q) => setSearchQuery(q ?? "")}
         rightIcons={[
           { name: "calendar-month", onPress: () => router.push("/p2p/mybooking") },
         ]}
@@ -237,7 +265,15 @@ export default function P2PServiceHome() {
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
           ListHeaderComponent={
             <View className="mb-3">
-              <Text className="text-white font-bold mb-2">กรองตามหมวดหมู่</Text>
+              <View className="flex-row items-center justify-between mb-1">
+                <Text className="text-white font-bold">กรองตามหมวดหมู่</Text>
+                {/* แสดงคำค้นปัจจุบันแบบเบา ๆ */}
+                {searchQuery ? (
+                  <Text className="text-white/60 text-xs" numberOfLines={1}>
+                    ค้นหา: “{searchQuery}”
+                  </Text>
+                ) : null}
+              </View>
               <View className="flex-row flex-wrap">
                 {categories.map((c) => (
                   <CategoryChip
@@ -259,7 +295,7 @@ export default function P2PServiceHome() {
           )}
           ListEmptyComponent={
             <View className="items-center mt-10">
-              <Text className="text-white/60">ไม่มีบริการในหมวดนี้</Text>
+              <Text className="text-white/60">ไม่พบผลลัพธ์ตามเงื่อนไข</Text>
             </View>
           }
         />
