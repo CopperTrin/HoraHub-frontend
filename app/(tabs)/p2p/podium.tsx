@@ -80,11 +80,11 @@ const RankingScreen = () => {
           <View className="items-center mx-3">
             <Image
               source={{ uri: top3[1].avatar }}
-              className="w-16 h-16 rounded-full mb-2"
+              className="w-20 h-20 rounded-full mb-2"
             />
-            <Text className="text-alabaster font-bold">{top3[1].name}</Text>
-            <View className="items-center bg-accent-200 px-3 py-1 mt-1 h-24 w-14">
-              <Text className="text-secondary-200 font-bold text-xl">2</Text>
+            <Text className="text-alabaster">{top3[1].name.slice(0,15)}</Text>
+            <View className="justify-center items-center bg-accent-200 mt-1 h-24 w-24 rounded-md">
+              <Text className="text-secondary-200 font-bold text-3xl">2</Text>
             </View>
           </View>
         )}
@@ -96,9 +96,9 @@ const RankingScreen = () => {
               source={{ uri: top3[0].avatar }}
               className="w-20 h-20 rounded-full mb-2"
             />
-            <Text className="text-alabaster font-bold">{top3[0].name}</Text>
-            <View className="items-center bg-accent-200 px-4 py-2 mt-1 h-32 w-14">
-              <Text className="text-secondary-200 font-bold text-xl">1</Text>
+            <Text className="text-alabaster">{top3[0].name.slice(0,15)}</Text>
+            <View className="justify-center items-center bg-accent-200 mt-1 h-32 w-24 rounded-md">
+              <Text className="text-secondary-200 font-bold text-3xl">1</Text>
             </View>
           </View>
         )}
@@ -108,11 +108,11 @@ const RankingScreen = () => {
           <View className="items-center mx-3">
             <Image
               source={{ uri: top3[2].avatar }}
-              className="w-16 h-16 rounded-full mb-2"
+              className="w-20 h-20 rounded-full mb-2"
             />
-            <Text className="text-alabaster font-bold">{top3[2].name}</Text>
-            <View className="items-center bg-accent-200 px-3 py-1 mt-1 h-20 w-14">
-              <Text className="text-secondary-200 font-bold text-xl">3</Text>
+            <Text className="text-alabaster">{top3[2].name.slice(0,15)}</Text>
+            <View className="justify-center items-center bg-accent-200 mt-1 h-16 w-16 rounded-md">
+              <Text className="text-secondary-200 font-bold text-3xl">3</Text>
             </View>
           </View>
         )}
@@ -127,7 +127,7 @@ const RankingScreen = () => {
             <Text className="w-6 text-alabaster font-bold">{item.rank}</Text>
             <Image
               source={{ uri: item.avatar }}
-              className="w-8 h-8 rounded-full mx-2"
+              className="w-12 h-12 rounded-full mx-2"
             />
             <Text className="flex-1 text-alabaster">{item.name}</Text>
             <Text className="text-accent-100 font-bold">{item.score}</Text>
