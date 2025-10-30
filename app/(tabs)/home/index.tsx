@@ -16,7 +16,7 @@ import home_new_02 from "@/assets/images/home/home_new_02.jpg";
 import home_new_03 from "@/assets/images/home/home_new_03.jpg";
 import ranking_bg from "@/assets/images/home/ranking_bg.png";
 import { router } from "expo-router";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import HeaderBar from "../../components/ui/HeaderBar";
 export default function HomePage() {
   const images = [home_new_03, home_new_02, home_new_01];
@@ -100,9 +100,11 @@ export default function HomePage() {
           {/* Fortune teller ranking */}
           <View className="flex-row items-center gap-2.5 mt-4">
             <Text className="text-white text-l font-sans-semibold">อันดับหมอดู</Text>
-            <View className="bg-secondary-100 rounded-md w-20 my-3 px-1">
-              <Text className="text-l text-white text-center py-2 font-sans-medium">ดูทั้งหมด</Text>
-            </View>
+            <TouchableOpacity className="bg-secondary-100 rounded-md w-20 my-3 px-1">
+              <Text className="text-l text-white text-center py-2 font-sans-medium"
+              onPress={() => router.navigate("../p2p/podium?id=overall")}
+              >ดูทั้งหมด</Text>
+            </TouchableOpacity>
           </View>
           <RankingPodium background={ranking_bg} items={podiumItems} />
 
