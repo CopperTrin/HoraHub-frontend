@@ -38,7 +38,7 @@ export default function CreateProductPage() {
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="Create Product" showChat showBack />
+      <HeaderBar title="สร้างสินค้าใหม่" showChat showBack />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
@@ -74,12 +74,12 @@ export default function CreateProductPage() {
         {/* Name */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Feather name="package" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Name</Text>
+          <Text className="text-alabaster text-base">ชื่อสินค้า</Text>
         </View>
         <TextInput
           value={product.name}
           onChangeText={(text) => setProduct({ ...product, name: text })}
-          placeholder="Enter product name"
+          placeholder="กรอกชื่อสินค้า"
           placeholderTextColor="#aaa"
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
@@ -87,12 +87,12 @@ export default function CreateProductPage() {
         {/* Price */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="pricetags" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Price</Text>
+          <Text className="text-alabaster text-base">ราคา</Text>
         </View>
         <TextInput
           value={product.price}
           onChangeText={(text) => setProduct({ ...product, price: text })}
-          placeholder="Enter price"
+          placeholder="กรอกราคาสินค้า"
           placeholderTextColor="#aaa"
           keyboardType="numeric"
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
@@ -101,12 +101,12 @@ export default function CreateProductPage() {
         {/* Link */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="link" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Link</Text>
+          <Text className="text-alabaster text-base">ลิงก์สินค้า</Text>
         </View>
         <TextInput
           value={product.link}
           onChangeText={(text) => setProduct({ ...product, link: text })}
-          placeholder="Enter link"
+          placeholder="ราคาลิงก์สินค้า"
           placeholderTextColor="#aaa"
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
@@ -114,12 +114,12 @@ export default function CreateProductPage() {
         {/* Detail */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="document-text" size={16} color="#F8F8F8" />
-          <Text className="text-alabaster text-base">Detail</Text>
+          <Text className="text-alabaster text-base">รายละเอียด</Text>
         </View>
         <TextInput
           value={product.detail}
           onChangeText={(text) => setProduct({ ...product, detail: text })}
-          placeholder="Enter product details"
+          placeholder="กรอกรายละเอียด"
           placeholderTextColor="#aaa"
           multiline
           numberOfLines={5}
@@ -128,7 +128,7 @@ export default function CreateProductPage() {
 
         {/* Submit Button */}
         <TouchableOpacity className="mt-6 bg-accent-200 py-3 rounded-full items-center">
-          <Text className="font-bold text-lg">Create Product</Text>
+          <Text className="font-bold text-lg">สร้างสินค้า</Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
