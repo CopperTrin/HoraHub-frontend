@@ -219,9 +219,6 @@ export default function ProfilePage() {
               <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">
                 อีเมล : {userInfo.Email}
               </Text>
-              <Text className='text-white text-xl font-sans-medium'>
-                Bio : ขอการันตีความแม่นยำ ในการพยากรณ์ ทุกศาสตร์ ไม่ว่าจะเป็น ไพ่ยิปซี เลข 7 ตัว 9 ฐาน หรือ โหราศาสตร์ไทย ได้รับการรับรอง
-              </Text>
 
               <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
               <HistoryCardList items={historyData} />
