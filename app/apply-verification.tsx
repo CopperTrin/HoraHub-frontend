@@ -1,6 +1,8 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GoogleSignin, statusCodes
+} from '@react-native-google-signin/google-signin';
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
@@ -105,21 +107,38 @@ export default function ApplyVerification() {
     }
   };
 
+
   const handleBackToSignIn = async () => {
     try {
-      await GoogleSignin.signOut();
-      await GoogleSignin.revokeAccess();
+      const hadPrev = typeof GoogleSignin.hasPreviousSignIn === "function"
+        ? GoogleSignin.hasPreviousSignIn()
+        : false;
+  
+      if (hadPrev) {
+        try {
+          await GoogleSignin.revokeAccess();
+        } catch (e: any) {
+          if (e?.code !== statusCodes.SIGN_IN_REQUIRED) throw e;
+        }
+        try {
+          await GoogleSignin.signOut();
+        } catch (e: any) {
+          if (e?.code !== statusCodes.SIGN_IN_REQUIRED) throw e;
+        }
+      }
+
       await SecureStore.deleteItemAsync("access_token");
       await SecureStore.deleteItemAsync("user_role");
       await SecureStore.deleteItemAsync("last_id_token");
       await SecureStore.deleteItemAsync("last_google_uid");
+  
       router.replace("/(tabs)/profile");
     } catch (e: any) {
+      console.error("Sign out error:", e?.message || e);
       Alert.alert("ไม่สามารถออกจากระบบได้", "โปรดลองอีกครั้ง");
     }
   };
 
-  // ✅ ถ้า ACTIVE ให้ข้ามหน้าไปเลย
   useEffect(() => {
     if (status === "ACTIVE") {
       router.replace("/(fortune-teller)/profile");
