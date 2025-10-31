@@ -1,102 +1,102 @@
 // app/(fortune-teller)/booking/index.tsx
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Alert, Platform } from "react-native";
+import ScreenWrapper from "@/app/components/ScreenWrapper";
+import HeaderBar from "@/app/components/ui/HeaderBar";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
+import Constants from "expo-constants";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
 
-import ScreenWrapper from "@/app/components/ScreenWrapper";
-import HeaderBar from "../../components/ui/HeaderBar";
+// -------- API base (ENV -> Expo host -> fallback) --------
+function computeApiBase() {
+  const fromEnv =
+    process.env.EXPO_PUBLIC_API_BASE_URL ||
+    (Constants?.expoConfig as any)?.extra?.API_BASE_URL ||
+    (Constants as any)?.manifest2?.extra?.API_BASE_URL;
+  if (fromEnv) return String(fromEnv);
 
-// ==============================
-// Types (UI)
-// ==============================
-type ServiceCategory = { id: string; name: string };
-type TimeSlot = {
-  id: string;
-  startTime: Date;
-  endTime: Date;
-  serviceName: string;
-  price: number;
-  status: "AVAILABLE" | "BOOKED" | "CANCELLED";
+  const dbg =
+    (Constants as any)?.manifest?.debuggerHost ||
+    (Constants as any)?.expoConfig?.hostUri ||
+    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri;
+
+  if (dbg && typeof dbg === "string" && dbg.includes(":")) {
+    const host = dbg.split(":")[0];
+    if (host === "localhost" || host === "127.0.0.1") {
+      return Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
+    }
+    return `http://${host}:3456`;
+  }
+  return Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
+}
+const API_BASE = computeApiBase();
+const ACCESS_TOKEN_KEY = "access_token";
+
+// -------- Types --------
+type Category = {
+  CategoryID: string;
+  Category_name: string;
+  Category_type?: string;
 };
 
-// ==============================
-// Types (จาก Server — ย่อจาก OAS)
-// ==============================
-type UserProfile = {
-  UserID: string;
-  Username: string;
-  Role: string[];
-  UserInfo?: {
-    Email?: string;
-    FirstName?: string;
-    LastName?: string;
-    GoogleID?: string;
-    PictureURL?: string;
-  };
-};
-
-type ServiceItem = {
+type Service = {
   ServiceID: string;
   Service_name: string;
-  Service_Description: string | null;
+  Service_Description?: string | null;
   Price: number;
-  Avg_Rating: number | null;
   ImageURLs?: string[] | null;
   CategoryID: string;
   FortuneTellerID: string;
-  Category?: {
-    CategoryID: string;
-    Category_name: string;
-    Category_type: string;
-  };
-  FortuneTeller?: {
-    FortuneTellerID: string;
-    UserID: string; // ใช้กรอง "บริการของฉัน"
-    Status: "ACTIVE" | "PENDING" | "REJECTED";
-  };
+  Category?: Category;
 };
 
 type TimeSlotItem = {
   TimeSlotID: string;
-  StartTime: string; // ISO
-  EndTime: string;   // ISO
+  StartTime: string;
+  EndTime: string;
   LockAmount: number;
-  Status?: string;   // AVAILABLE | BOOKED | CANCELLED (อาจ undefined/รูปแบบอื่น)
+  Status: "AVAILABLE" | "BOOKED" | "CANCELLED";
   FortuneTellerID: string;
   ServiceID: string;
 };
 
-// ==============================
-// Axios instance (ไฟล์เดียวจบ)
-// ==============================
-const ACCESS_TOKEN_KEY = "access_token";
-
-const computeBaseURL = () => {
-  const env = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (env) return env;
-  // Emulator-friendly fallback:
-  // Android Emulator -> 10.0.2.2, iOS Simulator -> localhost
-  // @ts-ignore
-  const { Platform } = require("react-native");
-  if (Platform.OS === "android") return "http://10.0.2.2:3456";
-  return "http://localhost:3456";
+type FortuneTellerMe = {
+  FortuneTellerID: string;
+  UserID: string;
+  Status: string;
 };
 
-const api = axios.create({
-  baseURL: computeBaseURL(),
-  timeout: 15000,
-});
+type BookingCardData = {
+  id: string;                 // TimeSlotID
+  ServiceID: string;
+  ServiceName: string;
+  StartTime: string;
+  EndTime: string;
+  Price: number;
+  AvatarURL?: string | null;  // service image
+};
 
+// -------- Utils (TH format แบบง่าย) --------
+const pad2 = (n: number) => String(n).padStart(2, "0");
+function formatDateOnlyTH(iso: string) {
+  const d = new Date(iso);
+  const dd = pad2(d.getDate());
+  const mm = pad2(d.getMonth() + 1);
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+function formatTimeRange(isoA: string, isoB: string) {
+  const a = new Date(isoA);
+  const b = new Date(isoB);
+  const h1 = pad2(a.getHours()), m1 = pad2(a.getMinutes());
+  const h2 = pad2(b.getHours()), m2 = pad2(b.getMinutes());
+  return `${h1}:${m1} - ${h2}:${m2}`;
+}
+
+// -------- API helper --------
+const api = axios.create({ baseURL: API_BASE, timeout: 15000 });
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
   if (token) {
@@ -106,273 +106,185 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ==============================
-// UI pieces
-// ==============================
-const ServiceCard = ({
-  service,
-  onPress,
+// -------- Row (Booking Card) --------
+function BookingRow({
+  b,
+  onChat,
+  onReview,
+  canReview,
 }: {
-  service: ServiceCategory;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    activeOpacity={0.9}
-    className="bg-primary-100 rounded-2xl p-4 mb-3 border border-white/10"
-  >
-    <View className="flex-row items-center justify-between">
-      <View className="flex-1 pr-3">
-        <Text className="text-alabaster font-bold text-base">{service.name}</Text>
-        <Text className="text-white/60 mt-1">create time slot/edit service </Text>
-      </View>
-      <MaterialIcons name="chevron-right" size={22} color="white" />
-    </View>
-  </TouchableOpacity>
-);
-
-const TimeSlotCard = ({ slot }: { slot: TimeSlot }) => {
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString("th-TH", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-  const formatTime = (d: Date) =>
-    d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-
-  // สไตล์สถานะมาตรฐาน
-  const STATUS_STYLES = {
-    AVAILABLE: {
-      text: "ว่าง",
-      color: "text-green-400",
-      bg: "bg-green-500/20",
-      border: "border-green-400/50",
-    },
-    BOOKED: {
-      text: "จองแล้ว",
-      color: "text-yellow-400",
-      bg: "bg-yellow-500/20",
-      border: "border-yellow-400/50",
-    },
-    CANCELLED: {
-      text: "ยกเลิก",
-      color: "text-red-400",
-      bg: "bg-red-500/20",
-      border: "border-red-400/50",
-    },
-  } as const;
-
-  // fallback กันพัง
-  const FALLBACK_STYLE = {
-    text: "ไม่ทราบสถานะ",
-    color: "text-gray-300",
-    bg: "bg-gray-500/20",
-    border: "border-gray-400/50",
-  };
-
-  // ปลอดภัยจากค่าที่เพี้ยน
-  const normalized =
-    typeof slot?.status === "string" ? slot.status.toUpperCase() : "AVAILABLE";
-
-  const s =
-    (STATUS_STYLES as any)[normalized] /* AVAILABLE/BOOKED/CANCELLED */ ||
-    FALLBACK_STYLE;
-
+  b: BookingCardData;
+  onChat: () => void;
+  onReview: () => void;
+  canReview: boolean;
+}) {
   return (
-    <View className="bg-primary-100 rounded-2xl p-4 mb-3 border border-white/10">
-      <View className="flex-row justify-between items-start">
-        <View className="flex-1 pr-2">
-          <Text className="text-alabaster font-bold text-base">
-            {slot.serviceName || "Unknown Service"}
+    <View className="bg-[#211A3A] rounded-2xl p-3 border border-white/10 mb-4">
+      <View className="flex-row">
+        <Image
+          source={{ uri: b.AvatarURL || "https://cdn-icons-png.flaticon.com/512/847/847969.png" }}
+          className="w-28 h-28 rounded-2xl mr-3"
+        />
+        <View className="flex-1">
+          <Text className="text-white font-semibold text-lg" numberOfLines={1}>
+            {b.ServiceName}
           </Text>
-          <Text className="text-gray-300 mt-1">📅 {formatDate(slot.startTime)}</Text>
-          <Text className="text-gray-300">
-            🕒 {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+
+          <Text className="text-yellow-400 font-bold mt-1 text-lg">
+            {formatDateOnlyTH(b.StartTime)}
           </Text>
+          <Text className="text-white/90 text-base mt-1">
+            {formatTimeRange(b.StartTime, b.EndTime)}
+          </Text>
+
+          <Text className="text-white/70 text-sm mt-1">฿ {b.Price.toFixed(2)}</Text>
         </View>
-        <View className="items-end">
-          <Text className="text-yellow-400 text-lg font-bold">฿{Number(slot.price || 0)}</Text>
-          <View className={`px-2 py-1 rounded-full mt-2 border ${s.bg} ${s.border}`}>
-            <Text className={`text-xs font-bold ${s.color}`}>{s.text}</Text>
-          </View>
-        </View>
+      </View>
+
+      <View className="h-[1px] bg-white/10 w-full my-3" />
+
+      <View className="flex-row">
+        <TouchableOpacity
+          onPress={onChat}
+          className="flex-1 mr-3 px-4 py-3 rounded-full border border-yellow-400 items-center justify-center flex-row"
+        >
+          <MaterialIcons name="chat-bubble-outline" size={18} color="#FDE68A" style={{ marginRight: 6 }} />
+          <Text className="text-yellow-400 font-bold text-base">แชต</Text>
+        </TouchableOpacity>
+
+        {canReview && (
+          <TouchableOpacity
+            onPress={onReview}
+            className="flex-1 px-4 py-3 rounded-full border border-green-500 items-center justify-center flex-row"
+          >
+            <MaterialIcons name="star-rate" size={18} color="#4ADE80" style={{ marginRight: 6 }} />
+            <Text className="text-green-400 font-bold text-base">รีวิว</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
-};
+}
 
-// ==============================
-// Page (ไฟล์เดียวครบ)
-// ==============================
-export default function BookingDashboardPage() {
+// -------- Page --------
+export default function FtBookingHome() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<Service[]>([]);
+  const [slots, setSlots] = useState<TimeSlotItem[]>([]);
+  const [ft, setFt] = useState<FortuneTellerMe | null>(null);
 
-  const [services, setServices] = useState<ServiceCategory[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadingOnce, setLoadingOnce] = useState(true);
-
-  const fetchAll = useCallback(async () => {
+  const loadAll = useCallback(async () => {
+    setLoading(true);
     try {
-      // 1) ใครฉัน? => เอา UserID มาก่อน
-      const meRes = await api.get<UserProfile>("/users/profile");
-      const myUserId = meRes.data.UserID;
+      const [ftRes, svcRes, tsRes] = await Promise.all([
+        api.get<FortuneTellerMe>("/fortune-teller/me"),
+        api.get<Service[]>("/services"),
+        api.get<TimeSlotItem[]>("/time-slots/me"),
+      ]);
 
-      // 2) ดึง services ทั้งหมด แล้วกรองเฉพาะที่เป็นของฉัน
-      const servicesRes = await api.get<ServiceItem[]>("/services");
-      const mine = (servicesRes.data || []).filter(
-        (s) => s.FortuneTeller?.UserID === myUserId
-      );
+      const myFt = ftRes.data;
+      setFt(myFt);
 
-      // Map เป็น ServiceCategory[] (ใช้ ServiceID/Service_name)
-      const myServiceList: ServiceCategory[] = mine.map((s) => ({
-        id: s.ServiceID,
-        name: s.Service_name,
-      }));
+      const myServices = (svcRes.data || []).filter((s) => s.FortuneTellerID === myFt.FortuneTellerID);
+      setServices(myServices);
 
-      // 3) ดึง time slots ของฉัน
-      const tsRes = await api.get<TimeSlotItem[]>("/time-slots/me");
-      const myTimeSlotsRaw = tsRes.data || [];
-
-      // สร้าง map service เพื่อง่ายต่อการเติมชื่อ/ราคา
-      const byId = new Map(mine.map((s) => [s.ServiceID, s]));
-
-      // ✅ normalize สถานะให้ปลอดภัยตั้งแต่ต้นทาง
-      const myTimeSlots: TimeSlot[] = myTimeSlotsRaw.map((t) => {
-        const srv = byId.get(t.ServiceID);
-        const normalizedStatus = (t.Status || "AVAILABLE").toString().toUpperCase();
-        const safeStatus: TimeSlot["status"] = (["AVAILABLE", "BOOKED", "CANCELLED"].includes(
-          normalizedStatus
-        )
-          ? normalizedStatus
-          : "AVAILABLE") as TimeSlot["status"];
-
-        return {
-          id: t.TimeSlotID,
-          startTime: new Date(t.StartTime),
-          endTime: new Date(t.EndTime),
-          serviceName: srv?.Service_name ?? "Unknown Service",
-          price: Number(srv?.Price ?? 0),
-          status: safeStatus,
-        };
-      });
-
-      // เรียงตามเวลาเริ่ม
-      myTimeSlots.sort(
-        (a, b) => a.startTime.getTime() - b.startTime.getTime()
-      );
-
-      setServices(myServiceList);
-      setTimeSlots(myTimeSlots);
-    } catch (err: any) {
-      console.log("Booking dashboard fetch error:", err?.message || err);
-      Alert.alert("ดึงข้อมูลไม่สำเร็จ", "โปรดลองใหม่อีกครั้ง");
+      setSlots(tsRes.data || []);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "โหลดข้อมูลไม่สำเร็จ";
+      Alert.alert("เกิดข้อผิดพลาด", String(msg));
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await fetchAll();
-    } finally {
-      setRefreshing(false);
-    }
-  }, [fetchAll]);
-
-  // โหลดครั้งแรก
   useEffect(() => {
-    (async () => {
-      try {
-        await fetchAll();
-      } finally {
-        setLoadingOnce(false);
-      }
-    })();
-  }, [fetchAll]);
+    loadAll();
+  }, [loadAll]);
 
-  // รีโหลดอัตโนมัติทุกครั้งที่หน้านี้ถูกโฟกัส
-  useFocusEffect(
-    useCallback(() => {
-      fetchAll();
-      return () => {};
-    }, [fetchAll])
-  );
+  // แผนที่ ServiceID -> Service
+  const serviceMap = useMemo(() => {
+    const map: Record<string, Service> = {};
+    services.forEach((s) => (map[s.ServiceID] = s));
+    return map;
+  }, [services]);
 
-  // ------ Render ------
-  if (loadingOnce) {
-    return (
-      <ScreenWrapper>
-        <HeaderBar title="P2P Booking" showChat />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-white/80">กำลังโหลดข้อมูล...</Text>
-        </View>
-      </ScreenWrapper>
-    );
-  }
+  // เลือกเฉพาะ slot ที่ BOOKED และเป็นของบริการของเรา
+  const bookings: BookingCardData[] = useMemo(() => {
+    const mine = new Set(services.map((s) => s.ServiceID));
+    return (slots || [])
+      .filter((t) => t.Status === "BOOKED" && mine.has(t.ServiceID))
+      .sort((a, b) => new Date(a.StartTime).getTime() - new Date(b.StartTime).getTime())
+      .map((t) => {
+        const svc = serviceMap[t.ServiceID];
+        return {
+          id: t.TimeSlotID,
+          ServiceID: t.ServiceID,
+          ServiceName: svc?.Service_name || "บริการ",
+          StartTime: t.StartTime,
+          EndTime: t.EndTime,
+          Price: Number(svc?.Price ?? 0),
+          AvatarURL: Array.isArray(svc?.ImageURLs) && svc.ImageURLs.length > 0 ? svc.ImageURLs[0] : null,
+        };
+      });
+  }, [slots, services, serviceMap]);
+
+  const goManageService = () => {
+    // ไปหน้า mybooking ตามที่ระบุ
+    router.push("/(fortune-teller)/booking/mybooking");
+  };
+
+  const onChat = (b: BookingCardData) => {
+    Alert.alert("แชต", "ตัวอย่าง: สร้าง/เปิดห้องแชตกับลูกค้าคนนี้ (รอ backend ส่ง customerId มากับ order/slot).");
+  };
+  const onReview = (_b: BookingCardData) => {
+    Alert.alert("รีวิว", "ฝั่งหมอดูมักไม่ต้องรีวิวลูกค้า (ปรับตาม requirement ได้).");
+  };
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="P2P Booking" showChat />
+      <HeaderBar title="Booking (Fortune Teller)" />
 
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 28,
-          paddingTop: 8,
-        }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* ปุ่มสร้าง Service */}
-        <TouchableOpacity
-          className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4 mb-6"
-          onPress={() => router.push("/(fortune-teller)/booking/create_service")}
-        >
-          <View className="flex-row items-center">
-            <MaterialIcons name="add-box" size={20} color="white" />
-            <Text className="text-alabaster text-base font-semibold ml-3">
-              Create new service
-            </Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={22} color="white" />
-        </TouchableOpacity>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#fff" />
+          <Text className="text-white/80 mt-2">กำลังโหลดข้อมูล...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={bookings}
+          keyExtractor={(it) => it.id}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+          ListHeaderComponent={
+            <View>
+              {/* ปุ่มยาวเดียว: Manage Service */}
+              <TouchableOpacity
+                onPress={goManageService}
+                activeOpacity={0.9}
+                className="w-full rounded-full bg-yellow-400 items-center justify-center py-4 mb-4"
+              >
+                <Text className="text-black font-extrabold text-base">Manage Service</Text>
+              </TouchableOpacity>
 
-        {/* บริการของคุณ */}
-        <Text className="text-white/80 font-bold mb-3 text-base">Your service</Text>
-        {services.length > 0 ? (
-          services.map((svc) => (
-            <ServiceCard
-              key={svc.id}
-              service={svc}
-              onPress={() =>
-                router.push({
-                  pathname: "/(fortune-teller)/booking/service/[id]",
-                  params: { id: svc.id },
-                })
-              }
+              <Text className="text-white font-bold text-lg mb-2">Customer Bookings</Text>
+
+              {bookings.length === 0 && (
+                <View className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-4">
+                  <Text className="text-white/70">ยังไม่มีการจองจากลูกค้า</Text>
+                </View>
+              )}
+            </View>
+          }
+          renderItem={({ item }) => (
+            <BookingRow
+              b={item}
+              onChat={() => onChat(item)}
+              onReview={() => onReview(item)}
+              canReview={false}
             />
-          ))
-        ) : (
-          <View className="items-center justify-center bg-primary-100/50 p-6 rounded-2xl mb-6">
-            <Text className="text-white/60">คุณยังไม่มีบริการที่สร้างไว้</Text>
-          </View>
-        )}
-
-        {/* ตารางเวลาของคุณ */}
-        <Text className="text-white/80 font-bold mt-4 mb-3 text-base">
-          Your time slots
-        </Text>
-        {timeSlots.length > 0 ? (
-          timeSlots.map((slot) => <TimeSlotCard key={slot.id} slot={slot} />)
-        ) : (
-          <View className="items-center justify-center bg-primary-100/50 p-6 rounded-2xl">
-            <Text className="text-white/60">คุณยังไม่มีตารางเวลาที่เปิดรับ</Text>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        />
+      )}
     </ScreenWrapper>
   );
 }
