@@ -20,7 +20,7 @@ import ranking_bg from "@/assets/images/home/ranking_bg.png";
 import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 const getBaseURL = () =>
   Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
@@ -160,7 +160,7 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
-  }, [colors]); 
+  }, [colors]);
 
   return (
     <ScreenWrapper>
@@ -171,7 +171,7 @@ export default function HomePage() {
           height={240}
           dotActiveClass="bg-accent-200"
           dotClass="bg-alabaster"
-          onIndexChange={() => {}}
+          onIndexChange={() => { }}
           onImagePress={(i) => {
             const a = newsToArticle[i % newsToArticle.length];
             router.push({
@@ -185,7 +185,7 @@ export default function HomePage() {
           {/* Fortune teller recommendation */}
           <View className="flex-row items-center gap-2.5">
             <Text className="text-white text-base font-sans-semibold">หมอดูออนไลน์</Text>
-            <View className="bg-secondary-100 rounded-md w-20 my-3 px-1">
+            <View className="bg-secondary-100 rounded-md w-20 my-3 px-1" >
               <Text className="text-base text-white text-center py-2 font-sans-medium">
                 ดูทั้งหมด
               </Text>
@@ -222,11 +222,19 @@ export default function HomePage() {
                           </Text>
                         )}
                       </View>
-                      <View className="bg-secondary-100 rounded-md w-20 px-1">
-                        <Text className="text-l text-white text-center py-2 font-sans-medium">
+                      <Pressable
+                        className="bg-secondary-100 rounded-md w-20 px-1"
+                        onPress={() => {
+                          router.push({
+                            pathname: "/(tabs)/p2p/podium",
+                            params: { id: b.LeaderboardID },
+                          });
+                        }}
+                      >
+                        <Text className="text-l text-white text-center py-2 font-sans">
                           ดูทั้งหมด
                         </Text>
-                      </View>
+                      </Pressable>
                     </View>
 
                     <RankingPodium
