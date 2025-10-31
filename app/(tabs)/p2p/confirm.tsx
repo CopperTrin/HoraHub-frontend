@@ -1,4 +1,3 @@
-// app/(tabs)/p2p/confirm.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -15,30 +14,41 @@ import HeaderBar from "@/app/components/ui/HeaderBar";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import p2p_user_1 from "@/assets/images/p2p/ft1.png";
 
 const getBaseURL = () =>
   Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
+type ServiceDetail = {
+  ServiceID: string;
+  Service_name: string;
+  Service_Description: string;
+  Price: number;
+  ImageURLs?: string[];
+};
+
 export default function ConfirmWalletPayment() {
   const router = useRouter();
   const params = useLocalSearchParams<{
-    providerId?: string;
-    serviceName?: string;
-    price?: string;
+    serviceId?: string;
+    customerId?: string;
+    slotId?: string;
     fortuneTellerName?: string;
   }>();
 
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [service, setService] = useState<ServiceDetail | null>(null);
 
-  const priceBaht = Number(params.price) || 0;
-  const serviceName = params.serviceName || "บริการ";
+  const serviceId = params.serviceId || "";
+  const slotId = params.slotId || "";
+  const customerId = params.customerId || "";
   const fortuneTellerName = params.fortuneTellerName || "หมอดูไม่ระบุ";
-  const providerId = params.providerId || "1";
 
-  // ✅ ดึงข้อมูล wallet จาก API
+  const priceBaht = service?.Price || 0;
+  const serviceName = service?.Service_name || "บริการ";
+
+  // ✅ โหลดข้อมูล service และ wallet
   useEffect(() => {
     (async () => {
       try {
@@ -50,49 +60,45 @@ export default function ConfirmWalletPayment() {
           return;
         }
         setToken(t);
-        const res = await axios.get(`${getBaseURL()}/accounting/customer/me`, {
-          headers: { Authorization: `Bearer ${t}` },
-        });
-        setBalance(res.data?.Balance_Number ?? 0);
+
+        // โหลดข้อมูล wallet และ service พร้อมกัน
+        const [balRes, svcRes] = await Promise.all([
+          axios.get(`${getBaseURL()}/accounting/customer/me`, {
+            headers: { Authorization: `Bearer ${t}` },
+          }),
+          axios.get(`${getBaseURL()}/services/${serviceId}`),
+        ]);
+
+        setBalance(balRes.data?.Balance_Number ?? 0);
+        setService(svcRes.data);
       } catch (err) {
-        console.log("Error loading balance:", err);
-        Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลบัญชีได้");
+        console.log("Error loading data:", err);
+        Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลได้");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [serviceId]);
 
+  // ✅ กดชำระเงิน
   const handleConfirmPayment = async () => {
-    if (!token) {
-      Alert.alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
-      return;
-    }
-
-    if (balance === null) {
-      Alert.alert("กำลังโหลดข้อมูลบัญชี...");
-      return;
-    }
-
-    if (balance < priceBaht) {
-      Alert.alert(
-        "ยอดเงินไม่เพียงพอ",
-        "กรุณาเติมเงินใน Wallet ก่อนดำเนินการต่อ",
-        [{ text: "ตกลง" }]
-      );
-      return;
-    }
+    if (!token) return Alert.alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
+    if (balance === null) return Alert.alert("กำลังโหลดข้อมูลบัญชี...");
+    if (balance < priceBaht)
+      return Alert.alert("ยอดเงินไม่เพียงพอ", "กรุณาเติมเงินก่อนชำระเงิน");
 
     try {
       setLoading(true);
       await axios.post(
         `${getBaseURL()}/orders`,
         {
-          ServiceID: providerId,
-          TimeslotID: "เลือกจากหน้า booking ต่อไป",
+          ServiceID: serviceId,
+          TimeslotID: slotId,
+          UserID: customerId,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       Alert.alert("สำเร็จ", "การจองของคุณเสร็จสมบูรณ์", [
         { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p") },
       ]);
@@ -104,12 +110,23 @@ export default function ConfirmWalletPayment() {
     }
   };
 
+  // ✅ กำลังโหลด
   if (loading)
     return (
       <View className="flex-1 bg-[#0E0B1B] justify-center items-center">
         <ActivityIndicator size="large" color="#fff" />
         <Text className="text-white mt-4">กำลังโหลด...</Text>
       </View>
+    );
+
+  if (!service)
+    return (
+      <ScreenWrapper>
+        <HeaderBar title="Payment" showBack />
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-white">ไม่พบบริการ</Text>
+        </View>
+      </ScreenWrapper>
     );
 
   return (
@@ -121,9 +138,18 @@ export default function ConfirmWalletPayment() {
       >
         {/* 🧙‍♂️ ข้อมูลหมอดู */}
         <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-4 mb-4">
-          <Text className="text-white font-bold text-lg mb-3">หมอดู: {fortuneTellerName}</Text>
+          <Text className="text-white font-bold text-lg mb-3">
+            หมอดู: {fortuneTellerName}
+          </Text>
           <View className="flex-row items-center">
-            <Image source={p2p_user_1} className="w-16 h-16 rounded-lg" />
+            <Image
+              source={{
+                uri:
+                  service.ImageURLs?.[0] ||
+                  "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+              }}
+              className="w-16 h-16 rounded-lg"
+            />
             <View className="flex-1 ml-4">
               <Text className="text-white/90">{serviceName}</Text>
               <Text className="text-yellow-400 font-bold mt-1">
@@ -143,10 +169,12 @@ export default function ConfirmWalletPayment() {
 
         {/* 📄 สรุปการชำระเงิน */}
         <View className="bg-[#2A2631] border border-white/10 rounded-2xl p-4 mb-6">
-          <Text className="text-white font-bold text-lg mb-2">สรุปรายการชำระเงิน</Text>
+          <Text className="text-white font-bold text-lg mb-2">
+            สรุปรายการชำระเงิน
+          </Text>
           <View className="flex-row justify-between mb-2">
             <Text className="text-white/70">ชื่อบริการ</Text>
-            <Text className="text-white">{serviceName}</Text>
+            <Text className="text-white">{service.Service_name}</Text>
           </View>
           <View className="flex-row justify-between mb-2">
             <Text className="text-white/70">หมอดู</Text>
@@ -171,7 +199,9 @@ export default function ConfirmWalletPayment() {
           onPress={handleConfirmPayment}
           className="bg-purple-600 py-4 rounded-xl items-center"
         >
-          <Text className="text-white font-bold text-lg">ยืนยันการชำระเงิน</Text>
+          <Text className="text-white font-bold text-lg">
+            ยืนยันการชำระเงิน
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
