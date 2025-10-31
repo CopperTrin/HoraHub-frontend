@@ -32,15 +32,6 @@ const CreateLeaderboard = () => {
             กระดานผู้นำ
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          className="bg-accent-200 rounded-2xl py-3 mb-5 mt-3"
-          onPress={() => router.navigate("../systems/service_categories")}
-        >
-          <Text className="text-blackpearl font-semibold text-center">
-            หมวดหมู่บริการ
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
   );
