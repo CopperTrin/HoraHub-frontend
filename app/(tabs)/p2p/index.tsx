@@ -1,137 +1,295 @@
-import ScreenWrapper from "@/app/components/ScreenWrapper";
-import { View, Text, ScrollView, Image, FlatList, TouchableOpacity } from "react-native";
-import HeaderBar from "../../components/ui/HeaderBar";
-import { useMemo } from "react";
+// app/(tabs)/p2p/index.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-// --- Images for Recommended Users ---
-import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
-import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
-import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
-import fortune_teller_4 from "@/assets/images/home/fortune_teller_4.png";
-import fortune_teller_5 from "@/assets/images/home/fortune_teller_3.png";
-import fortune_teller_6 from "@/assets/images/home/fortune_teller_4.png";
+import axios from "axios";
+import ScreenWrapper from "@/app/components/ScreenWrapper";
+import HeaderBar from "@/app/components/ui/HeaderBar";
 
-// --- Images for P2P Users (Example imports, please change to your actual files) ---
-import p2p_user_1 from "@/assets/images/p2p/ft2.png";
-import p2p_user_2 from "@/assets/images/p2p/ft2.png";
-import p2p_user_3 from "@/assets/images/p2p/ft2.png";
-import p2p_user_4 from "@/assets/images/p2p/ft2.png";
-import p2p_user_5 from "@/assets/images/p2p/ft2.png";
-import p2p_user_6 from "@/assets/images/p2p/ft2.png";
-import p2p_user_7 from "@/assets/images/p2p/ft2.png";
-import p2p_user_8 from "@/assets/images/p2p/ft2.png";
-import p2p_user_9 from "@/assets/images/p2p/ft2.png";
-
-
-// --- Mock Data ---
-// You can replace this with data from your API
-const recommendedUsers = [
-  { id: '1', imageUrl: fortune_teller_1 },
-  { id: '2', imageUrl: fortune_teller_2 },
-  { id: '3', imageUrl: fortune_teller_3 },
-  { id: '4', imageUrl: fortune_teller_4 },
-  { id: '5', imageUrl: fortune_teller_5 },
-  { id: '6', imageUrl: fortune_teller_6 },
-];
-
-const p2pUsers = [
-  { id: '1', name: 'Dr.ช้าง', imageUrl: p2p_user_1, available: true },
-  { id: '2', name: 'Dr.ลักษณ์', imageUrl: p2p_user_2, available: true },
-  { id: '3', name: 'Dr.ปลาย', imageUrl: p2p_user_3, available: true },
-  { id: '4', name: 'Dr.คฑา', imageUrl: p2p_user_4, available: true },
-  { id: '5', name: 'Dr.วั้ง อินดี้', imageUrl: p2p_user_5, available: false },
-  { id: '6', name: 'Dr.นาค', imageUrl: p2p_user_6, available: true },
-  { id: '7', name: 'Dr.บาบา วานก้า', imageUrl: p2p_user_7, available: false },
-  { id: '8', name: 'Dr.ไนท์ เชื่อมจิต', imageUrl: p2p_user_8, available: true },
-  { id: '9', name: 'Dr.โก๊ะ ตาทิพย์', imageUrl: p2p_user_9, available: true },
-];
-// --- End Mock Data ---
-
-// --- Components ---
-const AvailabilityBadge = ({ available }) => {
-  if (!available) return null;
-  return (
-    <View className="absolute top-2 right-2 bg-green-500/80 rounded-full px-2 py-1 flex-row items-center border border-white/50">
-      <View className="w-2 h-2 bg-white rounded-full mr-1.5"></View>
-      <Text className="text-white text-xs font-bold">ว่าง</Text>
-    </View>
-  );
+// ===== Types =====
+type Category = {
+  CategoryID: string;
+  Category_name: string;
+  Category_type: string;
 };
 
-const UserCard = ({ item, onPress }) => (
-  <TouchableOpacity className="w-[48%] mb-4 active:opacity-75" onPress={onPress}>
-    <View className="bg-[#2D2A32] rounded-2xl overflow-hidden shadow-lg">
-      <Image
-        source={typeof item.imageUrl === 'string' ? { uri: item.imageUrl } : item.imageUrl}
-        className="w-full h-48"
-        resizeMode="cover"
-      />
-      <AvailabilityBadge available={item.available} />
-      <Text className="text-center text-yellow-400 p-2 font-semibold">{item.name}</Text>
+type FortuneTeller = {
+  FortuneTellerID: string;
+  UserID: string;
+  Status: string;
+  Bio?: string | null;
+  CVURL?: string;
+};
+
+type User = {
+  UserID: string;
+  Username: string;
+  Role: string[];
+  UserInfo?: {
+    FirstName: string;
+    LastName: string;
+    PictureURL?: string;
+    Email?: string;
+  };
+};
+
+type Service = {
+  ServiceID: string;
+  Service_name: string;
+  Service_Description: string;
+  Price: number;
+  Avg_Rating?: number | null;
+  ImageURLs?: string[];
+  Category?: Category;
+  FortuneTeller?: FortuneTeller;
+  FortuneTellerProfile?: User;
+};
+
+// ===== Components =====
+const CategoryChip = ({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity onPress={onPress} activeOpacity={0.9} className="mr-2 mb-2">
+    <View
+      className={`px-3 py-1.5 rounded-full border ${
+        selected ? "bg-yellow-400 border-yellow-400" : "bg-white/10 border-white/20"
+      }`}
+    >
+      <Text className={`text-xs font-bold ${selected ? "text-black" : "text-white"}`}>{label}</Text>
     </View>
   </TouchableOpacity>
 );
 
-const RecommendedCircle = ({ item, onPress }) => (
-    <TouchableOpacity className="items-center mx-2 active:opacity-75" onPress={onPress}>
-        <View className="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-yellow-400 to-purple-500">
-             <Image
-                source={typeof item.imageUrl === 'string' ? { uri: item.imageUrl } : item.imageUrl}
-                className="w-full h-full rounded-full border-2 border-[#1A181D]"
-            />
+const ServiceCard = ({
+  item,
+  onPressCard,
+  onPressProfile,
+}: {
+  item: Service;
+  onPressCard: () => void;
+  onPressProfile: () => void;
+}) => {
+  const image = item.ImageURLs?.[0];
+  const ft = item.FortuneTellerProfile;
+  const ftName = ft ? `${ft.UserInfo?.FirstName || ""} ${ft.UserInfo?.LastName || ""}`.trim() : "Fortune Teller";
+
+  return (
+    <TouchableOpacity
+      onPress={onPressCard}
+      activeOpacity={0.9}
+      className="bg-[#211A3A] rounded-2xl overflow-hidden border border-white/10 mb-4"
+    >
+      {image ? (
+        <Image source={{ uri: image }} className="w-full h-44" resizeMode="cover" />
+      ) : (
+        <View className="w-full h-44 items-center justify-center bg-white/5">
+          <Text className="text-white/40">ไม่มีรูปภาพ</Text>
         </View>
+      )}
+
+      <View className="p-3">
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="text-white font-bold text-base flex-1 pr-2" numberOfLines={1}>
+            {item.Service_name}
+          </Text>
+        </View>
+
+        <View className="flex-row justify-between items-center mb-2">
+          <View className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15">
+            <Text className="text-[10px] text-white">
+              {item.Category?.Category_name || "Uncategorized"}
+            </Text>
+          </View>
+          <Text className="text-yellow-400 font-bold">฿{item.Price}</Text>
+        </View>
+
+        <Text className="text-gray-300 text-xs mb-3" numberOfLines={2}>
+          {item.Service_Description}
+        </Text>
+
+        {/* fortune teller profile area -> กดเพื่อไปหน้าโปรไฟล์ */}
+        <TouchableOpacity activeOpacity={0.9} onPress={onPressProfile} className="flex-row items-center">
+          {ft?.UserInfo?.PictureURL ? (
+            <Image source={{ uri: ft.UserInfo.PictureURL }} className="w-8 h-8 rounded-full mr-2" />
+          ) : (
+            <View className="w-8 h-8 rounded-full bg-white/10 mr-2" />
+          )}
+          <View className="flex-1">
+            <Text className="text-white text-sm font-semibold" numberOfLines={1}>
+              {ftName || "ไม่พบชื่อหมอดู"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
-);
+  );
+};
 
-
-export default function P2pPage() {
+// ===== Page =====
+export default function P2PServiceHome() {
   const router = useRouter();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleProfilePress = (userId) => {
-    router.push(`/p2p/${userId}`);
+  // กรอง
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const API_BASE = "http://localhost:3456";
+
+  // Fetch services + users แล้ว merge
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [svcRes, userRes] = await Promise.all([axios.get(`${API_BASE}/services`), axios.get(`${API_BASE}/users`)]);
+        const serviceList: Service[] = svcRes.data;
+        const userList: User[] = userRes.data;
+
+        const merged = serviceList.map((svc) => {
+          const ftUser = userList.find((u) => u.UserID === svc.FortuneTeller?.UserID);
+          return { ...svc, FortuneTellerProfile: ftUser };
+        });
+
+        setServices(merged);
+      } catch (err) {
+        console.error("โหลด services หรือ users ไม่ได้:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // หมวดหมู่ทั้งหมด
+  const categories = useMemo(() => {
+    const set = new Set<string>(["All"]);
+    services.forEach((s) => {
+      if (s.Category?.Category_name) set.add(s.Category.Category_name);
+    });
+    return Array.from(set);
+  }, [services]);
+
+  // ฟังก์ชันตรวจสอบว่าตรงกับคำค้นไหม (ไม่สนตัวพิมพ์เล็กใหญ่)
+  const matchSearch = (item: Service, q: string) => {
+    if (!q) return true;
+    const needle = q.trim().toLowerCase();
+
+    const ftName = item.FortuneTellerProfile
+      ? `${item.FortuneTellerProfile.UserInfo?.FirstName || ""} ${item.FortuneTellerProfile.UserInfo?.LastName || ""}`
+      : "";
+
+    const haystacks = [item.Service_name, item.Service_Description, item.Category?.Category_name, ftName, String(item.Price)]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+
+    return haystacks.some((h) => h.includes(needle));
   };
 
-  const memoizedHeader = useMemo(() => (
-    <>
-      <Text className="text-yellow-400 text-lg font-bold my-2 text-center">Recommend</Text>
-      <View className="mb-4">
-        <FlatList
-            data={recommendedUsers}
-            renderItem={({item}) => <RecommendedCircle item={item} onPress={() => handleProfilePress(item.id)} />}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 8 }}
-        />
-      </View>
-    </>
-  ), []);
+  // กรองตามหมวดหมู่ + คำค้น
+  const filtered = useMemo(() => {
+    const byCategory = selectedCategory === "All" ? services : services.filter((s) => s.Category?.Category_name === selectedCategory);
+    return byCategory.filter((s) => matchSearch(s, searchQuery));
+  }, [services, selectedCategory, searchQuery]);
+
+  // ไปหน้ารายละเอียด service
+  const goServiceDetail = (item: Service) => {
+    router.push({ pathname: "/(tabs)/p2p/service/[id]", params: { id: item.ServiceID } });
+  };
+
+  // ไปหน้าโปรไฟล์หมอดู
+  const goFortuneTellerProfile = (item: Service) => {
+    const ftId = item.FortuneTeller?.FortuneTellerID;
+    if (!ftId) return;
+    router.push({ pathname: "/(tabs)/fortune_teller_profile/[id_fortune_teller]", params: { id_fortune_teller: ftId } });
+  };
 
   return (
     <ScreenWrapper>
       <HeaderBar
         title="P2P"
-        rightIcons={[
-          { name: "calendar-month", onPress: () => console.log("Booking tapped") },
-        ]}
         showSearch
-        showChat
-        onSearchSubmit={(query) => {
-          console.log("ค้นหา:", query);
+        onSearchSubmit={(q: any) => {
+          const val =
+            typeof q === "string"
+              ? q
+              : q && typeof q === "object" && "text" in q
+              ? String((q as any).text ?? "")
+              : "";
+          setSearchQuery(val);
         }}
+        rightIcons={[
+          {
+            name: "calendar-month",
+            size: 22, // ✅ หดขนาดไอคอน
+            color: "#fff",
+            onPress: () => router.push("/(tabs)/p2p/mybooking/mybooking"), // ✅ ลิงก์หน้า My Booking
+            // ถ้า HeaderBar รองรับคลาสของ container:
+            containerClass: "p-1.5 mr-1 rounded-lg bg-white/10 border border-white/10 active:bg-white/20",
+          },
+        ]}
       />
-      <View className="flex-1">
-         <FlatList
-            data={p2pUsers}
-            renderItem={({item}) => <UserCard item={item} onPress={() => handleProfilePress(item.id)} />}
-            keyExtractor={item => item.id}
-            numColumns={2}
-            columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 8 }}
-            ListHeaderComponent={memoizedHeader}
-            contentContainerStyle={{ paddingTop: 8 }}
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#fff" />
+          <Text className="text-white mt-3">กำลังโหลดข้อมูล...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(it) => it.ServiceID}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+          ListHeaderComponent={
+            <View className="mb-3">
+              <View className="flex-row items-center justify-between mb-1">
+
+                {/* ✅ บัตรแสดงคำค้น + ปุ่มยกเลิก */}
+                {searchQuery ? (
+                  <View className="flex-row items-center">
+                    <Text className="text-white/60 text-xs mr-2" numberOfLines={1}>
+                      ค้นหา: “{searchQuery}”
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery("")}
+                      className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15"
+                      accessibilityRole="button"
+                      accessibilityLabel="ยกเลิกการค้นหา"
+                    >
+                      <Text className="text-[10px] text-white/80 font-semibold">ยกเลิก</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* ชิปหมวดหมู่ */}
+              <View className="flex-row flex-wrap">
+                {categories.map((c) => (
+                  <CategoryChip key={c} label={c} selected={selectedCategory === c} onPress={() => setSelectedCategory(c)} />
+                ))}
+              </View>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <ServiceCard
+              item={item}
+              onPressCard={() => goServiceDetail(item)}
+              onPressProfile={() => goFortuneTellerProfile(item)}
+            />
+          )}
+          ListEmptyComponent={
+            <View className="items-center mt-10">
+              <Text className="text-white/60">ไม่พบผลลัพธ์ตามเงื่อนไข</Text>
+            </View>
+          }
         />
-      </View>
+      )}
     </ScreenWrapper>
   );
 }
-

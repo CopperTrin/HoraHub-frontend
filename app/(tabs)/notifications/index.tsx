@@ -161,8 +161,8 @@ export default function NotificationsPage() {
       <View className="flex-1" style={{ backgroundColor: COLORS.bg }}>
         <View className="flex-row items-center justify-between px-4 pt-2 pb-2">
           <View className="flex-row gap-2">
-            <Tab label="ทั้งหมด" active={tab==="all"} onPress={()=>setTab("all")} />
-            <Tab label="ยังไม่ได้อ่าน" active={tab==="unread"} onPress={()=>setTab("unread")} />
+            <Tab label="All" active={tab==="all"} onPress={()=>setTab("all")} />
+            <Tab label="Not yet" active={tab==="unread"} onPress={()=>setTab("unread")} />
           </View>
 
           <TouchableOpacity
@@ -170,7 +170,7 @@ export default function NotificationsPage() {
             className="px-3 py-2 rounded-full border"
             style={{ borderColor: selectMode ? COLORS.yellow : "rgba(255,255,255,0.06)", backgroundColor: selectMode ? "rgba(255,211,61,0.12)" : "transparent" }}
           >
-            <Text style={{ color: COLORS.yellow, fontWeight: "800" }}>{selectMode ? "ยกเลิก" : "เลือก"}</Text>
+            <Text style={{ color: COLORS.yellow, fontWeight: "800" }}>{selectMode ? "cancel" : "choose"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -202,20 +202,18 @@ export default function NotificationsPage() {
   >
     <View className="flex-row items-center justify-between mb-2 px-1">
       <Text style={{ color: COLORS.dim }}>
-        เลือกแล้ว {selectedIds.size} รายการ
+        Ready {selectedIds.size} list
       </Text>
       <TouchableOpacity onPress={toggleSelectAll}>
         <Text style={{ color: COLORS.yellow, fontWeight: "800" }}>
-          เลือกทั้งหมด
+          Choose all
         </Text>
       </TouchableOpacity>
     </View>
 
     {/* แถวปุ่มลอยตัว ไม่มีพื้นหลังของแถว */}
     <View style={{ flexDirection: "row", gap: 12 }}>
-      <ActionButton label="ทำเป็นอ่านแล้ว" onPress={() => markRead(true)} />
-      <ActionButton label="ยังไม่ได้อ่าน" onPress={() => markRead(false)} />
-      <ActionButton label="ลบ" danger onPress={confirmRemoveSelected} />
+      <ActionButton label="Delete" danger onPress={confirmRemoveSelected} />
     </View>
   </View>
 )}

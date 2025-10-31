@@ -78,6 +78,7 @@ export default function ProfilePage() {
       });
       setUserInfo(res.data);
       console.log('Fetched profile:', res.data);
+      console.log(token)
       setLoading(false);
     } catch (error: any) {
       if (error?.response) {

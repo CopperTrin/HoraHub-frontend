@@ -22,6 +22,8 @@ const Stars = ({ rating }: { rating: number }) => {
   );
 };
 
+
+
 const ReviewCard = ({ name, date, rating, review }: ReviewProps) => (
   <View className="bg-[#1C0033] rounded-2xl p-6 w-full mb-6">
     {/* คะแนนรวม */}
