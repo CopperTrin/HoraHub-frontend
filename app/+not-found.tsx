@@ -1,4 +1,4 @@
-import { Link, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function NotFoundScreen() {
@@ -9,15 +9,6 @@ export default function NotFoundScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>404</Text>
         <Text style={styles.message}>ไม่พบหน้าที่คุณกำลังค้นหา</Text>
-
-        <Link href="/home" style={styles.link}>
-          <Text style={styles.linkText}>กลับหน้าแรก</Text>
-        </Link>
-
-        <Link href="/(fortune-teller)/dashboard" style={styles.link} className="mt-2">
-          <Text style={styles.linkText}>ไปหน้าหมอดู</Text>
-        </Link>
-
       </View>
     </>
   );
