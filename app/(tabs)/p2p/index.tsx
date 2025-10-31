@@ -1,6 +1,6 @@
 // app/(tabs)/p2p/index.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator , Platform} from "react-native";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
@@ -131,8 +131,7 @@ const ServiceCard = ({
   );
 };
 
-// ===== Page =====
-const API_BASE = "http://localhost:3456";
+const API_BASE = Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://127.0.0.1:3456";
 
 export default function P2PServiceHome() {
   const router = useRouter();
@@ -259,6 +258,7 @@ export default function P2PServiceHome() {
       <HeaderBar
         title="P2P"
         showSearch
+        showChat
         onSearchSubmit={(q: any) => {
           const val =
             typeof q === "string"

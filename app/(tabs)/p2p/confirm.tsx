@@ -133,7 +133,7 @@ export default function ConfirmWalletPayment() {
 
       // 5️⃣ แจ้งสำเร็จ
       Alert.alert("สำเร็จ", "การจองของคุณเสร็จสมบูรณ์", [
-        { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p") },
+        { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p/mybooking/mybooking") },
       ]);
     } catch (error: any) {
       console.error("Order error:", error?.message || error);

@@ -20,14 +20,6 @@ import HeaderBar from "../../components/ui/HeaderBar";
 // Types (UI)
 // ==============================
 type ServiceCategory = { id: string; name: string };
-type TimeSlot = {
-  id: string;
-  startTime: Date;
-  endTime: Date;
-  serviceName: string;
-  price: number;
-  status: "AVAILABLE" | "BOOKED" | "CANCELLED";
-};
 
 // ==============================
 // Types (จาก Server — ย่อจาก OAS)
@@ -61,31 +53,30 @@ type ServiceItem = {
   };
   FortuneTeller?: {
     FortuneTellerID: string;
-    UserID: string; // ใช้กรอง "บริการของฉัน"
+    UserID: string;
     Status: "ACTIVE" | "PENDING" | "REJECTED";
   };
 };
 
 type TimeSlotItem = {
   TimeSlotID: string;
-  StartTime: string; // ISO
-  EndTime: string;   // ISO
+  StartTime: string;
+  EndTime: string;
   LockAmount: number;
-  Status?: string;   // AVAILABLE | BOOKED | CANCELLED (อาจ undefined/รูปแบบอื่น)
+  Status?: string;
   FortuneTellerID: string;
   ServiceID: string;
 };
 
 // ==============================
-// Axios instance (ไฟล์เดียวจบ)
+// Axios instance
 // ==============================
 const ACCESS_TOKEN_KEY = "access_token";
 
 const computeBaseURL = () => {
   const env = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (env) return env;
-  // Emulator-friendly fallback:
-  // Android Emulator -> 10.0.2.2, iOS Simulator -> localhost
+  // Emulator-friendly fallback
   // @ts-ignore
   const { Platform } = require("react-native");
   if (Platform.OS === "android") return "http://10.0.2.2:3456";
@@ -131,141 +122,35 @@ const ServiceCard = ({
   </TouchableOpacity>
 );
 
-const TimeSlotCard = ({ slot }: { slot: TimeSlot }) => {
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString("th-TH", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-  const formatTime = (d: Date) =>
-    d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-
-  // สไตล์สถานะมาตรฐาน
-  const STATUS_STYLES = {
-    AVAILABLE: {
-      text: "ว่าง",
-      color: "text-green-400",
-      bg: "bg-green-500/20",
-      border: "border-green-400/50",
-    },
-    BOOKED: {
-      text: "จองแล้ว",
-      color: "text-yellow-400",
-      bg: "bg-yellow-500/20",
-      border: "border-yellow-400/50",
-    },
-    CANCELLED: {
-      text: "ยกเลิก",
-      color: "text-red-400",
-      bg: "bg-red-500/20",
-      border: "border-red-400/50",
-    },
-  } as const;
-
-  // fallback กันพัง
-  const FALLBACK_STYLE = {
-    text: "ไม่ทราบสถานะ",
-    color: "text-gray-300",
-    bg: "bg-gray-500/20",
-    border: "border-gray-400/50",
-  };
-
-  // ปลอดภัยจากค่าที่เพี้ยน
-  const normalized =
-    typeof slot?.status === "string" ? slot.status.toUpperCase() : "AVAILABLE";
-
-  const s =
-    (STATUS_STYLES as any)[normalized] /* AVAILABLE/BOOKED/CANCELLED */ ||
-    FALLBACK_STYLE;
-
-  return (
-    <View className="bg-primary-100 rounded-2xl p-4 mb-3 border border-white/10">
-      <View className="flex-row justify-between items-start">
-        <View className="flex-1 pr-2">
-          <Text className="text-alabaster font-bold text-base">
-            {slot.serviceName || "Unknown Service"}
-          </Text>
-          <Text className="text-gray-300 mt-1">📅 {formatDate(slot.startTime)}</Text>
-          <Text className="text-gray-300">
-            🕒 {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-          </Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-yellow-400 text-lg font-bold">฿{Number(slot.price || 0)}</Text>
-          <View className={`px-2 py-1 rounded-full mt-2 border ${s.bg} ${s.border}`}>
-            <Text className={`text-xs font-bold ${s.color}`}>{s.text}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-};
-
 // ==============================
-// Page (ไฟล์เดียวครบ)
+// Page
 // ==============================
 export default function BookingDashboardPage() {
   const router = useRouter();
 
   const [services, setServices] = useState<ServiceCategory[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingOnce, setLoadingOnce] = useState(true);
 
   const fetchAll = useCallback(async () => {
     try {
-      // 1) ใครฉัน? => เอา UserID มาก่อน
+      // 1) ใครฉัน?
       const meRes = await api.get<UserProfile>("/users/profile");
       const myUserId = meRes.data.UserID;
 
-      // 2) ดึง services ทั้งหมด แล้วกรองเฉพาะที่เป็นของฉัน
+      // 2) ดึง services แล้วกรองเฉพาะของฉัน
       const servicesRes = await api.get<ServiceItem[]>("/services");
       const mine = (servicesRes.data || []).filter(
         (s) => s.FortuneTeller?.UserID === myUserId
       );
 
-      // Map เป็น ServiceCategory[] (ใช้ ServiceID/Service_name)
+      // Map เป็น ServiceCategory[]
       const myServiceList: ServiceCategory[] = mine.map((s) => ({
         id: s.ServiceID,
         name: s.Service_name,
       }));
 
-      // 3) ดึง time slots ของฉัน
-      const tsRes = await api.get<TimeSlotItem[]>("/time-slots/me");
-      const myTimeSlotsRaw = tsRes.data || [];
-
-      // สร้าง map service เพื่อง่ายต่อการเติมชื่อ/ราคา
-      const byId = new Map(mine.map((s) => [s.ServiceID, s]));
-
-      // ✅ normalize สถานะให้ปลอดภัยตั้งแต่ต้นทาง
-      const myTimeSlots: TimeSlot[] = myTimeSlotsRaw.map((t) => {
-        const srv = byId.get(t.ServiceID);
-        const normalizedStatus = (t.Status || "AVAILABLE").toString().toUpperCase();
-        const safeStatus: TimeSlot["status"] = (["AVAILABLE", "BOOKED", "CANCELLED"].includes(
-          normalizedStatus
-        )
-          ? normalizedStatus
-          : "AVAILABLE") as TimeSlot["status"];
-
-        return {
-          id: t.TimeSlotID,
-          startTime: new Date(t.StartTime),
-          endTime: new Date(t.EndTime),
-          serviceName: srv?.Service_name ?? "Unknown Service",
-          price: Number(srv?.Price ?? 0),
-          status: safeStatus,
-        };
-      });
-
-      // เรียงตามเวลาเริ่ม
-      myTimeSlots.sort(
-        (a, b) => a.startTime.getTime() - b.startTime.getTime()
-      );
-
       setServices(myServiceList);
-      setTimeSlots(myTimeSlots);
     } catch (err: any) {
       console.log("Booking dashboard fetch error:", err?.message || err);
       Alert.alert("ดึงข้อมูลไม่สำเร็จ", "โปรดลองใหม่อีกครั้ง");
@@ -292,7 +177,7 @@ export default function BookingDashboardPage() {
     })();
   }, [fetchAll]);
 
-  // รีโหลดอัตโนมัติทุกครั้งที่หน้านี้ถูกโฟกัส
+  // รีโหลดเมื่อโฟกัส
   useFocusEffect(
     useCallback(() => {
       fetchAll();
@@ -300,7 +185,6 @@ export default function BookingDashboardPage() {
     }, [fetchAll])
   );
 
-  // ------ Render ------
   if (loadingOnce) {
     return (
       <ScreenWrapper>
@@ -314,7 +198,7 @@ export default function BookingDashboardPage() {
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="P2P Booking" showChat showBack/>
+      <HeaderBar title="P2P Booking" showChat showBack />
 
       <ScrollView
         contentContainerStyle={{
@@ -358,18 +242,6 @@ export default function BookingDashboardPage() {
         ) : (
           <View className="items-center justify-center bg-primary-100/50 p-6 rounded-2xl mb-6">
             <Text className="text-white/60">คุณยังไม่มีบริการที่สร้างไว้</Text>
-          </View>
-        )}
-
-        {/* ตารางเวลาของคุณ */}
-        <Text className="text-white/80 font-bold mt-4 mb-3 text-base">
-          Your time slots
-        </Text>
-        {timeSlots.length > 0 ? (
-          timeSlots.map((slot) => <TimeSlotCard key={slot.id} slot={slot} />)
-        ) : (
-          <View className="items-center justify-center bg-primary-100/50 p-6 rounded-2xl">
-            <Text className="text-white/60">คุณยังไม่มีตารางเวลาที่เปิดรับ</Text>
           </View>
         )}
       </ScrollView>
