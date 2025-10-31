@@ -173,16 +173,15 @@ export default function TimeSlotEditor() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 8 }}>
         {/* Service (read-only จาก params) */}
-        <Text className="text-white/70 mb-2">บริการ</Text>
+        <Text className="text-white/70 mb-2">Service</Text>
         <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10">
           <Text className="text-alabaster font-semibold">
             {serviceName ? String(serviceName) : serviceId ? `Service ID: ${serviceId}` : "-"}
           </Text>
-          <Text className="text-white/60 mt-1">* หน้านี้ถูกเปิดมาจากบริการที่คุณเลือก</Text>
         </View>
 
         {/* วันที่ */}
-        <Text className="text-white/70 mb-2">วันที่</Text>
+        <Text className="text-white/70 mb-2">Date</Text>
         <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10 flex-row items-center justify-between">
           <TouchableOpacity className="bg-white/10 px-3 py-2 rounded-xl" onPress={() => shiftDay(-1)}>
             <MaterialIcons name="chevron-left" size={20} color="#fff" />
@@ -198,12 +197,12 @@ export default function TimeSlotEditor() {
         </View>
 
         {/* เวลาเริ่ม (ปุ่มเป็น -10m / -1m / +1m / +10m) */}
-        <Text className="text-white/70 mb-2">เวลาเริ่ม</Text>
+        <Text className="text-white/70 mb-2">Time</Text>
         <TimeStepper date={date} onChange={setDate} />
         <View className="h-3" />
 
         {/* ระยะเวลา (มี 5 และ 10 นาทีเพิ่มแล้ว) */}
-        <Text className="text-white/70 mb-2">ระยะเวลา</Text>
+        <Text className="text-white/70 mb-2">Service time</Text>
         <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10 flex-row flex-wrap gap-2">
           {Durations.map((m) => {
             const active = duration === m;
@@ -224,13 +223,13 @@ export default function TimeSlotEditor() {
         {/* สรุป (ไม่มีราคา) */}
         <View className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6">
           <Text className="text-white/80">
-            เริ่ม: <Text className="font-semibold">{toLocalDateLabel(date)} {toLocalTimeLabel(date)}</Text>
+            Start: <Text className="font-semibold">{toLocalDateLabel(date)} {toLocalTimeLabel(date)}</Text>
           </Text>
           <Text className="text-white/80 mt-1">
-            สิ้นสุด: <Text className="font-semibold">{toLocalTimeLabel(endTime)}</Text>
+            End: <Text className="font-semibold">{toLocalTimeLabel(endTime)}</Text>
           </Text>
           <Text className="text-white/80 mt-1">
-            บริการ: <Text className="font-semibold">{serviceName ?? "-"}</Text>
+            Service: <Text className="font-semibold">{serviceName ?? "-"}</Text>
           </Text>
         </View>
 

@@ -124,7 +124,7 @@ const ServiceCard = ({
     <View className="flex-row items-center justify-between">
       <View className="flex-1 pr-3">
         <Text className="text-alabaster font-bold text-base">{service.name}</Text>
-        <Text className="text-white/60 mt-1">แตะเพื่อเลือกวัน/เวลาให้บริการนี้</Text>
+        <Text className="text-white/60 mt-1">create time slot/edit service </Text>
       </View>
       <MaterialIcons name="chevron-right" size={22} color="white" />
     </View>
@@ -341,7 +341,7 @@ export default function BookingDashboardPage() {
         </TouchableOpacity>
 
         {/* บริการของคุณ */}
-        <Text className="text-white/80 font-bold mb-3 text-base">บริการของคุณ</Text>
+        <Text className="text-white/80 font-bold mb-3 text-base">Your service</Text>
         {services.length > 0 ? (
           services.map((svc) => (
             <ServiceCard
@@ -363,7 +363,7 @@ export default function BookingDashboardPage() {
 
         {/* ตารางเวลาของคุณ */}
         <Text className="text-white/80 font-bold mt-4 mb-3 text-base">
-          ตารางเวลาของคุณ
+          Your time slots
         </Text>
         {timeSlots.length > 0 ? (
           timeSlots.map((slot) => <TimeSlotCard key={slot.id} slot={slot} />)

@@ -1,120 +1,179 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, TextInput } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+// app/(tabs)/p2p/confirm.tsx
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
-
-// --- Mock images ---
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import p2p_user_1 from "@/assets/images/p2p/ft1.png";
-import p2p_user_2 from "@/assets/images/p2p/ft1.png";
-import p2p_user_3 from "@/assets/images/p2p/ft1.png";
-import p2p_user_4 from "@/assets/images/p2p/ft1.png";
 
-// ===== Mock Data (ไม่ต้องใช้ savedCards และ mobileBanks แล้ว) =====
-const p2pUsers = [
-    { id: "1", name: "Dr.ช้าง ทศพร", imageUrl: p2p_user_1, rating: 4.8, reviews: 251 },
-    { id: "2", name: "Dr.ลักษณ์ ราชสีห์", imageUrl: p2p_user_2, rating: 5.0, reviews: 512 },
-    { id: "3", name: "Dr.ปลาย พรายกระซิบ", imageUrl: p2p_user_3, rating: 4.9, reviews: 330 },
-    { id: "4", name: "Dr.คฑา ชินบัญชร", imageUrl: p2p_user_4, rating: 4.7, reviews: 180 },
-];
+const getBaseURL = () =>
+  Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
-// ===== แก้ไข: เพิ่ม 'mobile' กลับเข้ามา =====
-type PayMethod = "card" | "mobile" | "qr";
-
-export default function ConfirmScreenRedesigned() {
-  const [payMethod, setPayMethod] = useState<PayMethod>("card");
+export default function ConfirmWalletPayment() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    providerId?: string;
+    serviceName?: string;
+    price?: string;
+    fortuneTellerName?: string;
+  }>();
 
-  const params = useLocalSearchParams<{ providerId?: string; serviceName?: string; price?: string; duration?: string; }>();
-  const providerId = params.providerId || "";
-  const serviceName = params.serviceName || "บริการ";
+  const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
   const priceBaht = Number(params.price) || 0;
+  const serviceName = params.serviceName || "บริการ";
+  const fortuneTellerName = params.fortuneTellerName || "หมอดูไม่ระบุ";
+  const providerId = params.providerId || "1";
 
-  const user = p2pUsers.find((u) => u.id === providerId) || { name: "ไม่พบหมอดู", imageUrl: p2p_user_1 };
-  
-  const getSelectedPaymentText = () => {
-    if (payMethod === 'card') return 'Credit card / Debit card';
-    if (payMethod === 'mobile') return 'Mobile Banking';
-    return 'QR Thai PromptPay';
-  }
+  // ✅ ดึงข้อมูล wallet จาก API
+  useEffect(() => {
+    (async () => {
+      try {
+        const t = await SecureStore.getItemAsync("access_token");
+        if (!t) {
+          Alert.alert("กรุณาเข้าสู่ระบบ", "คุณต้องเข้าสู่ระบบก่อนชำระเงิน", [
+            { text: "เข้าสู่ระบบ", onPress: () => router.replace("/profile") },
+          ]);
+          return;
+        }
+        setToken(t);
+        const res = await axios.get(`${getBaseURL()}/accounting/customer/me`, {
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        setBalance(res.data?.Balance_Number ?? 0);
+      } catch (err) {
+        console.log("Error loading balance:", err);
+        Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลบัญชีได้");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleConfirmPayment = async () => {
+    if (!token) {
+      Alert.alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
+      return;
+    }
+
+    if (balance === null) {
+      Alert.alert("กำลังโหลดข้อมูลบัญชี...");
+      return;
+    }
+
+    if (balance < priceBaht) {
+      Alert.alert(
+        "ยอดเงินไม่เพียงพอ",
+        "กรุณาเติมเงินใน Wallet ก่อนดำเนินการต่อ",
+        [{ text: "ตกลง" }]
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.post(
+        `${getBaseURL()}/orders`,
+        {
+          ServiceID: providerId,
+          TimeslotID: "เลือกจากหน้า booking ต่อไป",
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      Alert.alert("สำเร็จ", "การจองของคุณเสร็จสมบูรณ์", [
+        { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p") },
+      ]);
+    } catch (error: any) {
+      console.log("Order error:", error?.message || error);
+      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างคำสั่งซื้อได้");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading)
+    return (
+      <View className="flex-1 bg-[#0E0B1B] justify-center items-center">
+        <ActivityIndicator size="large" color="#fff" />
+        <Text className="text-white mt-4">กำลังโหลด...</Text>
+      </View>
+    );
 
   return (
     <ScreenWrapper>
       <HeaderBar title="Payment" showBack onBackPress={() => router.back()} />
-      <View className="flex-1 bg-[#0E0B1B]">
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}>
-          {/* Booking Summary Card */}
-          <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-4 mb-4">
-            <Text className="text-white font-bold text-lg mb-3">{user.name}</Text>
-            <View className="flex-row items-center">
-              <Image source={user.imageUrl} className="w-16 h-16 rounded-lg" />
-              <View className="flex-1 ml-4">
-                <Text className="text-white/90">Start 12 / 10 / 2568 Time 16:00-16:30</Text>
-                <Text className="text-white/70 mt-1">{serviceName}</Text>
-                <Text className="text-yellow-400 font-bold mt-1">฿ {priceBaht.toFixed(2)}</Text>
-              </View>
+      <ScrollView
+        className="flex-1 bg-[#0E0B1B]"
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+      >
+        {/* 🧙‍♂️ ข้อมูลหมอดู */}
+        <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-4 mb-4">
+          <Text className="text-white font-bold text-lg mb-3">หมอดู: {fortuneTellerName}</Text>
+          <View className="flex-row items-center">
+            <Image source={p2p_user_1} className="w-16 h-16 rounded-lg" />
+            <View className="flex-1 ml-4">
+              <Text className="text-white/90">{serviceName}</Text>
+              <Text className="text-yellow-400 font-bold mt-1">
+                ฿ {priceBaht.toFixed(2)}
+              </Text>
             </View>
           </View>
+        </View>
 
-          {/* Voucher Code */}
-          <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-3 flex-row items-center mb-4">
-            <Text className="text-yellow-400 mr-3">🎟️</Text>
-            <TextInput
-              placeholder="Enter Voucher Code"
-              placeholderTextColor="#8A8A8A"
-              className="flex-1 text-white"
-            />
-            <TouchableOpacity className="bg-purple-600 px-4 py-2 rounded-lg">
-              <Text className="text-white font-bold text-sm">Add</Text>
-            </TouchableOpacity>
+        {/* 💰 ยอดเงินในบัญชี */}
+        <View className="bg-[#1F1C23] border border-white/10 rounded-2xl px-4 py-3 flex-row justify-between mb-6">
+          <Text className="text-white">ยอดเงินใน Wallet</Text>
+          <Text className="text-yellow-400 font-bold">
+            {balance?.toFixed(2)} บาท
+          </Text>
+        </View>
+
+        {/* 📄 สรุปการชำระเงิน */}
+        <View className="bg-[#2A2631] border border-white/10 rounded-2xl p-4 mb-6">
+          <Text className="text-white font-bold text-lg mb-2">สรุปรายการชำระเงิน</Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-white/70">ชื่อบริการ</Text>
+            <Text className="text-white">{serviceName}</Text>
           </View>
-
-          {/* Total Price */}
-          <View className="bg-[#1F1C23] border border-white/10 rounded-2xl px-4 py-3 flex-row justify-between items-center mb-6">
-            <Text className="text-white font-bold">Total Price</Text>
-            <Text className="text-white font-bold text-lg">{priceBaht.toFixed(2)} Baht</Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-white/70">หมอดู</Text>
+            <Text className="text-white">{fortuneTellerName}</Text>
           </View>
-
-          {/* Payment Methods */}
-          <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-4">
-            <Text className="text-white font-bold text-base mb-4">Payment Methods</Text>
-            
-            {/* ===== แก้ไข: ทำให้เป็นตัวเลือกธรรมดา ไม่มีรายละเอียดข้างใน ===== */}
-            <PaymentRadioItem label="Credit card / Debit card" selected={payMethod === 'card'} onPress={() => setPayMethod('card')} />
-            <PaymentRadioItem label="Mobile Banking" selected={payMethod === 'mobile'} onPress={() => setPayMethod('mobile')} />
-            <PaymentRadioItem label="QR Thai PromptPay" selected={payMethod === 'qr'} onPress={() => setPayMethod('qr')} />
-
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-white/70">จำนวนเงินที่ต้องชำระ</Text>
+            <Text className="text-yellow-400 font-bold">
+              ฿ {priceBaht.toFixed(2)}
+            </Text>
           </View>
-        </ScrollView>
-
-        {/* --- Bottom Confirm Bar --- */}
-        <View className="absolute bottom-0 left-0 right-0 bg-[#1F1C23] border-t border-white/10 p-4 flex-row justify-between items-center">
-          <View>
-            <Text className="text-white/60 text-xs">Payment Method</Text>
-            <Text className="text-white font-bold">{getSelectedPaymentText()}</Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="text-white font-bold text-xl mr-4">฿{priceBaht.toFixed(2)}</Text>
-            <TouchableOpacity className="bg-purple-600 px-8 py-3 rounded-xl active:bg-purple-700">
-              <Text className="text-white font-bold text-base">Confirm</Text>
-            </TouchableOpacity>
+          <View className="flex-row justify-between border-t border-white/10 mt-3 pt-3">
+            <Text className="text-white font-bold">ยอดคงเหลือหลังชำระ</Text>
+            <Text className="text-green-400 font-bold">
+              ฿ {(balance! - priceBaht).toFixed(2)}
+            </Text>
           </View>
         </View>
-      </View>
+
+        {/* ✅ ปุ่มยืนยัน */}
+        <TouchableOpacity
+          onPress={handleConfirmPayment}
+          className="bg-purple-600 py-4 rounded-xl items-center"
+        >
+          <Text className="text-white font-bold text-lg">ยืนยันการชำระเงิน</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </ScreenWrapper>
   );
 }
-
-// ===== Sub-components (แก้ไข: เอา children ออก) =====
-const PaymentRadioItem = ({ label, selected, onPress }) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row items-center py-3">
-    <RadioCircle selected={selected} />
-    <Text className="text-white/90 ml-4">{label}</Text>
-  </TouchableOpacity>
-);
-
-const RadioCircle = ({ selected }: { selected: boolean }) => (
-  <View className="w-5 h-5 rounded-full border-2 border-purple-400 items-center justify-center">
-    {selected && <View className="w-2.5 h-2.5 rounded-full bg-purple-400" />}
-  </View>
-);

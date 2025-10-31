@@ -10,12 +10,16 @@ import {
   Dimensions,
   Pressable,
   Alert,
+  Modal,
+  FlatList,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 import Entypo from "@expo/vector-icons/Entypo";
+import * as SecureStore from "expo-secure-store"; // ✅ เพิ่มสำหรับเช็ค login
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -47,6 +51,16 @@ type User = {
   };
 };
 
+type TimeSlotItem = {
+  TimeSlotID: string;
+  StartTime: string; // ISO
+  EndTime: string; // ISO
+  LockAmount: number;
+  Status: "AVAILABLE" | "BOOKED" | "CANCELLED";
+  FortuneTellerID: string;
+  ServiceID: string;
+};
+
 type ServiceDetail = {
   ServiceID: string;
   Service_name: string;
@@ -56,28 +70,52 @@ type ServiceDetail = {
   ImageURLs?: string[];
   Category?: Category;
   FortuneTeller?: FortuneTeller;
+  TimeSlots?: TimeSlotItem[];
 };
 
 type ReviewItem = {
   ReviewID: string;
-  User: string; // userId
-  Star: number; // 1..5
+  User: string;
+  Star: number;
   Comment: string;
   Timestamp: string; // ISO
   ServiceID: string;
 };
 
 // ===== Helpers =====
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+
+const parseDate = (iso: string) => new Date(iso);
+const formatDateTH = (iso: string) => {
+  const d = parseDate(iso);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+};
+const formatTimeTH = (iso: string) => {
+  const d = parseDate(iso);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
 const clampStar = (n: number) => Math.max(0, Math.min(5, Math.round(n || 0)));
-const formatDatetimeTH = (iso: string) => {
-  try {
-    const d = new Date(iso);
-    const date = d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
-    const time = d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-    return `${date} ${time}`;
-  } catch {
-    return iso;
-  }
+const toYMD = (iso: string) => {
+  const d = parseDate(iso);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+const sameDay = (isoA: string, ymdOrIsoB: string) => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ymdOrIsoB)) return toYMD(isoA) === ymdOrIsoB;
+  return toYMD(isoA) === toYMD(ymdOrIsoB);
 };
 
 // ===== Components =====
@@ -91,336 +129,314 @@ const StarRow = ({ star }: { star: number }) => {
   );
 };
 
-const ReviewCard = ({
-  review,
-  author,
-}: {
-  review: ReviewItem;
-  author?: User | null;
-}) => {
-  const name = author?.UserInfo
-    ? `${author.UserInfo.FirstName || ""} ${author.UserInfo.LastName || ""}`.trim() || "ผู้ใช้"
-    : "ผู้ใช้";
-  const avatar = author?.UserInfo?.PictureURL;
-
-  return (
-    <View className="bg-[#2D2A32] p-3 rounded-2xl border border-white/10 mb-3">
-      <View className="flex-row items-center mb-2">
-        {avatar ? (
-          <Image source={{ uri: avatar }} className="w-8 h-8 rounded-full mr-2" />
-        ) : (
-          <View className="w-8 h-8 rounded-full bg-white/10 mr-2" />
-        )}
-        <View className="flex-1">
-          <Text className="text-white text-sm font-semibold" numberOfLines={1}>
-            {name}
-          </Text>
-          <Text className="text-white/50 text-[11px]" numberOfLines={1}>
-            {formatDatetimeTH(review.Timestamp)}
-          </Text>
-        </View>
-        <StarRow star={review.Star} />
-      </View>
-      {!!review.Comment && (
-        <Text className="text-gray-200 text-sm leading-5">{review.Comment}</Text>
-      )}
-    </View>
-  );
-};
+const ReviewCard = ({ review }: { review: ReviewItem }) => (
+  <View className="bg-[#211A3A] p-3 rounded-2xl border border-white/10 mb-3">
+    <Text className="text-white font-semibold">{review.User}</Text>
+    <StarRow star={review.Star} />
+    <Text className="text-white/70 mt-1">{review.Comment}</Text>
+  </View>
+);
 
 // ===== Page =====
 export default function ServicePrettyDetail() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>(); // service id
-
-  const API_BASE = "http://localhost:3456"; // เปลี่ยนเป็น IP เครื่องถ้ารันบนมือถือจริง
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const API_BASE =
+    Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
   const [loading, setLoading] = useState(true);
   const [service, setService] = useState<ServiceDetail | null>(null);
   const [ftUser, setFtUser] = useState<User | null>(null);
-
-  // Reviews
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [allUsersMap, setAllUsersMap] = useState<Record<string, User>>({});
-
   const [activeIndex, setActiveIndex] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlotItem | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const images = useMemo(
-    () => (service?.ImageURLs && service.ImageURLs.length > 0 ? service.ImageURLs : []),
+    () =>
+      service?.ImageURLs && service.ImageURLs.length > 0
+        ? service.ImageURLs
+        : [],
     [service]
   );
 
   const ftName = useMemo(() => {
     if (!ftUser?.UserInfo) return "Fortune Teller";
-    const first = ftUser.UserInfo.FirstName || "";
-    const last = ftUser.UserInfo.LastName || "";
-    const name = `${first} ${last}`.trim();
-    return name || "Fortune Teller";
+    const f = ftUser.UserInfo.FirstName || "";
+    const l = ftUser.UserInfo.LastName || "";
+    return `${f} ${l}`.trim() || "Fortune Teller";
   }, [ftUser]);
-
-  const reviewAvg = useMemo(() => {
-    if (!reviews.length) return null;
-    const sum = reviews.reduce((acc, r) => acc + (r.Star || 0), 0);
-    return Math.round((sum / reviews.length) * 10) / 10;
-  }, [reviews]);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
-      // 1) ดึงข้อมูล service
-      const svcRes = await axios.get<ServiceDetail>(`${API_BASE}/services/${id}`);
-      const svc = svcRes.data;
+      const res = await axios.get<ServiceDetail>(`${API_BASE}/services/${id}`);
+      const svc = res.data;
       setService(svc);
 
-      // 2) ใช้ UserID ของหมอดูไปดึงโปรไฟล์จาก /users/{id}
-      const userId = svc?.FortuneTeller?.UserID;
-      const reqs: Promise<any>[] = [
-        axios.get<ReviewItem[]>(`${API_BASE}/reviews`, { params: { serviceId: id } }),
-        axios.get<User[]>(`${API_BASE}/users`), // ดึง users ทั้งหมดเพื่อ map ชื่อผู้รีวิว
-      ];
-
-      if (userId) reqs.push(axios.get<User>(`${API_BASE}/users/${userId}`));
-
-      const [reviewsRes, usersRes, ftRes] = await Promise.allSettled(reqs);
-
-      // reviews
-      if (reviewsRes.status === "fulfilled") {
-        setReviews(Array.isArray(reviewsRes.value.data) ? reviewsRes.value.data : []);
-      } else {
-        setReviews([]);
+      if (svc.FortuneTeller?.UserID) {
+        const ftRes = await axios.get<User>(
+          `${API_BASE}/users/${svc.FortuneTeller.UserID}`
+        );
+        setFtUser(ftRes.data);
       }
 
-      // users map
-      if (usersRes.status === "fulfilled") {
-        const arr: User[] = usersRes.value.data || [];
-        const map: Record<string, User> = {};
-        arr.forEach((u) => (map[u.UserID] = u));
-        setAllUsersMap(map);
-      } else {
-        setAllUsersMap({});
-      }
-
-      // fortune teller user (optional)
-      if (userId && ftRes && ftRes.status === "fulfilled") {
-        setFtUser(ftRes.value.data);
-      } else if (userId) {
-        // fallback: ใช้จาก users map
-        setFtUser((prev) => prev ?? allUsersMap[userId] ?? null);
-      } else {
-        setFtUser(null);
-      }
+      const rvRes = await axios.get<ReviewItem[]>(
+        `${API_BASE}/reviews?serviceId=${id}`
+      );
+      setReviews(rvRes.data);
     } catch (e: any) {
-      console.log("Load error:", e?.message || e);
-      Alert.alert("ดึงข้อมูลไม่สำเร็จ", e?.response?.data?.message || "โปรดลองใหม่");
+      console.log("Load error:", e?.message);
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, id]);
+  }, [id]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const availableSlots = (service?.TimeSlots || []).filter(
+    (s) => s.Status === "AVAILABLE"
+  );
+
+  const dateOptions = useMemo(() => {
+    const set = new Set<string>();
+    availableSlots.forEach((s) => set.add(toYMD(s.StartTime)));
+    return Array.from(set).sort();
+  }, [availableSlots]);
+
+  useEffect(() => {
+    if (!selectedDate && dateOptions.length > 0) setSelectedDate(dateOptions[0]);
+  }, [dateOptions, selectedDate]);
+
+  const filteredSlots = useMemo(() => {
+    if (!selectedDate) return [];
+    return availableSlots.filter((s) => sameDay(s.StartTime, selectedDate));
+  }, [availableSlots, selectedDate]);
+
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / screenWidth);
-    setActiveIndex(newIndex);
+    setActiveIndex(Math.round(offsetX / screenWidth));
   };
 
-  const goBook = () => {
-    if (!service) return;
-    router.push({
-      pathname: "/p2p/[id]",
-      params: {
-        id: service.FortuneTeller?.FortuneTellerID || "",
-        serviceName: service.Service_name,
-        price: String(service.Price),
-        duration: "30",
-      },
-    });
-  };
-
-  const goFortuneTellerProfile = () => {
-    const ftId = service?.FortuneTeller?.FortuneTellerID;
-    if (!ftId) return;
-    router.push({
-      pathname: "/(tabs)/fortune_teller_profile/[id_fortune_teller]",
-      params: { id_fortune_teller: ftId },
-    });
-  };
-
-  const title = service?.Service_name || "Service";
-
-  if (loading) {
-    return (
-      <ScreenWrapper>
-        <HeaderBar title="Service" showBack />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
-          <Text className="text-white/80 mt-2">กำลังโหลดข้อมูล...</Text>
-        </View>
-      </ScreenWrapper>
-    );
+  // ✅ เช็ค login ก่อน router.push()
+  const confirmBookNow = async () => {
+    if (!service || !selectedSlot) {
+      Alert.alert("ยังไม่ได้เลือกช่วงเวลา", "Please select a time slot first.");
+      return;
     }
 
-  if (!service) {
+    const token = await SecureStore.getItemAsync("access_token");
+    if (!token) {
+      Alert.alert("กรุณาเข้าสู่ระบบ", "คุณต้องเข้าสู่ระบบก่อนจองบริการ", [
+        { text: "เข้าสู่ระบบ", onPress: () => router.replace("/profile") },
+        { text: "ยกเลิก" },
+      ]);
+      return;
+    }
+
+    router.push({
+      pathname: "/(tabs)/p2p/confirm",
+      params: {
+        serviceId: service.ServiceID,
+        serviceName: service.Service_name,
+        price: String(service.Price),
+        fortuneTellerName: ftName,
+        slotId: selectedSlot.TimeSlotID,
+        startTime: selectedSlot.StartTime,
+        endTime: selectedSlot.EndTime,
+      },
+    });
+
+    setModalVisible(false);
+  };
+
+  if (loading)
     return (
       <ScreenWrapper>
         <HeaderBar title="Service" showBack />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-white/80">ไม่พบบริการ</Text>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator color="#fff" />
+          <Text className="text-white mt-2">กำลังโหลดข้อมูล...</Text>
         </View>
       </ScreenWrapper>
     );
-  }
+
+  if (!service)
+    return (
+      <ScreenWrapper>
+        <HeaderBar title="Service" showBack />
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-white/70">ไม่พบบริการ</Text>
+        </View>
+      </ScreenWrapper>
+    );
 
   return (
     <ScreenWrapper>
-      <HeaderBar title={title} showBack showChat />
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 24,
-        }}
-      >
-        {/* รูปบริการแบบสไลด์ */}
-        <View className="mb-4">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          >
-            {(images.length > 0 ? images : [undefined]).map((img, index) => (
-              <Pressable key={index}>
-                {img ? (
-                  <Image
-                    source={{ uri: img }}
-                    style={{
-                      width: screenWidth - 32,
-                      height: 250,
-                      borderRadius: 12,
-                    }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View
-                    style={{
-                      width: screenWidth - 32,
-                      height: 250,
-                      borderRadius: 12,
-                    }}
-                    className="bg-white/5 items-center justify-center"
-                  >
-                    <Text className="text-white/40">ไม่มีรูปภาพ</Text>
-                  </View>
-                )}
-              </Pressable>
-            ))}
-          </ScrollView>
+      <HeaderBar title={service.Service_name} showBack showChat />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        {/* รูป */}
+        <ScrollView
+          horizontal
+          pagingEnabled
+          onScroll={handleScroll}
+          showsHorizontalScrollIndicator={false}
+        >
+          {(images.length > 0 ? images : [undefined]).map((img, i) => (
+            <View key={i} style={{ width: screenWidth - 32 }}>
+              {img ? (
+                <Image
+                  source={{ uri: img }}
+                  style={{
+                    width: screenWidth - 32,
+                    height: 220,
+                    borderRadius: 12,
+                  }}
+                />
+              ) : (
+                <View className="w-full h-[220px] bg-white/10 rounded-xl items-center justify-center">
+                  <Text className="text-white/60">ไม่มีรูปภาพ</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
 
-          {/* Dot Indicator */}
-          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
-            {(images.length > 0 ? images : [undefined]).map((_, index) => (
-              <View
-                key={index}
-                className={`w-2.5 h-2.5 mx-1 rounded-full ${
-                  activeIndex === index ? "bg-accent-200" : "bg-gray-400"
-                }`}
-              />
-            ))}
-          </View>
+        <View className="flex-row justify-center mt-2">
+          {(images.length > 0 ? images : [undefined]).map((_, i) => (
+            <View
+              key={i}
+              className={`w-2.5 h-2.5 rounded-full mx-1 ${
+                activeIndex === i ? "bg-accent-200" : "bg-white/30"
+              }`}
+            />
+          ))}
         </View>
 
-        {/* ชื่อ + ราคา + หมวดหมู่ */}
-        <Text className="text-alabaster text-xl font-bold mb-1" numberOfLines={2}>
+        {/* ข้อมูลบริการ */}
+        <Text className="text-white text-2xl font-bold mt-3">
           {service.Service_name}
         </Text>
+        <Text className="text-yellow-400 font-bold text-xl mt-1">
+          ฿{service.Price}
+        </Text>
 
-        <View className="flex-row items-center justify-between mb-2">
-          <View className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15">
-            <Text className="text-[11px] text-white">
-              {service.Category?.Category_name || "Uncategorized"}
-            </Text>
-          </View>
-          <Text className="text-accent-200 text-2xl font-bold">฿{service.Price}</Text>
-        </View>
-
-        {/* ปุ่มเลือกช่วงเวลา */}
-        <View className="mb-4">
-          <TouchableOpacity
-            onPress={goBook}
-            className="bg-accent-200 rounded-full py-4 items-center"
-          >
-            <Text className="text-black text-lg font-bold">เลือกช่วงเวลา</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* โปรไฟล์หมอดู */}
         <TouchableOpacity
-          onPress={goFortuneTellerProfile}
-          className="flex-row items-center bg-primary-100 p-3 rounded-full mb-4"
-          activeOpacity={0.9}
+          onPress={() => setModalVisible(true)}
+          className="bg-accent-200 py-4 mt-5 rounded-full items-center"
         >
-          <View className="flex-row items-center justify-between gap-4">
-            {ftUser?.UserInfo?.PictureURL ? (
-              <Image
-                source={{ uri: ftUser.UserInfo.PictureURL }}
-                className="w-12 h-12 rounded-full"
-              />
-            ) : (
-              <View className="w-12 h-12 rounded-full bg-white/10" />
-            )}
-            <View className="flex-1">
-              <Text className="text-alabaster text-lg font-semibold" numberOfLines={1}>
-                {ftName}
-              </Text>
-              <Text className="text-white/60 text-xs" numberOfLines={1}>
-                ดูโปรไฟล์หมอดู →
-              </Text>
-            </View>
-            <Entypo name="chevron-small-right" size={28} color="#F8F8F8" />
-          </View>
+          <Text className="text-black font-bold text-lg">Booking time slot</Text>
         </TouchableOpacity>
 
-        {/* รายละเอียดบริการ */}
-        {!!service.Service_Description && (
-          <Text className="text-alabaster text-base leading-6 mb-8">
-            {service.Service_Description}
-          </Text>
-        )}
-
-        {/* ===== รีวิวบริการนี้ ===== */}
-        <View className="mt-2">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-white text-lg font-semibold">รีวิวจากผู้ใช้</Text>
-            <Text className="text-white/70 text-sm">
-              {reviewAvg ? `⭐ ${reviewAvg} • ` : ""}
-              {reviews.length} รีวิว
-            </Text>
-          </View>
-
-          {reviews.length === 0 ? (
-            <View className="bg-[#2D2A32] p-4 rounded-2xl border border-white/10">
-              <Text className="text-white/70">ยังไม่มีรีวิวสำหรับบริการนี้</Text>
-            </View>
+        {/* หมอดู */}
+        <View className="flex-row items-center mt-6">
+          {ftUser?.UserInfo?.PictureURL ? (
+            <Image
+              source={{ uri: ftUser.UserInfo.PictureURL }}
+              className="w-12 h-12 rounded-full mr-3"
+            />
           ) : (
-            reviews
-              .slice() // ไม่แก้ของเดิม
-              .sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime())
-              .map((rv) => (
-                <ReviewCard
-                  key={rv.ReviewID}
-                  review={rv}
-                  author={allUsersMap[rv.User] || null}
-                />
-              ))
+            <View className="w-12 h-12 bg-white/10 rounded-full mr-3" />
           )}
+          <Text className="text-white text-lg">{ftName}</Text>
         </View>
 
+        <Text className="text-white/80 mt-3 leading-6">
+          {service.Service_Description}
+        </Text>
+
+        {/* รีวิว */}
+        <View className="mt-6">
+          <Text className="text-white font-bold text-lg mb-2">
+            รีวิวทั้งหมด ({reviews.length})
+          </Text>
+          {reviews.length === 0 ? (
+            <Text className="text-white/60">ยังไม่มีรีวิว</Text>
+          ) : (
+            reviews.map((r) => <ReviewCard key={r.ReviewID} review={r} />)
+          )}
+        </View>
       </ScrollView>
+
+      {/* Modal เลือกช่วงเวลา */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <TouchableOpacity
+          className="flex-1 bg-black/50"
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
+        />
+        <View className="bg-[#211A3A] rounded-t-3xl px-4 pt-4 pb-6">
+          <Text className="text-white font-bold text-lg mb-3">
+            เลือกช่วงเวลา
+          </Text>
+
+          {filteredSlots.length === 0 ? (
+            <Text className="text-white/70">ไม่มีช่วงเวลาว่าง</Text>
+          ) : (
+            <FlatList
+              data={filteredSlots}
+              keyExtractor={(it) => it.TimeSlotID}
+              renderItem={({ item }) => {
+                const active = selectedSlot?.TimeSlotID === item.TimeSlotID;
+                return (
+                  <TouchableOpacity
+                    onPress={() => setSelectedSlot(item)}
+                    className={`flex-row justify-between px-3 py-3 rounded-2xl mb-2 border ${
+                      active
+                        ? "bg-white/10 border-accent-200"
+                        : "bg-white/5 border-white/10"
+                    }`}
+                  >
+                    <View>
+                      <Text className="text-white font-medium">
+                        {formatDateTH(item.StartTime)}
+                      </Text>
+                      <Text className="text-white/70 mt-0.5">
+                        {formatTimeTH(item.StartTime)} -{" "}
+                        {formatTimeTH(item.EndTime)}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <Entypo name="check" size={22} color="#F9D85E" />
+                    ) : (
+                      <Entypo name="circle" size={18} color="#CFCFCF" />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+              style={{ maxHeight: 300 }}
+            />
+          )}
+
+          <View className="flex-row mt-3">
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              className="flex-1 mr-2 px-4 py-3 rounded-full bg-white/10 items-center justify-center"
+            >
+              <Text className="text-white font-semibold">Close</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              disabled={!selectedSlot}
+              onPress={confirmBookNow}
+              className={`flex-1 px-4 py-3 rounded-full items-center justify-center ${
+                selectedSlot ? "bg-accent-200" : "bg-white/10"
+              }`}
+            >
+              <Text
+                className={`font-bold ${
+                  selectedSlot ? "text-black" : "text-white/40"
+                }`}
+              >
+                Booking
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }

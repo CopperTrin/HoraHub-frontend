@@ -110,18 +110,17 @@ export default function NotificationsPage() {
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="แจ้งเตือนหมอดู" />
+      <HeaderBar title="Notification" />
 
       <View className="flex-1" style={{ backgroundColor: COLORS.bg }}>
         {/* ส่วนหัว */}
         <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
           <View className="flex-row gap-2">
-            <Tab label="ทั้งหมด" active={tab === "all"} onPress={() => setTab("all")} />
-            <Tab label="ยังไม่ได้อ่าน" active={tab === "unread"} onPress={() => setTab("unread")} />
+            <Tab label="All" active={tab === "all"} onPress={() => setTab("all")} />
+            <Tab label="Not yet" active={tab === "unread"} onPress={() => setTab("unread")} />
           </View>
 
           <TouchableOpacity onPress={markAllRead}>
-            <Text style={{ color: COLORS.accent, fontWeight: "800" }}>อ่านทั้งหมด</Text>
           </TouchableOpacity>
         </View>
 

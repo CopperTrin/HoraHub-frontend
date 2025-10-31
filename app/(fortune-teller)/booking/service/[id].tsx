@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityInd
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
+import Feather from "@expo/vector-icons/Feather";
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
@@ -131,7 +132,7 @@ export default function ServiceDetailPage() {
       try {
         const tsRes = await api.get<TimeSlotItem[]>(`/time-slots/me`);
         tsData = tsRes.data || [];
-      } catch (err) {
+      } catch {
         console.log("time-slot fetch failed (unauthorized?)");
       }
 
@@ -266,12 +267,16 @@ export default function ServiceDetailPage() {
             <Text className="text-alabaster font-bold text-base">{showEdit ? "Close Edit" : "Edit Service"}</Text>
           </TouchableOpacity>
 
+          {/* เล็ก + กลืนพื้นหลัง */}
           <TouchableOpacity
             onPress={onDelete}
             disabled={saving}
-            className="w-14 h-14 rounded-full bg-red-500 items-center justify-center"
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="ลบบริการนี้"
+            className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 items-center justify-center"
           >
-            <Text className="text-white font-bold text-lg">🗑</Text>
+            <Feather name="trash-2" size={18} color="rgba(255,255,255,0.75)" />
           </TouchableOpacity>
         </View>
 
@@ -283,18 +288,15 @@ export default function ServiceDetailPage() {
               <Text className="text-white/70 mt-2">{service.Service_Description}</Text>
             )}
             <Text className="text-white/75 mt-2">
-              ราคา: <Text className="font-semibold">{service.Price}</Text>
+              Price: <Text className="font-semibold">{service.Price}</Text>
             </Text>
             <Text className="text-white/75 mt-1">
-              หมวดหมู่:{" "}
-              <Text className="font-semibold">
-                {service?.Category?.Category_name ?? service?.CategoryID ?? "-"}
-              </Text>
+              Type: <Text className="font-semibold">{service?.Category?.Category_name ?? service?.CategoryID ?? "-"}</Text>
             </Text>
 
             {!!images?.length && (
               <View className="mt-3">
-                <Text className="text-white/70 mb-1">รูปภาพ:</Text>
+                <Text className="text-white/70 mb-1">Image:</Text>
                 {images.map((u) => (
                   <Text key={u} className="text-white/60" numberOfLines={1}>
                     • {u}
@@ -306,7 +308,7 @@ export default function ServiceDetailPage() {
         )}
 
         {/* Time Slots */}
-        <Text className="text-white/80 font-bold mb-3 text-base">Time Slots ของบริการนี้</Text>
+        <Text className="text-white/80 font-bold mb-3 text-base">Time Slots in service</Text>
         {Array.isArray(serviceTimeSlots) && serviceTimeSlots.length > 0 ? (
           serviceTimeSlots.map((t) => <TimeSlotCard key={t.TimeSlotID} slot={t} />)
         ) : (
@@ -318,7 +320,6 @@ export default function ServiceDetailPage() {
         {/* Edit Mode */}
         {showEdit && (
           <>
-            {/* Name */}
             <Text className="text-white/70 mb-2 mt-2">Service name</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -330,7 +331,6 @@ export default function ServiceDetailPage() {
               />
             </View>
 
-            {/* Desc */}
             <Text className="text-white/70 mb-2">Description</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -343,7 +343,6 @@ export default function ServiceDetailPage() {
               />
             </View>
 
-            {/* Price */}
             <Text className="text-white/70 mb-2">Price</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
               <TextInput
@@ -356,7 +355,6 @@ export default function ServiceDetailPage() {
               />
             </View>
 
-            {/* Category */}
             <Text className="text-white/70 mb-2">Category</Text>
             <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10">
               <View className="flex-row flex-wrap gap-2">
@@ -380,7 +378,6 @@ export default function ServiceDetailPage() {
               </View>
             </View>
 
-            {/* Images */}
             <Text className="text-white/70 mb-2">Image URLs</Text>
             <View className="bg-primary-100 rounded-2xl px-3 py-3 mb-2 border border-white/10">
               <View className="flex-row">

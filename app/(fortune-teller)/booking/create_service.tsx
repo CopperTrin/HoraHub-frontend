@@ -223,7 +223,7 @@ export default function CreateServicePage() {
           </View>
 
           {/* Price */}
-          <Text className="text-white/70 mb-2">Price (USD)</Text>
+          <Text className="text-white/70 mb-2">Price</Text>
           <View className="bg-primary-100 rounded-2xl px-3 py-2 mb-4 border border-white/10">
             <TextInput
               keyboardType="decimal-pad"
