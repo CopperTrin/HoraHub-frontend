@@ -2,8 +2,9 @@ import { ScrollView } from "react-native";
 import FortuneTellerCard from "./FortuneTellerCard";
 
 type Fortune = {
-  image: any; 
+  image?: any;
   label: string;
+  onPress?: () => void;
 };
 
 type Props = {
@@ -19,7 +20,7 @@ export default function FortuneCarousel({ items }: Props) {
       className="h-40"
     >
       {items.map((f, i) => (
-        <FortuneTellerCard key={i} image={f.image} label={f.label} />
+        <FortuneTellerCard key={i} image={f.image} label={f.label} onPress={f.onPress} />
       ))}
     </ScrollView>
   );

@@ -1,10 +1,10 @@
 // app/(tabs)/p2p/index.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
-import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 // ===== Types =====
 type Category = {
@@ -141,7 +141,7 @@ export default function P2PServiceHome() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const API_BASE = "http://localhost:3456";
+  const API_BASE = "http://10.0.2.2:3456";
 
   // Fetch services + users แล้ว merge
   useEffect(() => {

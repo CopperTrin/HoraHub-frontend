@@ -6,6 +6,7 @@ import * as SecureStore from "expo-secure-store";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -99,6 +100,19 @@ export default function CustomerWalletPage() {
     return d.toLocaleString("th-TH");
   };
 
+  const mapStatusTH = (s?: string) => {
+    switch (s) {
+      case "COMPLETED":
+        return "สำเร็จ";
+      case "FAILED":
+        return "ล้มเหลว";
+      case "PENDING":
+        return "รอดำเนินการ";
+      default:
+        return s || "-";
+    }
+  };
+
   const getErrMsg = (e: any, fallback = "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง") => {
     try {
       return e?.response?.data?.message || e?.message || fallback;
@@ -141,7 +155,6 @@ export default function CustomerWalletPage() {
     }
   }, []);
 
-  // initial load
   useState(() => {
     (async () => {
       setLoading(true);
@@ -160,7 +173,6 @@ export default function CustomerWalletPage() {
     [payments]
   );
 
-  // Create deposit
   const handleDeposit = useCallback(async () => {
     setDepositError("");
     const val = parseFloat(depositAmount);
@@ -186,7 +198,7 @@ export default function CustomerWalletPage() {
           accept: "application/json",
         },
       });
-      setDepositResult(res.data); // { PaymentId, Amount (crypto), Currency, Address, ... }
+      setDepositResult(res.data);
       setConfirmError("");
     } catch (e: any) {
       console.log("deposit error", e?.response?.data || String(e));
@@ -197,7 +209,6 @@ export default function CustomerWalletPage() {
     }
   }, [depositAmount]);
 
-  // Confirm payment for deposit
   const handleConfirmDeposit = useCallback(async () => {
     if (!depositResult?.PaymentId || !depositResult?.Address) return;
     setConfirmError("");
@@ -216,12 +227,31 @@ export default function CustomerWalletPage() {
           accept: "*/*",
         },
       });
+
       await Promise.all([fetchWallet(), fetchPayments()]);
-      // Keep modal open until user taps X (as requested)
+
+      Alert.alert(
+        "ชำระเงินสำเร็จ",
+        "ระบบได้รับการชำระเงินเรียบร้อยแล้ว",
+        [
+          {
+            text: "ตกลง",
+            onPress: () => {
+              // ปิดและรีเซ็ตสถานะโมดัลฝากเงิน
+              setDepositOpen(false);
+              setDepositAmount("");
+              setDepositResult(null);
+              setDepositError("");
+              setConfirmError("");
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (e: any) {
       const msg = getErrMsg(e, "ยืนยันการชำระเงินไม่สำเร็จ");
       console.log("confirm error", e?.response?.data || String(e));
-      setConfirmError(msg); // e.g. "Payment not received at contract address"
+      setConfirmError(msg); // เช่น "Payment not received at contract address"
     } finally {
       setConfirmLoading(false);
     }
@@ -274,7 +304,7 @@ export default function CustomerWalletPage() {
     } catch (e: any) {
       const msg = getErrMsg(e, "ไม่สามารถถอนเงินได้");
       console.log("withdraw error", e?.response?.data || String(e));
-      setWithdrawError(msg); // e.g. "Insufficient balance for withdrawal"
+      setWithdrawError(msg); 
       setWithdrawResult(null);
     } finally {
       setWithdrawLoading(false);
@@ -298,7 +328,6 @@ export default function CustomerWalletPage() {
   };
 
   const closeDepositModal = () => {
-    // only allow closing if we are in the input step (no result yet)
     if (!depositResult && !depositLoading) setDepositOpen(false);
   };
 
@@ -315,7 +344,7 @@ export default function CustomerWalletPage() {
     return (
       <View className="flex-1 items-center justify-center bg-primary-200">
         <ActivityIndicator size="large" color="#fff" />
-        <Text className="text-white mt-2 font-sans-semibold">Loading…</Text>
+        <Text className="text-white mt-2 font-sans-semibold">กำลังโหลด…</Text>
       </View>
     );
   }
@@ -331,7 +360,7 @@ export default function CustomerWalletPage() {
           >
             <MaterialIcons name="arrow-back-ios" size={24} color="white" />
           </Pressable>
-        <Text className="text-white text-xl font-sans-semibold">กระเป๋าเงิน</Text>
+          <Text className="text-white text-xl font-sans-semibold">กระเป๋าเงิน</Text>
         </View>
 
         {/* Balance */}
@@ -385,7 +414,7 @@ export default function CustomerWalletPage() {
                     {p.Type === "DEPOSIT" ? "ฝากเข้า" : p.Type === "WITHDRAWAL" ? "ถอนออก" : p.Type}
                   </Text>
                   <Text className="text-white/80 text-sm">{formatDateTime(p.Transaction_Date)}</Text>
-                  <Text className="text-white/70 text-xs mt-1">{p.Method}</Text>
+                  <Text className="text-white/70 font-sans text-xs mt-1">วิธีชำระ: {p.Method}</Text>
                 </View>
                 <View className="items-end">
                   <Text className="text-white font-sans-bold">
@@ -393,7 +422,7 @@ export default function CustomerWalletPage() {
                     {formatTHB(p.Amount)}
                   </Text>
                   <Text
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-1 font-sans ${
                       p.Transaction_Status === "COMPLETED"
                         ? "text-green-300"
                         : p.Transaction_Status === "FAILED"
@@ -401,7 +430,7 @@ export default function CustomerWalletPage() {
                         : "text-yellow-200"
                     }`}
                   >
-                    {p.Transaction_Status}
+                    {mapStatusTH(p.Transaction_Status)}
                   </Text>
                 </View>
               </View>
@@ -431,7 +460,6 @@ export default function CustomerWalletPage() {
           >
             <Text className="text-white font-sans-semibold text-xl">ฝากเงิน</Text>
 
-            {/* X button only when details are visible */}
             {depositResult && (
               <Pressable
                 onPress={forceCloseDepositModal}
@@ -444,14 +472,14 @@ export default function CustomerWalletPage() {
 
             {!depositResult ? (
               <>
-                <Text className="text-white/90">ระบุจำนวนเงิน (THB)</Text>
+                <Text className="text-white/90 font-sans">ระบุจำนวนเงิน (บาท)</Text>
                 <TextInput
                   value={depositAmount}
                   onChangeText={(t) => { setDepositAmount(t); setDepositError(""); }}
                   placeholder="เช่น 100"
                   placeholderTextColor="#ffffff99"
                   keyboardType="numeric"
-                  className="bg-primary-100 text-white rounded-xl px-4 py-3"
+                  className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
                 />
 
                 {!!depositError && (
@@ -470,24 +498,26 @@ export default function CustomerWalletPage() {
                   )}
                 </Pressable>
 
-                {/* Allow cancel in input step */}
                 <Pressable onPress={closeDepositModal} className="mt-2 items-center">
-                  <Text className="text-white/80">ยกเลิก</Text>
+                  <Text className="text-white/80 font-sans">ยกเลิก</Text>
                 </Pressable>
               </>
             ) : (
               <>
-                <Text className="text-white/90">ส่งคริปโตตามรายละเอียด แล้วกดยืนยัน</Text>
+                <Text className="text-white/90 font-sans">โปรดโอนคริปโตตามรายละเอียดด้านล่าง จากนั้นกด “ยืนยันการชำระเงิน”</Text>
 
                 <View className="bg-primary-100 rounded-xl p-3">
-                  <Text className="text-white">PaymentId: {depositResult.PaymentId}</Text>
-                  <Text className="text-white">
-                    โทเคนที่ต้องโอน: {depositResult.Amount} {depositResult.Currency}
+                  <Text className="text-white font-sans">รหัสการชำระเงิน: {depositResult.PaymentId}</Text>
+                  <Text className="text-white font-sans">
+                    จำนวนโทเคนที่ต้องโอน: {depositResult.Amount} {depositResult.Currency}
                   </Text>
-                  <Text className="text-white" selectable>
-                    Address: {depositResult.Address}
+                  <Text className="text-white font-sans" selectable>
+                    ที่อยู่ปลายทาง (Contract Address):
                   </Text>
-                  <Text className="text-white/80 text-xs mt-1">Method: {depositResult.Method}</Text>
+                  <Text className="text-white font-sans" selectable>
+                    {depositResult.Address}
+                  </Text>
+                  <Text className="text-white/80 text-xs mt-1 font-sans">วิธีชำระ: {depositResult.Method}</Text>
                 </View>
 
                 {!!confirmError && (
@@ -540,7 +570,7 @@ export default function CustomerWalletPage() {
 
             {!withdrawResult ? (
               <>
-                <Text className="text-white/90">ระบุจำนวนเงิน (THB)</Text>
+                <Text className="text-white/90 font-sans">ระบุจำนวนเงิน (บาท)</Text>
                 <TextInput
                   value={withdrawAmount}
                   onChangeText={(t) => { setWithdrawAmount(t); setWithdrawError(""); }}
@@ -549,14 +579,14 @@ export default function CustomerWalletPage() {
                   keyboardType="numeric"
                   className="bg-primary-100 text-white rounded-xl px-4 py-3"
                 />
-                <Text className="text-white/90 mt-2">ที่อยู่กระเป๋าปลายทาง (Receiver)</Text>
+                <Text className="text-white/90 mt-2 font-sans">ที่อยู่กระเป๋าปลายทาง (Receiver)</Text>
                 <TextInput
                   value={withdrawAddress}
                   onChangeText={(t) => { setWithdrawAddress(t); setWithdrawError(""); }}
                   placeholder="0x..."
                   placeholderTextColor="#ffffff99"
                   autoCapitalize="none"
-                  className="bg-primary-100 text-white rounded-xl px-4 py-3"
+                  className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
                 />
 
                 {!!withdrawError && (
@@ -577,16 +607,16 @@ export default function CustomerWalletPage() {
               </>
             ) : (
               <>
-                <Text className="text-white/90">คำขอถอนเงินถูกสร้างแล้ว</Text>
+                <Text className="text-white/90 font-sans">สร้างคำขอถอนเงินเรียบร้อย</Text>
                 <View className="bg-primary-100 rounded-xl p-3">
-                  <Text className="text-white">PaymentId: {withdrawResult.PaymentId}</Text>
-                  <Text className="text-white">
+                  <Text className="text-white font-sans">รหัสการชำระเงิน: {withdrawResult.PaymentId}</Text>
+                  <Text className="text-white font-sans">
                     จำนวนคริปโตโดยประมาณ: {withdrawResult.Amount} {withdrawResult.Currency}
                   </Text>
-                  <Text className="text-white" selectable>
-                    ส่งไปที่: {withdrawResult.Address}
+                  <Text className="text-white font-sans" selectable>
+                    ปลายทาง: {withdrawResult.Address}
                   </Text>
-                  <Text className="text-white/80 text-xs mt-1">Method: {withdrawResult.Method}</Text>
+                  <Text className="text-white/80 text-xs mt-1 font-sans">วิธีชำระ: {withdrawResult.Method}</Text>
                 </View>
 
                 <Pressable
