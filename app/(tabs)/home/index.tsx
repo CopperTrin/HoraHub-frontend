@@ -1,3 +1,4 @@
+// app/(tabs)/home/index.tsx
 import ArticleCarousel from "@/app/components/home/ArticleCarousel";
 import FortuneCarousel from "@/app/components/home/FortuneCarousel";
 import HomeNews from "@/app/components/home/HomeNews";
@@ -24,6 +25,19 @@ import { Platform, ScrollView, Text, View } from "react-native";
 const getBaseURL = () =>
   Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
+type LeaderboardSummary = {
+  LeaderboardID: string;
+  Description: string;
+  Prize_Pool?: number;
+};
+
+type PodiumItem = {
+  image?: any;
+  name: string;
+  rank: 1 | 2 | 3;
+  color: string;
+};
+
 export default function HomePage() {
   const images = [home_new_03, home_new_02, home_new_01];
 
@@ -49,12 +63,6 @@ export default function HomePage() {
   ];
   const newsToArticle = [articles[4], articles[5], articles[6]];
 
-
-  const [podiumItems, setPodiumItems] = useState<
-    { image: any; name: string; rank: 1 | 2 | 3; color: string }[]
-  >([]);
-  const [loadingRank, setLoadingRank] = useState(true);
-
   const colors = useMemo(
     () => ({
       gold: "#FFD824",
@@ -63,8 +71,6 @@ export default function HomePage() {
     }),
     []
   );
-
-
   const rankColors: Record<number, string> = { 1: colors.gold, 2: colors.silver, 3: colors.bronze };
 
   const getDisplayName = (ft: any) => {
@@ -73,65 +79,88 @@ export default function HomePage() {
     return fullname || ft?.User?.Username || "ไม่ระบุชื่อ";
   };
 
+  const [boards, setBoards] = useState<LeaderboardSummary[]>([]);
+  const [boardPodiums, setBoardPodiums] = useState<Record<string, PodiumItem[]>>({});
+  const [loadingBoards, setLoadingBoards] = useState<boolean>(true);
+
+  const buildTop3 = (list: any[]): PodiumItem[] => {
+    const top3 = list.slice(0, 3).map((x: any, idx: number) => {
+      const ft = x?.FortuneTeller;
+      const rank = (idx + 1) as 1 | 2 | 3;
+      const picture = ft?.User?.UserInfo?.PictureURL;
+      return {
+        image: picture ? { uri: picture } : undefined,
+        name: getDisplayName(ft),
+        rank,
+        color: rankColors[rank],
+      };
+    });
+
+    const padded = [...top3];
+    for (let i = top3.length; i < 3; i++) {
+      const rank = (i + 1) as 1 | 2 | 3;
+      padded.push({
+        image: undefined,
+        name: "รอจัดอันดับ",
+        rank,
+        color: rankColors[rank],
+      });
+    }
+    return padded;
+  };
+
   useEffect(() => {
     let mounted = true;
+
     (async () => {
+      setLoadingBoards(true);
       try {
-        setLoadingRank(true);
-        const lb = await axios.get(`${getBaseURL()}/leaderboards`);
-        const first = Array.isArray(lb.data) && lb.data.length > 0 ? lb.data[0] : null;
-        if (!first) {
-          if (mounted) setPodiumItems([]);
+        const lbRes = await axios.get(`${getBaseURL()}/leaderboards`);
+        const allBoards: LeaderboardSummary[] = Array.isArray(lbRes.data) ? lbRes.data : [];
+        if (!mounted) return;
+
+        setBoards(allBoards);
+
+        if (allBoards.length === 0) {
+          setBoardPodiums({});
           return;
         }
 
-        const det = await axios.get(
-          `${getBaseURL()}/leaderboards/${first.LeaderboardID}?page=1&limit=3`
+        const details = await Promise.allSettled(
+          allBoards.map((b) =>
+            axios.get(`${getBaseURL()}/leaderboards/${b.LeaderboardID}?page=1&limit=3`)
+          )
         );
-        const list = det.data?.FortuneTellers ?? [];
 
-        const top3 = list.slice(0, 3).map((x: any, idx: number) => {
-          const ft = x?.FortuneTeller;
-          const rank = (idx + 1) as 1 | 2 | 3;
-          const picture = ft?.User?.UserInfo?.PictureURL;
-          return {
-            image: { uri: picture },
-            name: getDisplayName(ft),
-            rank,
-            color: rankColors[rank],
-          };
+        if (!mounted) return;
+
+        const podiumMap: Record<string, PodiumItem[]> = {};
+        details.forEach((res, idx) => {
+          const b = allBoards[idx];
+          if (res.status === "fulfilled") {
+            const list = res.value?.data?.FortuneTellers ?? [];
+            podiumMap[b.LeaderboardID] = buildTop3(list);
+          } else {
+            podiumMap[b.LeaderboardID] = buildTop3([]);
+            console.log("Load ranking error (board):", b.LeaderboardID, res.reason);
+          }
         });
 
-
-        const padded = [...top3];
-        for (let i = top3.length; i < 3; i++) {
-          const rank = (i + 1) as 1 | 2 | 3;
-          padded.push({
-            name: "รอจัดอันดับ",
-            rank,
-            color: rankColors[rank],
-          });
-        }
-
-        if (mounted) setPodiumItems(padded);
+        setBoardPodiums(podiumMap);
       } catch (e) {
-        console.log("Load ranking error:", e);
-        if (mounted) {
-
-          setPodiumItems([
-            { image: fortune_teller_3, name: "รอจัดอันดับ", rank: 1, color: colors.gold },
-            { image: fortune_teller_1, name: "รอจัดอันดับ", rank: 2, color: colors.silver },
-            { image: fortune_teller_2, name: "รอจัดอันดับ", rank: 3, color: colors.bronze },
-          ]);
-        }
+        console.log("Load leaderboards error:", e);
+        if (!mounted) return;
+        setBoards([]);
+        setBoardPodiums({});
       } finally {
-        if (mounted) setLoadingRank(false);
+        if (mounted) setLoadingBoards(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
-  }, [colors, rankColors]);
+  }, [colors]); 
 
   return (
     <ScreenWrapper>
@@ -142,7 +171,7 @@ export default function HomePage() {
           height={240}
           dotActiveClass="bg-accent-200"
           dotClass="bg-alabaster"
-          onIndexChange={(i) => {}}
+          onIndexChange={() => {}}
           onImagePress={(i) => {
             const a = newsToArticle[i % newsToArticle.length];
             router.push({
@@ -164,23 +193,55 @@ export default function HomePage() {
           </View>
           <FortuneCarousel items={fortuneTellers} />
 
-          {/* Fortune teller ranking */}
-          <View className="flex-row items-center gap-2.5 mt-4">
-            <Text className="text-white text-l font-sans-semibold">อันดับหมอดู</Text>
-            <View className="bg-secondary-100 rounded-md w-20 my-3 px-1">
-              <Text className="text-l text-white text-center py-2 font-sans-medium">
-                ดูทั้งหมด
-              </Text>
-            </View>
+          {/* --- Leaderboards (0..N) --- */}
+          <View className="mt-4">
+            {loadingBoards ? (
+              <View className="py-3">
+                <Text className="text-white/80 font-sans">กำลังโหลดอันดับ...</Text>
+              </View>
+            ) : boards.length === 0 ? (
+              <View className="py-3">
+                <Text className="text-white/80 font-sans">
+                  ยังไม่มีการจัดอันดับในขณะนี้
+                </Text>
+              </View>
+            ) : (
+              boards.map((b) => {
+                const items = boardPodiums[b.LeaderboardID];
+                const isLoadingThis = !items || items.length === 0;
+                return (
+                  <View key={b.LeaderboardID} className="mb-6">
+                    <View className="flex-row items-center justify-between mb-2">
+                      <View className="flex-1 pr-3">
+                        <Text className="text-white text-l font-sans-semibold">
+                          อันดับหมอดู — {b.Description}
+                        </Text>
+                        {!!b.Prize_Pool && (
+                          <Text className="text-white/80 font-sans text-sm">
+                            Prize Pool: {b.Prize_Pool.toLocaleString()} Coins
+                          </Text>
+                        )}
+                      </View>
+                      <View className="bg-secondary-100 rounded-md w-20 px-1">
+                        <Text className="text-l text-white text-center py-2 font-sans-medium">
+                          ดูทั้งหมด
+                        </Text>
+                      </View>
+                    </View>
+
+                    <RankingPodium
+                      background={ranking_bg}
+                      items={items || []}
+                      loading={isLoadingThis}
+                    />
+                  </View>
+                );
+              })
+            )}
           </View>
-          <RankingPodium
-            background={ranking_bg}
-            items={podiumItems}
-            loading={loadingRank}
-          />
 
           {/* Article list */}
-          <View className="gap-2.5 mt-8">
+          <View className="gap-2.5 mt-2 mb-8">
             <Text className="text-white text-l font-sans-semibold">บทความ</Text>
             <ArticleCarousel
               items={articles.map((a) => ({
