@@ -80,6 +80,7 @@ export default function ConfirmWalletPayment() {
     })();
   }, [serviceId]);
 
+
   // ✅ กดชำระเงิน
   const handleConfirmPayment = async () => {
     if (!token) return Alert.alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
@@ -89,6 +90,8 @@ export default function ConfirmWalletPayment() {
 
     try {
       setLoading(true);
+
+      // 1️⃣ สร้าง order ก่อน
       await axios.post(
         `${getBaseURL()}/orders`,
         {
@@ -99,16 +102,47 @@ export default function ConfirmWalletPayment() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // 2️⃣ ดึงข้อมูล service เพื่อนำ UserID ของหมอดู
+      const svcRes = await axios.get(`${getBaseURL()}/services/${serviceId}`);
+      const fortuneTellerUserId = svcRes.data?.FortuneTeller?.UserID || null;
+
+      if (fortuneTellerUserId) {
+        // 3️⃣ ดึงรายชื่อแชตทั้งหมดของผู้ใช้คนนี้
+        const chatRes = await axios.get(`${getBaseURL()}/chat-conversations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const existing = (chatRes.data || []).find((conv: any) =>
+          conv.Participants?.some(
+            (p: any) => p.UserID === fortuneTellerUserId
+          )
+        );
+
+        // 4️⃣ ถ้ายังไม่เคยคุยกับหมอดูนี้ → สร้างห้องใหม่
+        if (!existing) {
+          await axios.post(
+            `${getBaseURL()}/chat-conversations`,
+            { participantUserIDs: [fortuneTellerUserId] },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          console.log("✅ ห้องแชตใหม่ถูกสร้างเรียบร้อย");
+        } else {
+          console.log("ℹ️ พบห้องแชตเดิมอยู่แล้ว ไม่สร้างซ้ำ");
+        }
+      }
+
+      // 5️⃣ แจ้งสำเร็จ
       Alert.alert("สำเร็จ", "การจองของคุณเสร็จสมบูรณ์", [
         { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p") },
       ]);
     } catch (error: any) {
-      console.log("Order error:", error?.message || error);
-      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างคำสั่งซื้อได้");
+      console.error("Order error:", error?.message || error);
+      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างคำสั่งซื้อหรือห้องแชตได้");
     } finally {
       setLoading(false);
     }
   };
+
 
   // ✅ กำลังโหลด
   if (loading)

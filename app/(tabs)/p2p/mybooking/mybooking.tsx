@@ -52,9 +52,10 @@ type Booking = {
   EndTime: string;
   AvatarURL?: string;
   Status: BookingStatus;
+  FortuneTellerUserID?: string;
 };
 
-// ---------- UI Components ----------
+// ---------- UI ----------
 const PillFilter = ({
   label,
   active,
@@ -91,89 +92,94 @@ const BookingCard = ({
   b: Booking;
   onReview: () => void;
   onChat: () => void;
-}) => (
-  <View className="bg-[#211A3A] rounded-3xl border border-white/10 mb-4 overflow-hidden p-4">
-    {/* Header */}
-    <View className="flex-row items-center justify-between mb-3">
-      <View className="flex-row items-center">
+}) => {
+  const now = new Date();
+  const end = new Date(b.EndTime);
+  const canReview = now >= end; // แสดงเฉพาะถ้าเวลาผ่านแล้ว
+
+  return (
+    <View className="bg-[#211A3A] rounded-3xl border border-white/10 mb-4 overflow-hidden p-4">
+      {/* Header */}
+      <View className="flex-row items-center justify-between mb-3">
+        <View className="flex-row items-center">
+          <Image
+            source={{
+              uri:
+                b.AvatarURL ||
+                "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+            }}
+            className="w-7 h-7 rounded-full mr-2"
+          />
+          <Text className="text-white font-semibold">{b.FortuneTellerName}</Text>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View className="flex-row">
         <Image
           source={{
             uri:
               b.AvatarURL ||
               "https://cdn-icons-png.flaticon.com/512/847/847969.png",
           }}
-          className="w-7 h-7 rounded-full mr-2"
+          className="w-28 h-28 rounded-2xl mr-3"
         />
-        <Text className="text-white font-semibold">{b.FortuneTellerName}</Text>
-      </View>
-    </View>
-
-    {/* Content */}
-    <View className="flex-row">
-      <View className="mr-3">
-        <Image
-          source={{
-            uri:
-              b.AvatarURL ||
-              "https://cdn-icons-png.flaticon.com/512/847/847969.png",
-          }}
-          className="w-28 h-28 rounded-2xl"
-        />
+        <View className="flex-1">
+          <Text className="text-white mt-1 font-semibold">{b.ServiceName}</Text>
+          <Text className="text-yellow-400 font-bold mt-2">
+            {formatDateOnlyTH(b.StartTime)}
+          </Text>
+          <Text className="text-white/70 text-sm mt-1">
+            {formatTimeRange(b.StartTime, b.EndTime)}
+          </Text>
+          <Text className="text-white/60 text-sm mt-1">
+            ฿ {b.Price.toFixed(2)}
+          </Text>
+        </View>
       </View>
 
-      <View className="flex-1">
-        <Text className="text-white mt-1 font-semibold">{b.ServiceName}</Text>
-        <Text className="text-yellow-400 font-bold mt-2">
-          {formatDateOnlyTH(b.StartTime)}
-        </Text>
-        <Text className="text-white/70 text-sm mt-1">
-          {formatTimeRange(b.StartTime, b.EndTime)}
-        </Text>
-        <Text className="text-white/60 text-sm mt-1">
-          ฿ {b.Price.toFixed(2)}
-        </Text>
+      <View className="h-[1px] bg-white/10 w-full my-3" />
+
+      {/* Buttons */}
+      <View className="flex-row">
+        <TouchableOpacity
+          onPress={onChat}
+          className="flex-1 mr-3 px-4 py-3 rounded-full border border-yellow-400 items-center justify-center flex-row"
+        >
+          <MaterialIcons
+            name="chat-bubble-outline"
+            size={16}
+            color="#FDE68A"
+            style={{ marginRight: 6 }}
+          />
+          <Text className="text-yellow-400 font-bold">แชต</Text>
+        </TouchableOpacity>
+
+        {canReview && (
+          <TouchableOpacity
+            onPress={onReview}
+            className="flex-1 px-4 py-3 rounded-full border border-green-500 items-center justify-center flex-row"
+          >
+            <MaterialIcons
+              name="star-rate"
+              size={16}
+              color="#4ADE80"
+              style={{ marginRight: 6 }}
+            />
+            <Text className="text-green-400 font-bold">รีวิว</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
-
-    <View className="h-[1px] bg-white/10 w-full my-3" />
-
-    {/* Buttons */}
-    <View className="flex-row">
-      <TouchableOpacity
-        onPress={onChat}
-        className="flex-1 mr-3 px-4 py-3 rounded-full border border-yellow-400 items-center justify-center flex-row"
-      >
-        <MaterialIcons
-          name="chat-bubble-outline"
-          size={16}
-          color="#FDE68A"
-          style={{ marginRight: 6 }}
-        />
-        <Text className="text-yellow-400 font-bold">Chat</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={onReview}
-        className="flex-1 px-4 py-3 rounded-full border border-green-500 items-center justify-center flex-row"
-      >
-        <MaterialIcons
-          name="star-rate"
-          size={16}
-          color="#4ADE80"
-          style={{ marginRight: 6 }}
-        />
-        <Text className="text-green-400 font-bold">Review</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
+  );
+};
 
 // ---------- Page ----------
 export default function MyBookingPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filter, setFilter] = useState<
-    "ALL" | "UPCOMING" | "ONGOING" | "COMPLETED"
+    "ALL" | "UPCOMING" | "ONGOING" | "COMPLETED" | "TODAY"
   >("ALL");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -198,20 +204,34 @@ export default function MyBookingPage() {
       const services = servicesRes.data;
       const now = Date.now();
 
-      const combined = ordersRes.data.map((order: any) => {
-        const svc = services.find((s: any) => s.ServiceID === order.ServiceID);
-        const ftPic =
-          svc?.FortuneTeller?.UserInfo?.PictureURL || svc?.ImageURLs?.[0] || null;
+      const combined = ordersRes.data
+        .map((order: any) => {
+          const svc = services.find(
+            (s: any) => s.ServiceID === order.ServiceID
+          );
+          const ftPic =
+            svc?.FortuneTeller?.UserInfo?.PictureURL ||
+            svc?.ImageURLs?.[0] ||
+            null;
 
-        let status: BookingStatus = "UPCOMING";
-        const start = new Date(order.StartTime).getTime();
-        const end = new Date(order.EndTime).getTime();
+          let status: BookingStatus = "UPCOMING";
+          const start = new Date(order.StartTime).getTime();
+          const end = new Date(order.EndTime).getTime();
 
-        if (now >= start && now <= end) status = "ONGOING";
-        else if (now > end) status = "COMPLETED";
+          if (now >= start && now <= end) status = "ONGOING";
+          else if (now > end) status = "COMPLETED";
 
-        return { ...order, AvatarURL: ftPic, Status: status };
-      });
+          return {
+            ...order,
+            AvatarURL: ftPic,
+            Status: status,
+            FortuneTellerUserID: svc?.FortuneTeller?.UserID,
+          };
+        })
+        .sort(
+          (a: Booking, b: Booking) =>
+            new Date(b.StartTime).getTime() - new Date(a.StartTime).getTime()
+        ); // เรียงใหม่ -> เก่า
 
       setBookings(combined);
     } catch (error) {
@@ -234,17 +254,52 @@ export default function MyBookingPage() {
 
   const filteredBookings = useMemo(() => {
     if (filter === "ALL") return bookings;
+    if (filter === "TODAY") {
+      const today = new Date().toDateString();
+      return bookings.filter(
+        (b) =>
+          new Date(b.StartTime).toDateString() === today ||
+          new Date(b.EndTime).toDateString() === today
+      );
+    }
     return bookings.filter((b) => b.Status === filter);
   }, [bookings, filter]);
 
-  const onChat = (b: Booking) => {
-    Alert.alert("Chat", `เปิดแชทกับ ${b.FortuneTellerName}`);
+  const onChat = async (b: Booking) => {
+    try {
+      const token = await SecureStore.getItemAsync("access_token");
+      if (!token) return Alert.alert("โปรดเข้าสู่ระบบก่อน");
+
+      // 🔹 ดึงห้องแชตทั้งหมด
+      const chatRes = await axios.get(`${getBaseURL()}/chat-conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 🔹 หา chat ที่มีหมอดูคนนี้อยู่ใน Participants
+      const conversation = (chatRes.data || []).find((conv: any) =>
+        conv.Participants?.some((p: any) => p.UserID === b.FortuneTellerUserID)
+      );
+
+      if (conversation) {
+        // ✅ ใช้ router.push ไปหน้าแชต
+        router.push({
+          pathname: "/chat/chat_screen",
+          params: { chatId: conversation.ConversationID },
+        });
+      } else {
+        Alert.alert("ไม่พบห้องแชต", "ยังไม่มีการสนทนากับหมอดูคนนี้");
+      }
+    } catch (err) {
+      console.log("Chat open error:", err);
+      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถเปิดแชตได้");
+    }
   };
+
 
   if (loading)
     return (
       <ScreenWrapper>
-        <HeaderBar title="My Booking" showBack onBackPress={() => router.back()} />
+        <HeaderBar title="การจองของฉัน" showBack onBackPress={() => router.back()} />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#fff" />
           <Text className="text-white/70 mt-2">กำลังโหลดข้อมูล...</Text>
@@ -254,35 +309,40 @@ export default function MyBookingPage() {
 
   return (
     <ScreenWrapper>
-      <HeaderBar title="My Booking" showBack />
+      <HeaderBar title="การจองของฉัน" showBack />
 
-      {/* Filter Tabs */}
+      {/* ฟิลเตอร์ */}
       <View className="px-4 pt-2 pb-3">
         <View className="flex-row flex-wrap">
           <PillFilter
-            label="All"
+            label="ทั้งหมด"
             active={filter === "ALL"}
             onPress={() => setFilter("ALL")}
           />
           <PillFilter
-            label="Upcoming"
+            label="วันนี้"
+            active={filter === "TODAY"}
+            onPress={() => setFilter("TODAY")}
+          />
+          <PillFilter
+            label="กำลังจะมาถึง"
             active={filter === "UPCOMING"}
             onPress={() => setFilter("UPCOMING")}
           />
           <PillFilter
-            label="Ongoing"
+            label="กำลังดำเนินการ"
             active={filter === "ONGOING"}
             onPress={() => setFilter("ONGOING")}
           />
           <PillFilter
-            label="Completed"
+            label="เสร็จสิ้น"
             active={filter === "COMPLETED"}
             onPress={() => setFilter("COMPLETED")}
           />
         </View>
       </View>
 
-      {/* Booking List */}
+      {/* รายการ */}
       <FlatList
         data={filteredBookings}
         keyExtractor={(item) => item.OrderID}
@@ -300,7 +360,7 @@ export default function MyBookingPage() {
             onChat={() => onChat(item)}
             onReview={() =>
               router.push({
-                pathname: "/(tabs)/p2p/review",
+                pathname: "/review",
                 params: { serviceId: item.ServiceID },
               })
             }

@@ -17,7 +17,8 @@ const toLocalDateLabel = (d: Date) =>
 const toLocalTimeLabel = (d: Date) =>
   d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 // ส่งเป็น UTC ISO "Z"
-const toISOZ = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+const toISOZ = (d: Date) => d.toISOString();
+
 
 // ---- Axios (ในไฟล์เดียว) ----
 const ACCESS_TOKEN_KEY = "access_token";
