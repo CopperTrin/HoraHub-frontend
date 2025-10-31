@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
 
         {/* โปรไฟล์หมอดู */}
         <TouchableOpacity
-          onPress={() => router.push(`/fortune_teller_profile/mock`)}
+          onPress={() => router.push(`/fortune_teller_profile/mock?from_id=${product.id}`)}
           className="flex-row items-center bg-primary-100 p-3 rounded-full mb-3"
         >
           <Image source={prodile_img} className="w-12 h-12 rounded-full" />

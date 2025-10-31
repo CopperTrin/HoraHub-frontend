@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+import { MaterialIcons } from "@expo/vector-icons";
 import HeaderBar from "../../components/ui/HeaderBar";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
@@ -56,7 +57,7 @@ type Service = {
 };
 
 export default function FortuneTellerProfilePage() {
-  const { id_fortune_teller } = useLocalSearchParams();
+  const { id_fortune_teller, from_id } = useLocalSearchParams<{ id_fortune_teller?: string; from_id?: string }>();
   const [activeTab, setActiveTab] = useState<"shop" | "p2p">("shop");
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<FTProfile | null>(null);
@@ -165,13 +166,47 @@ export default function FortuneTellerProfilePage() {
       ? { uri: profile.User.UserInfo.PictureURL }
       : prodile_img;
 
+  
+
+  const onClickBack = () => {
+    if (id_fortune_teller === "mock") {
+      router.push(`/(tabs)/shop/${from_id || ""}`);
+      console.log('shop')
+    } else {
+      router.push(`/(tabs)/p2p/${from_id || ""}`);
+      console.log('p2p')
+    }
+  };
+
   return (
     <ScreenWrapper>
-      <HeaderBar
-        title={profile?.User?.UserInfo?.FirstName || "หมอดู"}
-        showChat
-        showBack
-      />
+      <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
+        <View className="flex-row items-center">
+          <TouchableOpacity onPress={() => onClickBack()} accessibilityLabel="ย้อนกลับ">
+            <MaterialIcons name="arrow-back-ios-new" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+
+          <Text className="text-alabaster text-2xl font-semibold ml-2" numberOfLines={1}>
+            {(() => {
+              const rawTitle = profile?.User?.UserInfo?.FirstName || "หมอดู";
+              const t = Array.from(rawTitle);
+              return t.length > 20 ? `${t.slice(0, 20).join("")}...` : rawTitle;
+            })()}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => router.push("/chat")}
+            className="ml-4"
+            accessibilityLabel="เปิดแชท"
+          >
+            <MaterialIcons name="chat-bubble-outline" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
