@@ -74,6 +74,9 @@ export default function ProfilePage() {
     } catch (error: any) {
       if (error?.response) {
         console.log('Error fetching profile:', error.response.status, error.response.data);
+        if (error.response.status === 401) {
+          googleSignOut();
+        }
       } else {
         console.log('Error fetching profile:', error.message || error);
       }
