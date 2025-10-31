@@ -1,8 +1,5 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HistoryCardList from "@/app/components/profile/HistoryCardList";
-import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
-import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
-import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import profile_background from '@/assets/images/profile_background.png';
 import { MaterialIcons } from '@expo/vector-icons';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -14,12 +11,91 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
-/** ---- Types ---- */
 type WalletMe = {
   AccountingID: string;
-  Balance_Number: number;  
-  Label: string;         
+  Balance_Number: number;
+  Label: string;
   UserID: string;
+};
+
+type OrderItem = {
+  OrderID: string;
+  Status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
+  CreatedAt: string;
+  StartTime?: string | null;
+  EndTime?: string | null;
+  ServiceID: string;
+  ServiceName: string;
+  FortuneTellerName?: string | null;
+  Price?: number | null;
+};
+
+type ServiceDetail = {
+  ServiceID: string;
+  Service_name: string;
+  Service_Description?: string;
+  Price?: number | null;
+  Avg_Rating?: number | null;
+  ImageURLs?: string[];
+  CategoryID?: string;
+  FortuneTellerID: string;
+  FortuneTeller?: {
+    FortuneTellerID: string;
+    UserID: string;
+    Status: string;
+    CVURL?: string;
+    Point?: number;
+    Bio?: string;
+  };
+};
+
+type UserDetail = {
+  UserID: string;
+  Username?: string;
+  Role?: string[];
+  UserInfo?: {
+    FirstName?: string;
+    LastName?: string;
+    PictureURL?: string;
+    Email?: string;
+    GoogleID?: string;
+  };
+};
+
+const getBaseURL = () => (Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456");
+
+const toThaiStatus = (s?: string): "จองคิวแล้ว" | "สำเร็จ" | "ยกเลิก" => {
+  if (s === "COMPLETED") return "สำเร็จ";
+  if (s === "CANCELLED") return "ยกเลิก";
+  return "จองคิวแล้ว";
+};
+
+const toThaiDate = (iso?: string | null) => {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleDateString("th-TH", { dateStyle: "medium" });
+  } catch { return "-"; }
+};
+const toThaiTime = (iso?: string | null) => {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  } catch { return "-"; }
+};
+const toThaiDateTime = (iso?: string | null) => {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleString("th-TH");
+  } catch { return "-"; }
+};
+
+const formatTHB = (num?: number | null) => {
+  if (typeof num !== "number") return "—";
+  try {
+    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(num);
+  } catch {
+    return `${num.toLocaleString('th-TH')} บาท`;
+  }
 };
 
 export default function ProfilePage() {
@@ -32,21 +108,19 @@ export default function ProfilePage() {
   const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
 
-  const getBaseURL = () => {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:3456";
-    }
-    return "http://localhost:3456";
-  };
-
-  const formatTHB = (num?: number) => {
-    if (typeof num !== "number") return "—";
-    try {
-      return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(num);
-    } catch {
-      return `${num.toLocaleString('th-TH')} บาท`;
-    }
-  };
+  const [historyItems, setHistoryItems] = useState<
+    {
+      fortuneTellerName: string;
+      status: "จองคิวแล้ว" | "สำเร็จ" | "ยกเลิก";
+      profileImage: any;
+      horoscopeType: string;
+      dateTime: string;    
+      endTimeText: string;  
+      price: string;
+    }[]
+  >([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState<string>("");
 
   const googleSignOut = async () => {
     try {
@@ -67,51 +141,36 @@ export default function ProfilePage() {
   const fetchProfile = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        console.log('No access token found');
-        setUserInfo(null);
-        setLoading(false);
-        return;
-      }
+      if (!token) { setUserInfo(null); setLoading(false); return; }
       const res = await axios.get(`${getBaseURL()}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
-      console.log('Fetched profile:', res.data);
-      console.log(token)
       setLoading(false);
     } catch (error: any) {
-      if (error?.response) {
-        console.log('Error fetching profile:', error.response.status, error.response.data);
-        if (error.response.status === 401) {
-          googleSignOut();
-        }
-      } else {
-        console.log('Error fetching profile:', error.message || error);
-      }
       setLoading(false);
+      if (error?.response?.status === 401) {
+        await googleSignOut();
+      } else {
+        console.log('Error fetching profile:', error?.response?.data || error);
+      }
     }
   }, []);
 
-  /** Fetch wallet balance: GET /accounting/customer/me */
   const fetchWallet = useCallback(async () => {
     setWalletLoading(true);
     try {
       const token = await SecureStore.getItemAsync('access_token');
-      if (!token) {
-        setWallet(null);
-        setWalletLoading(false);
-        return;
-      }
+      if (!token) { setWallet(null); setWalletLoading(false); return; }
       const res = await axios.get<WalletMe>(`${getBaseURL()}/accounting/customer/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWallet(res.data);
     } catch (error: any) {
-      if (error?.response) {
-        console.log('Error fetching wallet:', error.response.status, error.response.data);
+      if (error?.response?.status === 401) {
+        await googleSignOut();
       } else {
-        console.log('Error fetching wallet:', error.message || error);
+        console.log('Error fetching wallet:', error?.response?.data || error);
       }
       setWallet(null);
     } finally {
@@ -119,46 +178,111 @@ export default function ProfilePage() {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      fetchProfile();
-      fetchWallet();
-    }, [fetchProfile, fetchWallet])
-  );
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    setOrdersError("");
+    try {
+      const token = await SecureStore.getItemAsync('access_token');
+      if (!token) { setHistoryItems([]); setOrdersLoading(false); return; }
 
-  const historyData = [
-    {
-      fortuneTellerName: "อาจารย์ไม้ร่ม",
-      status: "จองคิวแล้ว",
-      profileImage: fortune_teller_3,
-      horoscopeType: "ดูดวงลายมือ",
-      dateTime: "วันที่ 11 ก.ย. 68 เวลา 13.00-13.20",
-      price: "120 บาท",
-    },
-    {
-      fortuneTellerName: "หมอบี",
-      status: "สำเร็จ",
-      profileImage: fortune_teller_1,
-      horoscopeType: "ดูดวงความรัก",
-      dateTime: "วันที่ 15 ส.ค. 68 เวลา 14.20-14.35",
-      price: "600 บาท",
-    },
-    {
-      fortuneTellerName: "อาจารย์แดง",
-      status: "ยกเลิก",
-      profileImage: fortune_teller_2,
-      horoscopeType: "ดูดวงวันเกิด",
-      dateTime: "วันที่ 10 ส.ค. 68 เวลา 10.10-10.40",
-      price: "321 บาท",
-    },
-  ];
+      const resOrders = await axios.get<OrderItem[]>(
+        `${getBaseURL()}/orders/me`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const orders = Array.isArray(resOrders.data) ? resOrders.data : [];
+
+      const enriched = await Promise.all(
+        orders.map(async (o) => {
+          try {
+            const resService = await axios.get<ServiceDetail>(`${getBaseURL()}/services/${o.ServiceID}`);
+            const service = resService.data;
+
+            let ftUser: UserDetail | null = null;
+            const ftUserId = service?.FortuneTeller?.UserID || null;
+            if (ftUserId) {
+              try {
+                const resUser = await axios.get<UserDetail>(`${getBaseURL()}/users/${ftUserId}`);
+                ftUser = resUser.data;
+              } catch {}
+            }
+
+            const profileURL =
+              ftUser?.UserInfo?.PictureURL ||
+              service?.ImageURLs?.[0] ||
+              "https://cdn-icons-png.flaticon.com/512/1077/1077012.png";
+
+            const realName = [ftUser?.UserInfo?.FirstName, ftUser?.UserInfo?.LastName]
+              .filter(Boolean).join(" ").trim();
+
+            const fortuneTellerName = realName || o.FortuneTellerName || ftUser?.Username || "ไม่ระบุชื่อ";
+            const serviceName = service?.Service_name || o.ServiceName || "บริการดูดวง";
+
+            const start = o.StartTime || o.CreatedAt;
+            const dateTime = start
+              ? `${toThaiDate(start)} • ${toThaiTime(start)} น.`
+              : toThaiDateTime(o.CreatedAt);
+
+            const endTimeText = o.EndTime ? `สิ้นสุด ${toThaiTime(o.EndTime)} น.` : "สิ้นสุด —";
+
+            const priceNumber =
+              (typeof o.Price === "number" ? o.Price : null) ??
+              (typeof service?.Price === "number" ? service.Price : null);
+
+            return {
+              fortuneTellerName,
+              status: toThaiStatus(o.Status),
+              profileImage: { uri: profileURL },
+              horoscopeType: serviceName,
+              dateTime,
+              endTimeText,
+              price: typeof priceNumber === "number" ? `${priceNumber} บาท` : "-",
+            };
+          } catch {
+            const start = o.StartTime || o.CreatedAt;
+            const dateTime = start
+              ? `${toThaiDate(start)} • ${toThaiTime(start)} น.`
+              : toThaiDateTime(o.CreatedAt);
+            const endTimeText = o.EndTime ? `สิ้นสุด ${toThaiTime(o.EndTime)} น.` : "สิ้นสุด —";
+
+            return {
+              fortuneTellerName: o.FortuneTellerName || "ไม่ระบุชื่อ",
+              status: toThaiStatus(o.Status),
+              profileImage: { uri: "https://cdn-icons-png.flaticon.com/512/1077/1077012.png" },
+              horoscopeType: o.ServiceName || "บริการดูดวง",
+              dateTime,
+              endTimeText,
+              price: typeof o.Price === "number" ? `${o.Price} บาท` : "-",
+            };
+          }
+        })
+      );
+
+      setHistoryItems(enriched);
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        await googleSignOut();
+      } else {
+        console.error("Error loading /orders/me:", error?.response?.data || error);
+        setOrdersError("ไม่สามารถโหลดประวัติการใช้งานได้");
+      }
+      setHistoryItems([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    fetchProfile();
+    fetchWallet();
+    fetchOrders();
+  }, [fetchProfile, fetchWallet, fetchOrders]));
 
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-primary-200">
         <ActivityIndicator size="large" color="#fff" />
-        <Text className="text-white font-sans-semibold mt-2.5">Loading…</Text>
+        <Text className="text-white font-sans-semibold mt-2.5">กำลังโหลด…</Text>
       </View>
     );
   }
@@ -169,11 +293,9 @@ export default function ProfilePage() {
         <View>
           <ScrollView className="mb-20" bounces={false} overScrollMode="never">
             <HeaderBar title="Customer" showChat />
+
             <View className='relative h-64'>
-              <Image
-                source={profile_background}
-                style={{ width: '100%', height: 150, resizeMode: 'cover' }}
-              />
+              <Image source={profile_background} style={{ width: '100%', height: 150, resizeMode: 'cover' }} />
               <Pressable
                 onPress={() => setOpen(true)}
                 style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
@@ -188,23 +310,14 @@ export default function ProfilePage() {
                   source={{ uri: userInfo.PictureURL }}
                   style={{ width: 129, height: 128, borderRadius: 64, marginVertical: 10 }}
                 />
-                <Text
-                  className='text-white font-sans-semibold text-2xl max-w-[256px]'
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
+                <Text className='text-white font-sans-semibold text-2xl max-w-[256px]' numberOfLines={1} ellipsizeMode="tail">
                   {userInfo.FirstName} {userInfo.LastName}
                 </Text>
               </View>
             </View>
 
             <View className='mx-4 my-5 flex-col gap-6'>
-
-              {/* Wallet Card */}
-              <Pressable
-                onPress={() => router.push("/wallet-customer")}
-                className="bg-accent-200 rounded-2xl p-4"
-              >
+              <Pressable onPress={() => router.push("/wallet-customer")} className="bg-accent-200 rounded-2xl p-4">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-2">
                     <MaterialIcons name="account-balance-wallet" size={24} color="black" />
@@ -214,7 +327,7 @@ export default function ProfilePage() {
                     <ActivityIndicator />
                   ) : (
                     <Text className="text-blackpearl font-sans-bold text-2xl">
-                      {formatTHB(wallet?.Balance_Number)}
+                      {formatTHB(wallet?.Balance_Number ?? null)}
                     </Text>
                   )}
                 </View>
@@ -225,50 +338,37 @@ export default function ProfilePage() {
               </Text>
 
               <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-              <HistoryCardList items={historyData} />
+
+              {ordersLoading ? (
+                <View className="mt-2 flex-row items-center gap-2">
+                  <ActivityIndicator />
+                  <Text className="text-white font-sans">กำลังโหลดประวัติ…</Text>
+                </View>
+              ) : ordersError ? (
+                <Text className="text-red-300 font-sans">{ordersError}</Text>
+              ) : historyItems.length === 0 ? (
+                <Text className="text-white/80 font-sans">ยังไม่มีประวัติการใช้งาน</Text>
+              ) : (
+                <HistoryCardList items={historyItems} />
+              )}
             </View>
           </ScrollView>
 
-          <Modal
-            visible={open}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setOpen(false)}
-          >
+          <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
             <Pressable
               onPress={() => setOpen(false)}
-              style={{
-                flex: 1,
-                backgroundColor: 'rgba(0,0,0,0.35)',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Pressable
-                onPress={() => { }}
-                className="bg-primary-200"
-                style={{
-                  width: '85%',
-                  borderRadius: 16,
-                  padding: 16,
-                  gap: 12
-                }}
-              >
+              <Pressable onPress={() => { }} className="bg-primary-200" style={{ width: '85%', borderRadius: 16, padding: 16, gap: 12 }}>
                 <View className="flex flex-row w-full justify-center relative  p-2">
                   <Text className="text-white font-sans-semibold text-xl">การตั้งค่าบัญชี</Text>
-                  <Pressable
-                    onPress={() => setOpen(false)}
-                    className="absolute right-0 top-0 p-2"
-                  >
+                  <Pressable onPress={() => setOpen(false)} className="absolute right-0 top-0 p-2">
                     <MaterialIcons name="close" size={24} color="white" />
                   </Pressable>
                 </View>
 
                 <Pressable
-                  onPress={() => {
-                    router.push("/(tabs)/profile/edit-profile-customer");
-                    setOpen(false);
-                  }}
+                  onPress={() => { router.push("/(tabs)/profile/edit-profile-customer"); setOpen(false); }}
                   className="flex flex-row justify-between gap-2 bg-primary-100 w-full h-12 rounded-lg p-2.5"
                 >
                   <Text className="text-white font-sans-semibold text-xl">แก้ไขโปรไฟล์</Text>

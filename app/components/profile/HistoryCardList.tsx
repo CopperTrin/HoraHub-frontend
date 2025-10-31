@@ -4,9 +4,10 @@ import HistoryCard from "./HistoryCard";
 type HistoryItem = {
   fortuneTellerName: string;
   status: "จองคิวแล้ว" | "สำเร็จ" | "ยกเลิก";
-  profileImage: any; 
+  profileImage: any;
   horoscopeType: string;
   dateTime: string;
+  endTimeText: string; 
   price: string;
 };
 
@@ -25,6 +26,7 @@ export default function HistoryCardList({ items }: HistoryCardListProps) {
           profileImage={item.profileImage}
           horoscopeType={item.horoscopeType}
           dateTime={item.dateTime}
+          endTimeText={item.endTimeText} 
           price={item.price}
         />
       ))}
