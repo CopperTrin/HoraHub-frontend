@@ -172,7 +172,11 @@ export default function FortuneTellerProfilePage() {
     if (id_fortune_teller === "mock") {
       router.push(`/(tabs)/shop/${from_id || ""}`);
     } else {
-      router.push(`/(tabs)/p2p/service/${from_id || ""}`);
+      if(!from_id){
+        router.push(`/(tabs)/home`);
+      }else{
+        router.push(`/(tabs)/p2p/service/${from_id || ""}`);
+      }
     }
   };
 
