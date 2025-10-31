@@ -22,11 +22,15 @@ const getBaseURL = () =>
   Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
 const formatDateOnlyTH = (iso: string) =>
-  new Date(iso).toLocaleDateString("th-TH", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  new Date(iso)
+    .toLocaleDateString("th-TH", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+    .replace("วัน", ""); 
+
 
 const formatTimeRange = (start: string, end: string) => {
   const s = new Date(start).toLocaleTimeString("th-TH", {
@@ -95,27 +99,26 @@ const BookingCard = ({
 }) => {
   const now = new Date();
   const end = new Date(b.EndTime);
-  const canReview = now >= end; // แสดงเฉพาะถ้าเวลาผ่านแล้ว
+  const canReview = now >= end;
 
   return (
     <View className="bg-[#211A3A] rounded-3xl border border-white/10 mb-4 overflow-hidden p-4">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
-          <Image
-            source={{
-              uri:
-                b.AvatarURL ||
-                "https://cdn-icons-png.flaticon.com/512/847/847969.png",
-            }}
-            className="w-7 h-7 rounded-full mr-2"
-          />
-          <Text className="text-white font-semibold">{b.FortuneTellerName}</Text>
+          {/* 🔹 ใช้ icon แทนรูปหมอดู */}
+          <View className="w-8 h-8 rounded-full bg-yellow-400 mr-2 items-center justify-center">
+            <MaterialIcons name="person" size={20} color="#000" />
+          </View>
+          <Text className="text-white font-semibold text-base">
+            {b.FortuneTellerName}
+          </Text>
         </View>
       </View>
 
       {/* Content */}
       <View className="flex-row">
+        {/* 🔹 service image ยังคงเดิม */}
         <Image
           source={{
             uri:
@@ -125,14 +128,19 @@ const BookingCard = ({
           className="w-28 h-28 rounded-2xl mr-3"
         />
         <View className="flex-1">
-          <Text className="text-white mt-1 font-semibold">{b.ServiceName}</Text>
-          <Text className="text-yellow-400 font-bold mt-2">
+          <Text className="text-white font-semibold text-lg">
+            {b.ServiceName}
+          </Text>
+
+          {/* ขยายขนาดเวลา */}
+          <Text className="text-yellow-400 font-bold mt-1 text-lg">
             {formatDateOnlyTH(b.StartTime)}
           </Text>
-          <Text className="text-white/70 text-sm mt-1">
+          <Text className="text-white/90 text-base mt-1">
             {formatTimeRange(b.StartTime, b.EndTime)}
           </Text>
-          <Text className="text-white/60 text-sm mt-1">
+
+          <Text className="text-white/70 text-sm mt-1">
             ฿ {b.Price.toFixed(2)}
           </Text>
         </View>
@@ -148,11 +156,11 @@ const BookingCard = ({
         >
           <MaterialIcons
             name="chat-bubble-outline"
-            size={16}
+            size={18}
             color="#FDE68A"
             style={{ marginRight: 6 }}
           />
-          <Text className="text-yellow-400 font-bold">แชต</Text>
+          <Text className="text-yellow-400 font-bold text-base">แชต</Text>
         </TouchableOpacity>
 
         {canReview && (
@@ -162,11 +170,11 @@ const BookingCard = ({
           >
             <MaterialIcons
               name="star-rate"
-              size={16}
+              size={18}
               color="#4ADE80"
               style={{ marginRight: 6 }}
             />
-            <Text className="text-green-400 font-bold">รีวิว</Text>
+            <Text className="text-green-400 font-bold text-base">รีวิว</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -209,10 +217,6 @@ export default function MyBookingPage() {
           const svc = services.find(
             (s: any) => s.ServiceID === order.ServiceID
           );
-          const ftPic =
-            svc?.FortuneTeller?.UserInfo?.PictureURL ||
-            svc?.ImageURLs?.[0] ||
-            null;
 
           let status: BookingStatus = "UPCOMING";
           const start = new Date(order.StartTime).getTime();
@@ -223,7 +227,7 @@ export default function MyBookingPage() {
 
           return {
             ...order,
-            AvatarURL: ftPic,
+            AvatarURL: svc?.ImageURLs?.[0] || null,
             Status: status,
             FortuneTellerUserID: svc?.FortuneTeller?.UserID,
           };
@@ -231,7 +235,7 @@ export default function MyBookingPage() {
         .sort(
           (a: Booking, b: Booking) =>
             new Date(b.StartTime).getTime() - new Date(a.StartTime).getTime()
-        ); // เรียงใหม่ -> เก่า
+        );
 
       setBookings(combined);
     } catch (error) {
@@ -270,18 +274,15 @@ export default function MyBookingPage() {
       const token = await SecureStore.getItemAsync("access_token");
       if (!token) return Alert.alert("โปรดเข้าสู่ระบบก่อน");
 
-      // 🔹 ดึงห้องแชตทั้งหมด
       const chatRes = await axios.get(`${getBaseURL()}/chat-conversations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // 🔹 หา chat ที่มีหมอดูคนนี้อยู่ใน Participants
       const conversation = (chatRes.data || []).find((conv: any) =>
         conv.Participants?.some((p: any) => p.UserID === b.FortuneTellerUserID)
       );
 
       if (conversation) {
-        // ✅ ใช้ router.push ไปหน้าแชต
         router.push({
           pathname: "/chat/chat_screen",
           params: { chatId: conversation.ConversationID },
@@ -295,11 +296,14 @@ export default function MyBookingPage() {
     }
   };
 
-
   if (loading)
     return (
       <ScreenWrapper>
-        <HeaderBar title="การจองของฉัน" showBack onBackPress={() => router.back()} />
+        <HeaderBar
+          title="การจองของฉัน"
+          showBack
+          onBackPress={() => router.back()}
+        />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#fff" />
           <Text className="text-white/70 mt-2">กำลังโหลดข้อมูล...</Text>
@@ -314,31 +318,11 @@ export default function MyBookingPage() {
       {/* ฟิลเตอร์ */}
       <View className="px-4 pt-2 pb-3">
         <View className="flex-row flex-wrap">
-          <PillFilter
-            label="ทั้งหมด"
-            active={filter === "ALL"}
-            onPress={() => setFilter("ALL")}
-          />
-          <PillFilter
-            label="วันนี้"
-            active={filter === "TODAY"}
-            onPress={() => setFilter("TODAY")}
-          />
-          <PillFilter
-            label="กำลังจะมาถึง"
-            active={filter === "UPCOMING"}
-            onPress={() => setFilter("UPCOMING")}
-          />
-          <PillFilter
-            label="กำลังดำเนินการ"
-            active={filter === "ONGOING"}
-            onPress={() => setFilter("ONGOING")}
-          />
-          <PillFilter
-            label="เสร็จสิ้น"
-            active={filter === "COMPLETED"}
-            onPress={() => setFilter("COMPLETED")}
-          />
+          <PillFilter label="ทั้งหมด" active={filter === "ALL"} onPress={() => setFilter("ALL")} />
+          <PillFilter label="วันนี้" active={filter === "TODAY"} onPress={() => setFilter("TODAY")} />
+          <PillFilter label="กำลังจะมาถึง" active={filter === "UPCOMING"} onPress={() => setFilter("UPCOMING")} />
+          <PillFilter label="กำลังดำเนินการ" active={filter === "ONGOING"} onPress={() => setFilter("ONGOING")} />
+          <PillFilter label="เสร็จสิ้น" active={filter === "COMPLETED"} onPress={() => setFilter("COMPLETED")} />
         </View>
       </View>
 
@@ -346,14 +330,8 @@ export default function MyBookingPage() {
       <FlatList
         data={filteredBookings}
         keyExtractor={(item) => item.OrderID}
-        contentContainerStyle={{
-          paddingHorizontal: 12,
-          paddingBottom: 24,
-          paddingTop: 8,
-        }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 24, paddingTop: 8 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => (
           <BookingCard
             b={item}
