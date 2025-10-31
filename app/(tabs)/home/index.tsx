@@ -4,6 +4,7 @@ import FortuneCarousel from "@/app/components/home/FortuneCarousel";
 import HomeNews from "@/app/components/home/HomeNews";
 import RankingPodium from "@/app/components/home/RankingPodium";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+import HeaderBar from "../../components/ui/HeaderBar";
 
 import article_1 from "@/assets/images/home/article_1.png";
 import article_2 from "@/assets/images/home/article_2.png";
@@ -12,6 +13,8 @@ import home_new_01 from "@/assets/images/home/home_new_01.png";
 import home_new_02 from "@/assets/images/home/home_new_02.jpg";
 import home_new_03 from "@/assets/images/home/home_new_03.jpg";
 import ranking_bg from "@/assets/images/home/ranking_bg.png";
+
+import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
@@ -292,9 +295,7 @@ export default function HomePage() {
   /** ---------- UI ---------- */
   return (
     <ScreenWrapper>
-      <ScrollView
-        className="mb-0"
-      >
+      <ScrollView className="mb-0">
         <HeaderBar title="Home" showChat />
 
         {/* News slider */}
@@ -308,13 +309,12 @@ export default function HomePage() {
             const a = newsToArticle[i % newsToArticle.length];
             router.push({
               pathname: "/article/[slug]",
-              params: { slug: a.slug,image: a.image, title: a.title, author: a.author }
+              params: { slug: a.slug, image: a.image, title: a.title, author: a.author },
             });
           }}
         />
 
         <View className="px-4 py-4">
-
           {/* Fortune teller recommendation */}
           <View className="flex-row items-center gap-2.5">
             <Text className="text-white text-base font-sans-semibold">หมอดูออนไลน์</Text>
@@ -400,18 +400,18 @@ export default function HomePage() {
           <View className="gap-2.5 mt-2 mb-8">
             <Text className="text-white text-l font-sans-semibold">บทความ</Text>
             <ArticleCarousel
-              items={articles.map(a => ({
+              items={articles.map((a) => ({
                 image: a.image,
                 title: a.title,
                 author: a.author,
-                onPress: () => router.push({
-                  pathname: "/article/[slug]",
-                  params: { slug: a.slug,image: a.image, title: a.title, author: a.author }
-                }),
+                onPress: () =>
+                  router.push({
+                    pathname: "/article/[slug]",
+                    params: { slug: a.slug, image: a.image, title: a.title, author: a.author },
+                  }),
               }))}
             />
           </View>
-
         </View>
       </ScrollView>
     </ScreenWrapper>

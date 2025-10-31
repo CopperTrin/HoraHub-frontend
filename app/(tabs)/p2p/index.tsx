@@ -5,10 +5,6 @@ import { useRouter } from "expo-router";
 import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
-import axios from "axios";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 // ===== Types =====
 type Category = {
