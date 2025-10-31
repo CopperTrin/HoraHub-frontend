@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from "react-native";
 
@@ -12,6 +13,7 @@ const getToken = async () => {
     const token = await SecureStore.getItemAsync('access_token');
     if (!token) {
         console.log('No access token found');
+        router.replace("/(tabs)/profile");
         return;
     }
     return token;}

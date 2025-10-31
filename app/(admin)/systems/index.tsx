@@ -26,7 +26,7 @@ const CreateLeaderboard = () => {
 
         <TouchableOpacity
           className="bg-accent-200 rounded-2xl py-3 mb-5 mt-3"
-          onPress={() => router.navigate("../systems/leaderboard")}
+          onPress={() => router.navigate("../systems/leaderboard_list")}
         >
           <Text className="text-blackpearl font-semibold text-center">
             กระดานผู้นำ

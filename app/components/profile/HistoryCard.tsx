@@ -6,6 +6,7 @@ type HistoryCardProps = {
   profileImage: ImageSourcePropType;
   horoscopeType: string;
   dateTime: string;
+  endTimeText: string; 
   price: string;
 };
 
@@ -15,22 +16,24 @@ export default function HistoryCard({
   profileImage,
   horoscopeType,
   dateTime,
+  endTimeText,
   price,
 }: HistoryCardProps) {
-    const statusColor = (() => {
-        switch (status) {
-          case "จองคิวแล้ว":
-            return "text-yellow-400";
-          case "สำเร็จ":
-            return "text-green-400";
-          case "ยกเลิก":
-            return "text-red-400";
-          default:
-            return "text-white";
-        }
-      })();
+  const statusColor = (() => {
+    switch (status) {
+      case "จองคิวแล้ว":
+        return "text-yellow-400";
+      case "สำเร็จ":
+        return "text-green-400";
+      case "ยกเลิก":
+        return "text-red-400";
+      default:
+        return "text-white";
+    }
+  })();
+
   return (
-    <View className="bg-primary-100 h-40 p-2.5 rounded-lg gap-4">
+    <View className="bg-primary-100 h-44 p-2.5 rounded-lg gap-4">
       {/* Header row */}
       <View className="flex flex-row justify-between">
         <Text
@@ -58,20 +61,20 @@ export default function HistoryCard({
         />
 
         <View className="flex-1 flex-col ml-2.5 mr-2.5">
-          <Text
-            className="text-white text-base font-sans"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
+          <Text className="text-white text-base font-sans" numberOfLines={1} ellipsizeMode="tail">
             {horoscopeType}
           </Text>
-          <Text
-            className="text-white text-base font-sans"
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
+
+          {/* เวลาเริ่ม */}
+          <Text className="text-white text-base font-sans" numberOfLines={1} ellipsizeMode="tail">
             {dateTime}
           </Text>
+
+          {/* เวลาสิ้นสุด */}
+          <Text className="text-white/80 text-base font-sans" numberOfLines={1} ellipsizeMode="tail">
+            {endTimeText}
+          </Text>
+
           <Text
             className="text-white text-base font-sans self-end mt-auto"
             numberOfLines={1}
