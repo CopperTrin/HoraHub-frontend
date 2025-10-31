@@ -171,10 +171,8 @@ export default function FortuneTellerProfilePage() {
   const onClickBack = () => {
     if (id_fortune_teller === "mock") {
       router.push(`/(tabs)/shop/${from_id || ""}`);
-      console.log('shop')
     } else {
-      router.push(`/(tabs)/p2p/${from_id || ""}`);
-      console.log('p2p')
+      router.push(`/(tabs)/p2p/service/${from_id || ""}`);
     }
   };
 
@@ -283,7 +281,7 @@ export default function FortuneTellerProfilePage() {
                 <TouchableOpacity
                   key={service.ServiceID}
                   className="bg-primary-100 rounded-2xl flex-row items-center p-2 mb-2"
-                  onPress={() => router.push(`/(tabs)/p2p/${service.ServiceID}`)}
+                  onPress={() => router.push(`/(tabs)/p2p/service/${service.ServiceID}`)}
                 >
                   {service.ImageURLs?.length > 0 && (
                     <Image
