@@ -1,20 +1,63 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeadersBar from "@/app/components/ui/HeaderBar";
+import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  Alert,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity
+    Alert,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity
 } from "react-native";
 import fcomponent from "../../fcomponent";
 
 const CreateLeaderboard = () => {
   const [description, setDescription] = useState("");
   const [prize, setPrize] = useState<number>(0.0);
+  const route = useRoute();
+  const { id } = route.params as { id: string };
   const API_URL = fcomponent.getBaseURL();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await fcomponent.getToken();
+        const res = await axios.get(`${API_URL}/leaderboards/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data
+        setDescription(data.Description);
+        setPrize(data.Prize_Pool);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const delLeaderBoard = async () => {
+    try {
+      const token = await fcomponent.getToken();
+      const response = await axios.delete(`${API_URL}/leaderboards/${id}`,
+        {headers: {Authorization: `Bearer ${token}`}
+      });
+        if (response.status) {
+        Alert.alert("สำเร็จ", "กระดานผู้นำของคุณถูกลบแล้ว");
+        setDescription("");
+        setPrize(0.0);
+        router.replace("../systems/leaderboard_list");
+      } else {
+        Alert.alert("ผิดพลาด", "ไม่สามารถลบได้");
+      }
+    } catch (error) {
+      console.error("Report error:", error);
+      Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    }
+    };
 
   const submitLeaderBoard = async () => {
     if (!description.trim()) {
@@ -27,7 +70,7 @@ const CreateLeaderboard = () => {
     }
     try {
       const token = await fcomponent.getToken();
-      const response = await axios.post(`${API_URL}/leaderboards`,
+      const response = await axios.patch(`${API_URL}/leaderboards/${id}`,
         { Description: description,
           Prize_Pool: prize},
         {headers: {
@@ -36,11 +79,12 @@ const CreateLeaderboard = () => {
       });
 
       if (response.status) {
-        Alert.alert("สำเร็จ", "กระดานผู้นำของคุณถูกสร้างแล้ว");
+        Alert.alert("สำเร็จ", "กระดานผู้นำของคุณถูกแก้ไขแล้ว");
         setDescription("");
         setPrize(0.0);
+        router.replace("../systems/leaderboard_list");
       } else {
-        Alert.alert("ผิดพลาด", "ไม่สามารถสร้างได้");
+        Alert.alert("ผิดพลาด", "ไม่สามารถแก้ไขได้");
       }
     } catch (error) {
       console.error("Report error:", error);
@@ -52,7 +96,7 @@ const CreateLeaderboard = () => {
     <ScreenWrapper>
       {/* Header */}
       <HeadersBar 
-        title="Create Leaderboard" 
+        title="Edit Leaderboard" 
         showBack />
 
       {/* Content */}
@@ -95,9 +139,13 @@ const CreateLeaderboard = () => {
           className="bg-accent-200 rounded-2xl py-3 mb-5"
           onPress={submitLeaderBoard}
         >
-          <Text className="text-blackpearl font-semibold text-center">
-            สร้าง
-          </Text>
+          <Text className="text-blackpearl font-semibold text-center">แก้ไข</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-red-400 rounded-2xl py-3 mb-5"
+          onPress={delLeaderBoard}
+        >
+          <Text className="text-blackpearl font-semibold text-center">ลบ</Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
