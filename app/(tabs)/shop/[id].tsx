@@ -27,7 +27,7 @@ import product_7 from "@/assets/images/product/7.png";
 import product_8 from "@/assets/images/product/8.png";
 import product_9 from "@/assets/images/product/9.png";
 
-import prodile_img from "@/assets/images/product/fortune-teller/อาจารย์เเดง.jpg";
+import prodile_img from "@/assets/images/product/fortune-teller/ajarndaeng.jpg";
 
 const products = [
   {

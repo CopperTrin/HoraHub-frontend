@@ -21,7 +21,7 @@ import product_4 from "@/assets/images/product/4.png";
 import product_5 from "@/assets/images/product/5.png";
 import product_6 from "@/assets/images/product/6.png";
 
-import prodile_img from "@/assets/images/product/fortune-teller/อาจารย์เเดง.jpg";
+import prodile_img from "@/assets/images/product/fortune-teller/ajarndaeng.jpg";
 
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
