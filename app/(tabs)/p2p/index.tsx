@@ -1,10 +1,10 @@
 // app/(tabs)/p2p/index.tsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator , Platform} from "react-native";
+import { useRouter } from "expo-router";
+import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
-import axios from "axios";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 // ===== Types =====
 type Category = {
@@ -131,41 +131,69 @@ const ServiceCard = ({
   );
 };
 
-// ===== Page =====
+const API_BASE = Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://127.0.0.1:3456";
+
 export default function P2PServiceHome() {
   const router = useRouter();
+
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // กรอง
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const API_BASE = "http://10.0.2.2:3456";
+  // โหลดข้อมูล (ใช้ซ้ำได้)
+  const fetchServicesAndUsers = useCallback(async () => {
+    const [svcRes, userRes] = await Promise.all([
+      axios.get(`${API_BASE}/services`),
+      axios.get(`${API_BASE}/users`),
+    ]);
+    const serviceList: Service[] = svcRes.data;
+    const userList: User[] = userRes.data;
 
-  // Fetch services + users แล้ว merge
+    const merged = serviceList.map((svc) => {
+      const ftUser = userList.find((u) => u.UserID === svc.FortuneTeller?.UserID);
+      return { ...svc, FortuneTellerProfile: ftUser };
+    });
+
+    return merged;
+  }, []);
+
+  const reload = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      const merged = await fetchServicesAndUsers();
+      setServices(merged);
+    } catch (err: any) {
+      console.error("โหลด services หรือ users ไม่ได้:", err);
+      setError(err?.response?.data?.message || "โหลดข้อมูลไม่สำเร็จ");
+      setServices([]); // กัน null
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchServicesAndUsers]);
+
+  // initial load
   useEffect(() => {
-    const fetchData = async () => {
+    (async () => {
       try {
-        const [svcRes, userRes] = await Promise.all([axios.get(`${API_BASE}/services`), axios.get(`${API_BASE}/users`)]);
-        const serviceList: Service[] = svcRes.data;
-        const userList: User[] = userRes.data;
-
-        const merged = serviceList.map((svc) => {
-          const ftUser = userList.find((u) => u.UserID === svc.FortuneTeller?.UserID);
-          return { ...svc, FortuneTellerProfile: ftUser };
-        });
-
+        setLoading(true);
+        setError(null);
+        const merged = await fetchServicesAndUsers();
         setServices(merged);
-      } catch (err) {
+      } catch (err: any) {
         console.error("โหลด services หรือ users ไม่ได้:", err);
+        setError(err?.response?.data?.message || "โหลดข้อมูลไม่สำเร็จ");
+        setServices([]);
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
-  }, []);
+    })();
+  }, [fetchServicesAndUsers]);
 
   // หมวดหมู่ทั้งหมด
   const categories = useMemo(() => {
@@ -185,7 +213,13 @@ export default function P2PServiceHome() {
       ? `${item.FortuneTellerProfile.UserInfo?.FirstName || ""} ${item.FortuneTellerProfile.UserInfo?.LastName || ""}`
       : "";
 
-    const haystacks = [item.Service_name, item.Service_Description, item.Category?.Category_name, ftName, String(item.Price)]
+    const haystacks = [
+      item.Service_name,
+      item.Service_Description,
+      item.Category?.Category_name,
+      ftName,
+      String(item.Price),
+    ]
       .filter(Boolean)
       .map((s) => String(s).toLowerCase());
 
@@ -194,7 +228,8 @@ export default function P2PServiceHome() {
 
   // กรองตามหมวดหมู่ + คำค้น
   const filtered = useMemo(() => {
-    const byCategory = selectedCategory === "All" ? services : services.filter((s) => s.Category?.Category_name === selectedCategory);
+    const byCategory =
+      selectedCategory === "All" ? services : services.filter((s) => s.Category?.Category_name === selectedCategory);
     return byCategory.filter((s) => matchSearch(s, searchQuery));
   }, [services, selectedCategory, searchQuery]);
 
@@ -207,7 +242,15 @@ export default function P2PServiceHome() {
   const goFortuneTellerProfile = (item: Service) => {
     const ftId = item.FortuneTeller?.FortuneTellerID;
     if (!ftId) return;
-    router.push({ pathname: "/(tabs)/fortune_teller_profile/[id_fortune_teller]", params: { id_fortune_teller: ftId } });
+    router.push({
+      pathname: "/(tabs)/fortune_teller_profile/[id_fortune_teller]",
+      params: { id_fortune_teller: ftId },
+    });
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("All");
   };
 
   return (
@@ -215,6 +258,7 @@ export default function P2PServiceHome() {
       <HeaderBar
         title="P2P"
         showSearch
+        showChat
         onSearchSubmit={(q: any) => {
           const val =
             typeof q === "string"
@@ -227,10 +271,9 @@ export default function P2PServiceHome() {
         rightIcons={[
           {
             name: "calendar-month",
-            size: 22, // ✅ หดขนาดไอคอน
+            size: 22,
             color: "#fff",
-            onPress: () => router.push("/(tabs)/p2p/mybooking/mybooking"), // ✅ ลิงก์หน้า My Booking
-            // ถ้า HeaderBar รองรับคลาสของ container:
+            onPress: () => router.push("/(tabs)/p2p/mybooking/mybooking"),
             containerClass: "p-1.5 mr-1 rounded-lg bg-white/10 border border-white/10 active:bg-white/20",
           },
         ]}
@@ -245,12 +288,13 @@ export default function P2PServiceHome() {
         <FlatList
           data={filtered}
           keyExtractor={(it) => it.ServiceID}
+          refreshing={refreshing}
+          onRefresh={reload}
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
           ListHeaderComponent={
             <View className="mb-3">
               <View className="flex-row items-center justify-between mb-1">
-
-                {/* ✅ บัตรแสดงคำค้น + ปุ่มยกเลิก */}
+                {/* ชิปสถานะการค้นหา */}
                 {searchQuery ? (
                   <View className="flex-row items-center">
                     <Text className="text-white/60 text-xs mr-2" numberOfLines={1}>
@@ -266,6 +310,16 @@ export default function P2PServiceHome() {
                     </TouchableOpacity>
                   </View>
                 ) : null}
+
+                {/* ปุ่มล้างตัวกรองด้านขวาเมื่อมีการกรอง */}
+                {(searchQuery || selectedCategory !== "All") && (
+                  <TouchableOpacity
+                    onPress={clearFilters}
+                    className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15"
+                  >
+                    <Text className="text-xs text-white/90 font-bold">ล้างทั้งหมด</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* ชิปหมวดหมู่ */}
@@ -284,8 +338,35 @@ export default function P2PServiceHome() {
             />
           )}
           ListEmptyComponent={
-            <View className="items-center mt-10">
-              <Text className="text-white/60">ไม่พบผลลัพธ์ตามเงื่อนไข</Text>
+            <View className="items-center mt-10 px-6">
+              {error ? (
+                <>
+                  <Text className="text-white/80 text-center mb-3">เกิดข้อผิดพลาด: {error}</Text>
+                  <TouchableOpacity
+                    onPress={reload}
+                    className="px-4 py-2 rounded-full bg-white/10 border border-white/15"
+                  >
+                    <Text className="text-white font-semibold">ลองใหม่</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text className="text-white/60 text-center mb-3">
+                    {services.length === 0 && !searchQuery && selectedCategory === "All"
+                      ? "ยังไม่มีบริการในระบบ"
+                      : "ไม่พบผลลัพธ์ตามเงื่อนไข"}
+                  </Text>
+
+                  {(searchQuery || selectedCategory !== "All") && (
+                    <TouchableOpacity
+                      onPress={clearFilters}
+                      className="px-4 py-2 rounded-full bg-white/10 border border-white/15"
+                    >
+                      <Text className="text-white font-semibold">ล้างตัวกรอง</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
             </View>
           }
         />
