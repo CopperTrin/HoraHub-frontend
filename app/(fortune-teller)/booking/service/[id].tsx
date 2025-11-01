@@ -17,7 +17,6 @@ import {
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 
-// ---------- Types ----------
 type ServiceDetail = {
   ServiceID: string;
   Service_name: string;
@@ -52,7 +51,6 @@ type TimeSlotItem = {
   ServiceID: string;
 };
 
-// ---------- Axios ----------
 const ACCESS_TOKEN_KEY = "access_token";
 const computeBaseURL = () => {
   const env = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -73,7 +71,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ---------- Helpers ----------
 const toLocalDateLabel = (d: Date) =>
   d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
 const toLocalTimeLabel = (d: Date) =>
@@ -102,7 +99,6 @@ const TimeSlotCard = ({
         </View>
       </View>
 
-      {/* ปุ่มลบ TimeSlot */}
       <TouchableOpacity
         onPress={() => onDeleteSlot?.(slot.TimeSlotID)}
         className="w-10 h-10 bg-white/10 rounded-full items-center justify-center border border-white/20"
@@ -132,7 +128,6 @@ export default function ServiceDetailPage() {
   const [imageInput, setImageInput] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // ---------- Fetch ----------
   const fetchAll = useCallback(async () => {
     if (!id) return;
     try {
@@ -179,7 +174,6 @@ export default function ServiceDetailPage() {
     fetchAll();
   }, [fetchAll]);
 
-  // ---------- CRUD ----------
   const onSave = async () => {
     if (!service?.ServiceID) return Alert.alert("ยังโหลดข้อมูลไม่เสร็จ");
     if (!name.trim()) return Alert.alert("กรอกไม่ครบ", "กรุณาใส่ชื่อบริการ");
@@ -205,7 +199,6 @@ export default function ServiceDetailPage() {
     }
   };
 
-  // ✅ ลบ Time Slot ได้ทันที (ไม่ต้องเข้า Edit)
   const onDeleteSlot = (timeSlotId: string) => {
     Alert.alert("ยืนยันการลบ", "คุณต้องการลบ Time Slot นี้หรือไม่?", [
       { text: "ยกเลิก", style: "cancel" },
@@ -261,7 +254,6 @@ export default function ServiceDetailPage() {
     });
   };
 
-  // ---------- Render ----------
   const title = useMemo(() => service?.Service_name ?? "Service Detail", [service]);
 
   if (loading)
@@ -289,7 +281,6 @@ export default function ServiceDetailPage() {
     <ScreenWrapper>
       <HeaderBar title={title} showBack />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28, paddingTop: 8 }}>
-        {/* Create Slot */}
         <TouchableOpacity
           onPress={onCreateTimeSlot}
           className="bg-yellow-400 rounded-full items-center justify-center py-4 mb-3"
@@ -297,7 +288,6 @@ export default function ServiceDetailPage() {
           <Text className="text-black font-extrabold text-base">Create Time Slot</Text>
         </TouchableOpacity>
 
-        {/* Edit / Delete Service */}
         <View className="flex-row justify-between mb-6">
           <TouchableOpacity
             onPress={() => setShowEdit((v) => !v)}
@@ -315,7 +305,6 @@ export default function ServiceDetailPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Detail */}
         {!showEdit && (
           <>
             <View className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6">
@@ -339,7 +328,6 @@ export default function ServiceDetailPage() {
               </Text>
             </View>
 
-            {/* ✅ Time Slots (เฉพาะ AVAILABLE) */}
             <Text className="text-white/80 font-bold mb-3 text-base">Time Slots (AVAILABLE)</Text>
             {Array.isArray(serviceTimeSlots) && serviceTimeSlots.length > 0 ? (
               serviceTimeSlots.map((t) => (
@@ -353,7 +341,6 @@ export default function ServiceDetailPage() {
           </>
         )}
 
-        {/* 🧩 Edit Mode (ไม่มี TimeSlot) */}
         {showEdit && (
           <>
             <Text className="text-white/70 mb-2 mt-2">Service name</Text>

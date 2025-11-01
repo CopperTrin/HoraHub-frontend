@@ -18,7 +18,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-// ---------- Helpers ----------
 const getBaseURL = () =>
   Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
 
@@ -44,7 +43,6 @@ const formatTimeRange = (start: string, end: string) => {
   return `${s} - ${e}`;
 };
 
-// ---------- Types ----------
 type BookingStatus = "UPCOMING" | "ONGOING" | "COMPLETED" | "CANCELLED";
 type Booking = {
   OrderID: string;
@@ -59,7 +57,6 @@ type Booking = {
   FortuneTellerUserID?: string;
 };
 
-// ---------- UI ----------
 const PillFilter = ({
   label,
   active,
@@ -107,9 +104,7 @@ const BookingCard = ({
 
   return (
     <View className="bg-[#211A3A] rounded-3xl border border-white/10 mb-4 overflow-hidden p-4">
-      {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        {/* ชื่อหมอดู */}
         <View className="flex-row items-center">
           <View className="w-8 h-8 rounded-full bg-yellow-400 mr-2 items-center justify-center">
             <MaterialIcons name="person" size={20} color="#000" />
@@ -119,7 +114,6 @@ const BookingCard = ({
           </Text>
         </View>
 
-        {/* สถานะด้านขวา */}
         <View className="items-end">
           {b.Status === "UPCOMING" && (
             <View className="bg-yellow-400/20 px-3 py-1 rounded-full">
@@ -149,7 +143,6 @@ const BookingCard = ({
       </View>
 
 
-      {/* Content */}
       <View className="flex-row">
         <Image
           source={{
@@ -181,7 +174,6 @@ const BookingCard = ({
 
       <View className="h-[1px] bg-white/10 w-full my-3" />
 
-      {/* Buttons */}
       <View className="flex-row flex-wrap">
         <TouchableOpacity
           onPress={onChat}
@@ -230,7 +222,6 @@ const BookingCard = ({
   );
 };
 
-// ---------- Page ----------
 export default function MyBookingPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -401,8 +392,6 @@ export default function MyBookingPage() {
         </ScrollView>
       </View>
 
-
-      {/* รายการ */}
       <FlatList
         data={filteredBookings}
         keyExtractor={(item) => item.OrderID}

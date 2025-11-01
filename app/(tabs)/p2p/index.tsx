@@ -1,4 +1,3 @@
-// app/(tabs)/p2p/index.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator , Platform} from "react-native";
 import { useRouter } from "expo-router";
@@ -6,7 +5,6 @@ import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 
-// ===== Types =====
 type Category = {
   CategoryID: string;
   Category_name: string;
@@ -45,7 +43,6 @@ type Service = {
   FortuneTellerProfile?: User;
 };
 
-// ===== Components =====
 const CategoryChip = ({
   label,
   selected,
@@ -141,11 +138,9 @@ export default function P2PServiceHome() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // กรอง
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // โหลดข้อมูล (ใช้ซ้ำได้)
   const fetchServicesAndUsers = useCallback(async () => {
     const [svcRes, userRes] = await Promise.all([
       axios.get(`${API_BASE}/services`),
@@ -177,7 +172,6 @@ export default function P2PServiceHome() {
     }
   }, [fetchServicesAndUsers]);
 
-  // initial load
   useEffect(() => {
     (async () => {
       try {
@@ -195,7 +189,6 @@ export default function P2PServiceHome() {
     })();
   }, [fetchServicesAndUsers]);
 
-  // หมวดหมู่ทั้งหมด
   const categories = useMemo(() => {
     const set = new Set<string>(["All"]);
     services.forEach((s) => {
@@ -204,7 +197,6 @@ export default function P2PServiceHome() {
     return Array.from(set);
   }, [services]);
 
-  // ฟังก์ชันตรวจสอบว่าตรงกับคำค้นไหม (ไม่สนตัวพิมพ์เล็กใหญ่)
   const matchSearch = (item: Service, q: string) => {
     if (!q) return true;
     const needle = q.trim().toLowerCase();
@@ -226,19 +218,16 @@ export default function P2PServiceHome() {
     return haystacks.some((h) => h.includes(needle));
   };
 
-  // กรองตามหมวดหมู่ + คำค้น
   const filtered = useMemo(() => {
     const byCategory =
       selectedCategory === "All" ? services : services.filter((s) => s.Category?.Category_name === selectedCategory);
     return byCategory.filter((s) => matchSearch(s, searchQuery));
   }, [services, selectedCategory, searchQuery]);
 
-  // ไปหน้ารายละเอียด service
   const goServiceDetail = (item: Service) => {
     router.push({ pathname: "/(tabs)/p2p/service/[id]", params: { id: item.ServiceID } });
   };
 
-  // ไปหน้าโปรไฟล์หมอดู
   const goFortuneTellerProfile = (item: Service) => {
     const ftId = item.FortuneTeller?.FortuneTellerID;
     if (!ftId) return;
@@ -294,7 +283,6 @@ export default function P2PServiceHome() {
           ListHeaderComponent={
             <View className="mb-3">
               <View className="flex-row items-center justify-between mb-1">
-                {/* ชิปสถานะการค้นหา */}
                 {searchQuery ? (
                   <View className="flex-row items-center">
                     <Text className="text-white/60 text-xs mr-2" numberOfLines={1}>
@@ -311,7 +299,6 @@ export default function P2PServiceHome() {
                   </View>
                 ) : null}
 
-                {/* ปุ่มล้างตัวกรองด้านขวาเมื่อมีการกรอง */}
                 {(searchQuery || selectedCategory !== "All") && (
                   <TouchableOpacity
                     onPress={clearFilters}
@@ -322,7 +309,6 @@ export default function P2PServiceHome() {
                 )}
               </View>
 
-              {/* ชิปหมวดหมู่ */}
               <View className="flex-row flex-wrap">
                 {categories.map((c) => (
                   <CategoryChip key={c} label={c} selected={selectedCategory === c} onPress={() => setSelectedCategory(c)} />

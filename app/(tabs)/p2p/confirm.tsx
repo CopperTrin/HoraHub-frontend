@@ -170,7 +170,7 @@ export default function ConfirmWalletPayment() {
         className="flex-1 bg-[#0E0B1B]"
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
       >
-        {/* 🧙‍♂️ ข้อมูลหมอดู */}
+
         <View className="bg-[#1F1C23] border border-white/10 rounded-2xl p-4 mb-4">
           <Text className="text-white font-bold text-lg mb-3">
             หมอดู: {fortuneTellerName}
@@ -193,7 +193,6 @@ export default function ConfirmWalletPayment() {
           </View>
         </View>
 
-        {/* 💰 ยอดเงินในบัญชี */}
         <View className="bg-[#1F1C23] border border-white/10 rounded-2xl px-4 py-3 flex-row justify-between mb-6">
           <Text className="text-white">ยอดเงินใน Wallet</Text>
           <Text className="text-yellow-400 font-bold">
@@ -201,7 +200,6 @@ export default function ConfirmWalletPayment() {
           </Text>
         </View>
 
-        {/* 📄 สรุปการชำระเงิน */}
         <View className="bg-[#2A2631] border border-white/10 rounded-2xl p-4 mb-6">
           <Text className="text-white font-bold text-lg mb-2">
             สรุปรายการชำระเงิน
@@ -228,7 +226,6 @@ export default function ConfirmWalletPayment() {
           </View>
         </View>
 
-        {/* ✅ ปุ่มยืนยัน */}
         <TouchableOpacity
           onPress={handleConfirmPayment}
           className="bg-purple-600 py-4 rounded-xl items-center"

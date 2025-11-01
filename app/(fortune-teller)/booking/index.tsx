@@ -17,7 +17,6 @@ import Constants from "expo-constants";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 
-// -------- API base --------
 function computeApiBase() {
   const fromEnv =
     process.env.EXPO_PUBLIC_API_BASE_URL ||
@@ -30,7 +29,6 @@ function computeApiBase() {
 const API_BASE = computeApiBase();
 const ACCESS_TOKEN_KEY = "access_token";
 
-// -------- Types --------
 type Service = {
   ServiceID: string;
   Service_name: string;
@@ -65,7 +63,6 @@ type FortuneTellerMe = {
   Status: string;
 };
 
-// -------- Utils --------
 const pad2 = (n: number) => String(n).padStart(2, "0");
 function formatDateOnlyTH(iso: string) {
   return new Date(iso).toLocaleDateString("th-TH", {
@@ -82,7 +79,6 @@ function formatTimeRange(a: string, b: string) {
   )}:${pad2(B.getMinutes())}`;
 }
 
-// -------- Axios helper --------
 const api = axios.create({ baseURL: API_BASE, timeout: 15000 });
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
@@ -91,7 +87,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// -------- Row (Booking Card) --------
 function BookingRow({
   slot,
   onChat,
@@ -103,7 +98,6 @@ const userInfo = slot.CustomerInfo;
 
   return (
     <View className="bg-[#211A3A] rounded-2xl p-4 border border-white/10 mb-5">
-      {/* ----- โปรไฟล์ลูกค้า ----- */}
       {userInfo && (
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
@@ -123,7 +117,6 @@ const userInfo = slot.CustomerInfo;
             </View>
           </View>
 
-          {/* 🔹 สถานะทางขวา */}
           <View className="items-end">
             {slot.Status === "BOOKED" && (
               <View className="bg-yellow-400/20 px-3 py-1 rounded-full">
@@ -154,7 +147,6 @@ const userInfo = slot.CustomerInfo;
 
       )}
 
-      {/* ----- รายละเอียดการจอง ----- */}
       <View className="flex-row">
         <Image
           source={{
@@ -182,7 +174,6 @@ const userInfo = slot.CustomerInfo;
 
       <View className="h-[1px] bg-white/10 w-full my-3" />
 
-      {/* ----- ปุ่มแชต ----- */}
       <TouchableOpacity
         onPress={onChat}
         className="w-full px-4 py-3 rounded-full border border-yellow-400 items-center justify-center flex-row"
@@ -199,7 +190,6 @@ const userInfo = slot.CustomerInfo;
   );
 }
 
-// -------- Page --------
 export default function FtBookingHome() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -239,14 +229,12 @@ export default function FtBookingHome() {
     loadAll();
   }, [loadAll]);
 
-  // -------- Service Map --------
   const serviceMap = useMemo(() => {
     const map: Record<string, Service> = {};
     services.forEach((s) => (map[s.ServiceID] = s));
     return map;
   }, [services]);
 
-// -------- Filter + Sort --------
 const bookings = useMemo(() => {
   const mine = new Set(services.map((s) => s.ServiceID));
 
@@ -297,18 +285,15 @@ const bookings = useMemo(() => {
 }, [slots, services, serviceMap, filterType]);
 
 
-  // -------- Chat --------
   const onChat = async (b: any) => {
     try {
       const token = await SecureStore.getItemAsync("access_token");
       if (!token) return Alert.alert("โปรดเข้าสู่ระบบก่อน");
 
-      // ดึงข้อมูลห้องสนทนาทั้งหมดของหมอดู
       const chatRes = await axios.get(`${API_BASE}/chat-conversations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // ดึง userID ของลูกค้า (จาก CustomerInfo ที่ map มาแล้ว)
       const customerEmail = b.CustomerInfo?.Email || "";
       const customerFirstName = b.CustomerInfo?.FirstName || "";
       const customerLastName = b.CustomerInfo?.LastName || "";
@@ -317,7 +302,6 @@ const bookings = useMemo(() => {
         return Alert.alert("ไม่พบข้อมูลลูกค้า", "ไม่สามารถเปิดแชตได้เพราะไม่มีข้อมูลลูกค้า");
       }
 
-      // พยายามจับคู่จากอีเมลหรือชื่อในห้องแชต
       const conversation = (chatRes.data || []).find((conv: any) =>
         conv.Participants?.some(
           (p: any) =>
@@ -341,8 +325,6 @@ const bookings = useMemo(() => {
     }
   };
 
-
-  // -------- Render --------
   return (
     <ScreenWrapper>
       <HeaderBar title="การจองของลูกค้า" showChat/>
@@ -358,7 +340,6 @@ const bookings = useMemo(() => {
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
           ListHeaderComponent={
             <View>
-              {/* ---- ปุ่ม Manage Service ---- */}
               <TouchableOpacity
                 onPress={() =>
                   router.push("/(fortune-teller)/booking/mybooking")
@@ -375,7 +356,6 @@ const bookings = useMemo(() => {
                 รายการจองจากลูกค้า
               </Text>
 
-              {/* ---- Filter Tabs ---- */}
               <View className="flex-row flex-wrap mb-3">
                 {[
                   { key: "UPCOMING", label: "กำลังจะมาถึง" },

@@ -1,4 +1,3 @@
-// app/(fortune-teller)/booking/[id].tsx
 import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
@@ -18,7 +17,6 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 import BookingModal from "@/app/components/booking/popup";
 
-// ---- Helpers ----
 const addMinutes = (d: Date, mins: number) => new Date(d.getTime() + mins * 60000);
 const toLocalDateLabel = (d: Date) =>
   d.toLocaleDateString("th-TH", {
@@ -36,7 +34,6 @@ const toLocalTimeLabel = (d: Date) =>
   });
 const toISOZ = (d: Date) => d.toISOString();
 
-// ---- Axios ----
 const ACCESS_TOKEN_KEY = "access_token";
 const computeBaseURL = () => {
   const env = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -54,7 +51,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ---- Page ----
 export default function TimeSlotEditor() {
   const router = useRouter();
   const { id, serviceId, serviceName } = useLocalSearchParams<{
@@ -140,7 +136,6 @@ export default function TimeSlotEditor() {
           </Text>
         </View>
 
-        {/* Date */}
         <Text className="text-white/70 mb-2">Date</Text>
         <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10 flex-row items-center justify-between">
           <TouchableOpacity className="bg-white/10 px-3 py-2 rounded-xl" onPress={() => shiftDay(-1)}>
@@ -156,10 +151,9 @@ export default function TimeSlotEditor() {
           </TouchableOpacity>
         </View>
 
-        {/* Start Time + Quick Adjust รวมกัน */}
         <Text className="text-white/70 mb-2">Start Time</Text>
         <View className="bg-primary-100 rounded-2xl p-4 mb-4 border border-white/10">
-          {/* แสดงเวลา */}
+
           <TouchableOpacity
             onPress={() => setShowTimePicker(true)}
             activeOpacity={0.8}
@@ -170,7 +164,6 @@ export default function TimeSlotEditor() {
             </Text>
           </TouchableOpacity>
 
-          {/* ปุ่มปรับเวลา */}
           <View className="flex-row flex-wrap justify-between">
             <TouchableOpacity
               className="bg-white/10 px-3 py-2 rounded-xl mb-2"
@@ -276,8 +269,6 @@ export default function TimeSlotEditor() {
         )}
 
 
-
-        {/* Duration */}
         <Text className="text-white/70 mb-2">Duration</Text>
         <View className="bg-primary-100 rounded-2xl p-3 mb-4 border border-white/10 flex-row flex-wrap gap-2">
           {[5, 10, 15, 20, 30, 45, 60 , 90].map((m) => {
@@ -298,7 +289,6 @@ export default function TimeSlotEditor() {
           })}
         </View>
 
-        {/* Summary */}
         <View className="bg-[#1E1633] rounded-2xl p-5 mb-6 border border-white/10">
           <Text className="text-white/90 font-semibold text-lg mb-2 text-center">
             {toLocalDateLabel(date)}
@@ -317,7 +307,6 @@ export default function TimeSlotEditor() {
           </View>
         </View>
 
-        {/* Create */}
         {id === "new" && (
           <TouchableOpacity
             onPress={onCreate}
@@ -328,7 +317,6 @@ export default function TimeSlotEditor() {
         )}
       </ScrollView>
 
-      {/* Popup เลือกวันแบบไทย */}
       <BookingModal
         visible={showDatePopup}
         onClose={() => setShowDatePopup(false)}

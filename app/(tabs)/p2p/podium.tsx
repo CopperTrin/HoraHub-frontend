@@ -13,7 +13,6 @@ const RankingScreen = () => {
   const { id } = route.params as { id: string };
   const API_URL = fcomponent.getBaseURL();
 
-  // เรียก API ตอนเปิดหน้า
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -29,7 +28,6 @@ const RankingScreen = () => {
     fetchData();
   }, []);
 
-  // ถ้ายังโหลดอยู่
   if (loading) {
     return (
       <ScreenWrapper>
@@ -42,7 +40,6 @@ const RankingScreen = () => {
     );
   }
 
-  // ถ้าไม่มีข้อมูล
   if (!leaderboardData || !leaderboardData.FortuneTellers?.length) {
     return (
       <ScreenWrapper>
@@ -54,7 +51,6 @@ const RankingScreen = () => {
     );
   }
 
-  // แปลงข้อมูลที่ได้จาก API
   const data = leaderboardData.FortuneTellers.map((item: any, index: number) => {
     const f = item.FortuneTeller;
     return {
@@ -73,9 +69,7 @@ const RankingScreen = () => {
     <ScreenWrapper>
       <HeadersBar title={leaderboardData.Description || "Podium"} showBack />
 
-      {/* Top 3 podium */}
       <View className="flex-row justify-center items-end p-4">
-        {/* 2nd */}
         {top3[1] && (
           <View className="items-center mx-3">
             <Image
@@ -89,7 +83,6 @@ const RankingScreen = () => {
           </View>
         )}
 
-        {/* 1st */}
         {top3[0] && (
           <View className="items-center mx-3">
             <Image
@@ -103,7 +96,6 @@ const RankingScreen = () => {
           </View>
         )}
 
-        {/* 3rd */}
         {top3[2] && (
           <View className="items-center mx-3">
             <Image
@@ -118,7 +110,6 @@ const RankingScreen = () => {
         )}
       </View>
 
-      {/* List ranking */}
       <FlatList
         data={others}
         keyExtractor={(item) => item.id}

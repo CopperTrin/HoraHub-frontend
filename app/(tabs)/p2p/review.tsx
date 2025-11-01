@@ -35,10 +35,8 @@ const ReviewCard = ({ name, date, rating, review }: ReviewProps) => (
       <Text className="text-gray-300 text-sm mt-1">{date}</Text>
     </View>
 
-    {/* รีวิวข้อความ */}
     <Text className="text-gray-200 text-base italic mb-4">"{review}"</Text>
 
-    {/* ข้อมูลผู้รีวิว */}
     <View className="flex-row items-center gap-3">
       <View className="w-10 h-10 rounded-full bg-purple-500 items-center justify-center">
         <Text className="text-white font-bold text-sm">{name.charAt(0)}</Text>
@@ -59,7 +57,6 @@ export default function ReviewPage() {
 
   return (
     <ScreenWrapper>
-      {/* ใช้ HeaderBar ตามที่ขอ */}
       <HeaderBar
         title="P2P"
         rightIcons={[

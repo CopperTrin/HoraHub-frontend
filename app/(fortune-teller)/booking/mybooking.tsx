@@ -1,4 +1,3 @@
-// app/(fortune-teller)/booking/index.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -16,14 +15,8 @@ import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "../../components/ui/HeaderBar";
 
-// ==============================
-// Types (UI)
-// ==============================
 type ServiceCategory = { id: string; name: string };
 
-// ==============================
-// Types (จาก Server — ย่อจาก OAS)
-// ==============================
 type UserProfile = {
   UserID: string;
   Username: string;
@@ -68,9 +61,6 @@ type TimeSlotItem = {
   ServiceID: string;
 };
 
-// ==============================
-// Axios instance
-// ==============================
 const ACCESS_TOKEN_KEY = "access_token";
 
 const computeBaseURL = () => {
@@ -97,9 +87,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ==============================
-// UI pieces
-// ==============================
 const ServiceCard = ({
   service,
   onPress,
@@ -122,9 +109,6 @@ const ServiceCard = ({
   </TouchableOpacity>
 );
 
-// ==============================
-// Page
-// ==============================
 export default function BookingDashboardPage() {
   const router = useRouter();
 
@@ -134,17 +118,14 @@ export default function BookingDashboardPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      // 1) ใครฉัน?
       const meRes = await api.get<UserProfile>("/users/profile");
       const myUserId = meRes.data.UserID;
 
-      // 2) ดึง services แล้วกรองเฉพาะของฉัน
       const servicesRes = await api.get<ServiceItem[]>("/services");
       const mine = (servicesRes.data || []).filter(
         (s) => s.FortuneTeller?.UserID === myUserId
       );
 
-      // Map เป็น ServiceCategory[]
       const myServiceList: ServiceCategory[] = mine.map((s) => ({
         id: s.ServiceID,
         name: s.Service_name,
@@ -177,7 +158,6 @@ export default function BookingDashboardPage() {
     })();
   }, [fetchAll]);
 
-  // รีโหลดเมื่อโฟกัส
   useFocusEffect(
     useCallback(() => {
       fetchAll();
@@ -210,7 +190,6 @@ export default function BookingDashboardPage() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* ปุ่มสร้าง Service */}
         <TouchableOpacity
           className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4 mb-6"
           onPress={() => router.push("/(fortune-teller)/booking/create_service")}
@@ -224,7 +203,7 @@ export default function BookingDashboardPage() {
           <MaterialIcons name="chevron-right" size={22} color="white" />
         </TouchableOpacity>
 
-        {/* บริการของคุณ */}
+
         <Text className="text-white/80 font-bold mb-3 text-base">Your service</Text>
         {services.length > 0 ? (
           services.map((svc) => (
