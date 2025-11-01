@@ -1,4 +1,3 @@
-// app/role_redirect.tsx
 import axios from "axios";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";

@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+import { MaterialIcons } from "@expo/vector-icons";
 import HeaderBar from "../../components/ui/HeaderBar";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
@@ -56,14 +57,13 @@ type Service = {
 };
 
 export default function FortuneTellerProfilePage() {
-  const { id_fortune_teller } = useLocalSearchParams();
+  const { id_fortune_teller, from_id } = useLocalSearchParams<{ id_fortune_teller?: string; from_id?: string }>();
   const [activeTab, setActiveTab] = useState<"shop" | "p2p">("shop");
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<FTProfile | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [showFullBio, setShowFullBio] = useState(false);
 
-  //  mock ของ "อาจารย์แดง"
   const mockProfile: FTProfile = {
     FortuneTellerID: "mock-red",
     UserID: "mock-user",
@@ -83,7 +83,6 @@ export default function FortuneTellerProfilePage() {
     },
   };
 
-  // สินค้าของอาจารย์แดง (mock เท่านั้น)
   const shopProducts = [
     { id: "4", name: "เครื่องรางของต่างประเทศ รวมชุด", price: 1800, image: product_4 },
     { id: "5", name: "น้ำเต้า", price: 299, image: product_5 },
@@ -93,7 +92,7 @@ export default function FortuneTellerProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
 
-      if (!id_fortune_teller || id_fortune_teller === "null" || id_fortune_teller === "undefined") {
+      if (!id_fortune_teller || id_fortune_teller === "mock" || id_fortune_teller === "null" || id_fortune_teller === "undefined") {
         setProfile(mockProfile);
         setLoading(false);
         return;
@@ -124,7 +123,6 @@ export default function FortuneTellerProfilePage() {
       } catch (err: any) {
         console.log("Error fetching fortune teller:", err?.message);
         Alert.alert("ไม่สามารถโหลดข้อมูลหมอดูได้", "โปรดลองอีกครั้ง");
-        // ใช้ mock แทน
         setProfile(mockProfile);
       } finally {
         setLoading(false);
@@ -165,13 +163,49 @@ export default function FortuneTellerProfilePage() {
       ? { uri: profile.User.UserInfo.PictureURL }
       : prodile_img;
 
+  
+
+  const onClickBack = () => {
+    if (id_fortune_teller === "mock") {
+      router.push(`/(tabs)/shop/${from_id || ""}`);
+    } else {
+      if(!from_id){
+        router.push(`/(tabs)/home`);
+      }else{
+        router.push(`/(tabs)/p2p/service/${from_id || ""}`);
+      }
+    }
+  };
+
   return (
     <ScreenWrapper>
-      <HeaderBar
-        title={profile?.User?.UserInfo?.FirstName || "หมอดู"}
-        showChat
-        showBack
-      />
+      <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
+        <View className="flex-row items-center">
+          <TouchableOpacity onPress={() => onClickBack()} accessibilityLabel="ย้อนกลับ">
+            <MaterialIcons name="arrow-back-ios-new" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+
+          <Text className="text-alabaster text-2xl font-semibold ml-2" numberOfLines={1}>
+            {(() => {
+              const rawTitle = profile?.User?.UserInfo?.FirstName || "หมอดู";
+              const t = Array.from(rawTitle);
+              return t.length > 20 ? `${t.slice(0, 20).join("")}...` : rawTitle;
+            })()}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => router.push("/chat")}
+            className="ml-4"
+            accessibilityLabel="เปิดแชท"
+          >
+            <MaterialIcons name="chat-bubble-outline" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 16,
@@ -248,7 +282,7 @@ export default function FortuneTellerProfilePage() {
                 <TouchableOpacity
                   key={service.ServiceID}
                   className="bg-primary-100 rounded-2xl flex-row items-center p-2 mb-2"
-                  onPress={() => router.push(`/(tabs)/p2p/${service.ServiceID}`)}
+                  onPress={() => router.push(`/(tabs)/p2p/service/${service.ServiceID}`)}
                 >
                   {service.ImageURLs?.length > 0 && (
                     <Image

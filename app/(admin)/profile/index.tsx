@@ -1,8 +1,4 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
-import HistoryCardList from "@/app/components/profile/HistoryCardList";
-import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
-import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
-import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import profile_background from '@/assets/images/profile_background.png';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -32,23 +28,17 @@ export default function ProfilePage() {
 
   const googleSignOut = async () => {
     try {
-      // 1) Sign out from Google SDK
       await GoogleSignin.signOut();
 
-      // 2) Optional but recommended if you want to force account re-pick next time
-      // (removes granted scopes on Google side)
       try { await GoogleSignin.revokeAccess(); } catch { }
 
-      // 3) Remove your backend token
       await SecureStore.deleteItemAsync('access_token');
-
-      // 4) Clear local UI state and go to login
       setUserInfo(null);
       setOpen(false);
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_role');
       await SecureStore.deleteItemAsync('last_id_token');
-      router.replace('/(tabs)/profile'); // or your auth screen, e.g. '/(auth)/login'
+      router.replace('/(tabs)/profile'); 
     } catch (e) {
       console.error('Sign out error', e);
       Alert.alert('Sign out failed', 'Please try again.');
@@ -68,11 +58,15 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
+      console.log(token)
       console.log('Fetched profile:', res.data);
       setLoading(false);
     } catch (error: any) {
       if (error?.response) {
         console.log('Error fetching profile:', error.response.status, error.response.data);
+        if (error.response.status === 401) {
+          googleSignOut();
+        }
       } else {
         console.log('Error fetching profile:', error.message || error);
       }
@@ -85,33 +79,6 @@ export default function ProfilePage() {
       fetchProfile();
     }, [fetchProfile])
   );
-  const historyData = [
-    {
-      fortuneTellerName: "อาจารย์ไม้ร่ม",
-      status: "จองคิวแล้ว",
-      profileImage: fortune_teller_3,
-      horoscopeType: "ดูดวงลายมือ",
-      dateTime: "วันที่ 11 ก.ย. 68 เวลา 13.00-13.20",
-      price: "120 บาท",
-    },
-    {
-      fortuneTellerName: "หมอบี",
-      status: "สำเร็จ",
-      profileImage: fortune_teller_1,
-      horoscopeType: "ดูดวงความรัก",
-      dateTime: "วันที่ 15 ส.ค. 68 เวลา 14.20-14.35",
-      price: "600 บาท",
-    },
-    {
-      fortuneTellerName: "อาจารย์แดง",
-      status: "ยกเลิก",
-      profileImage: fortune_teller_2,
-      horoscopeType: "ดูดวงวันเกิด",
-      dateTime: "วันที่ 10 ส.ค. 68 เวลา 10.10-10.40",
-      price: "321 บาท",
-    },
-  ];
-
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-primary-200">
@@ -161,8 +128,6 @@ export default function ProfilePage() {
 
               <View className='mx-4 my-5 flex-col gap-6'>
                 <Text className='text-white text-xl font-sans-medium' numberOfLines={1} ellipsizeMode="tail">อีเมล : {userInfo.Email}</Text>
-                <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
-                <HistoryCardList items={historyData} />
               </View>
             </ScrollView>
             <Modal

@@ -32,16 +32,26 @@ export default function AdminLayout() {
         options={{
           title: "Verify",
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="dashboard" color={color} size={size} />
+            <MaterialIcons name="check" color={color} size={size} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="category"
+        options={{
+          title: "Category",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="category" color={color} size={size} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="chat-report"
         options={{
           title: "Report",
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="calendar-month" color={color} size={size} />
+            <MaterialIcons name="report" color={color} size={size} />
           ),
         }}
       />

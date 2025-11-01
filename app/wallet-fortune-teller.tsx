@@ -6,6 +6,7 @@ import * as SecureStore from "expo-secure-store";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -18,14 +19,14 @@ import {
 type WalletMe = {
   AccountingID: string;
   Balance_Number: number;
-  Label: string; // FORTUNE_TELLER
+  Label: string; 
   UserID: string;
 };
 
 type Payment = {
   PaymentID: string;
   Transaction_Status: "PENDING" | "COMPLETED" | "FAILED" | string;
-  Transaction_Date: string;
+  Transaction_Date: string; 
   Type: "DEPOSIT" | "WITHDRAWAL" | string;
   AccountingID: string;
   Amount: number;
@@ -42,7 +43,6 @@ export default function FortuneTellerWalletPage() {
   const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  // Deposit modal state
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [depositLoading, setDepositLoading] = useState(false);
@@ -56,9 +56,9 @@ export default function FortuneTellerWalletPage() {
     Type: string;
   } | null>(null);
   const [depositError, setDepositError] = useState<string>("");
-  const [confirmError, setConfirmError] = useState<string>("");
+  const [confirmError, setConfirmError] = useState<string>(""); 
 
-  // Withdraw modal state
+
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawAddress, setWithdrawAddress] = useState<string>("");
@@ -92,6 +92,19 @@ export default function FortuneTellerWalletPage() {
   const formatDateTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleString("th-TH");
+  };
+
+  const mapStatusTH = (s?: string) => {
+    switch (s) {
+      case "COMPLETED":
+        return "สำเร็จ";
+      case "FAILED":
+        return "ล้มเหลว";
+      case "PENDING":
+        return "รอดำเนินการ";
+      default:
+        return s || "-";
+    }
   };
 
   const getErrMsg = (e: any, fallback = "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง") => {
@@ -138,7 +151,6 @@ export default function FortuneTellerWalletPage() {
     }
   }, []);
 
-  // initial load
   useState(() => {
     (async () => {
       setLoading(true);
@@ -157,7 +169,6 @@ export default function FortuneTellerWalletPage() {
     [payments]
   );
 
-  // Create deposit (FT label)
   const handleDeposit = useCallback(async () => {
     setDepositError("");
     const val = parseFloat(depositAmount);
@@ -183,7 +194,7 @@ export default function FortuneTellerWalletPage() {
           accept: "application/json",
         },
       });
-      setDepositResult(res.data);
+      setDepositResult(res.data); 
       setConfirmError("");
     } catch (e: any) {
       console.log("deposit error", e?.response?.data || String(e));
@@ -194,7 +205,6 @@ export default function FortuneTellerWalletPage() {
     }
   }, [depositAmount]);
 
-  // Confirm payment for deposit
   const handleConfirmDeposit = useCallback(async () => {
     if (!depositResult?.PaymentId || !depositResult?.Address) return;
     setConfirmError("");
@@ -213,17 +223,35 @@ export default function FortuneTellerWalletPage() {
           accept: "*/*",
         },
       });
+
       await Promise.all([fetchWallet(), fetchPayments()]);
+
+      Alert.alert(
+        "ชำระเงินสำเร็จ",
+        "ระบบได้รับการชำระเงินเรียบร้อยแล้ว",
+        [
+          {
+            text: "ตกลง",
+            onPress: () => {
+              setDepositOpen(false);
+              setDepositAmount("");
+              setDepositResult(null);
+              setDepositError("");
+              setConfirmError("");
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (e: any) {
       const msg = getErrMsg(e, "ยืนยันการชำระเงินไม่สำเร็จ");
       console.log("confirm error", e?.response?.data || String(e));
-      setConfirmError(msg);
+      setConfirmError(msg); 
     } finally {
       setConfirmLoading(false);
     }
   }, [depositResult, fetchWallet, fetchPayments]);
 
-  // Create withdrawal (FT label)
   const handleWithdraw = useCallback(async () => {
     setWithdrawError("");
     const val = parseFloat(withdrawAmount);
@@ -265,7 +293,6 @@ export default function FortuneTellerWalletPage() {
           accept: "application/json",
         },
       });
-
       setWithdrawResult(res.data);
       await Promise.all([fetchWallet(), fetchPayments()]);
     } catch (e: any) {
@@ -311,7 +338,7 @@ export default function FortuneTellerWalletPage() {
     return (
       <View className="flex-1 items-center justify-center bg-primary-200">
         <ActivityIndicator size="large" color="#fff" />
-        <Text className="text-white mt-2 font-sans-semibold">Loading…</Text>
+        <Text className="text-white mt-2 font-sans">กำลังโหลด…</Text>
       </View>
     );
   }
@@ -327,7 +354,7 @@ export default function FortuneTellerWalletPage() {
           >
             <MaterialIcons name="arrow-back-ios" size={24} color="white" />
           </Pressable>
-          <Text className="text-white text-xl font-sans-semibold">กระเป๋าเงิน</Text>
+          <Text className="text-white text-xl font-sans">กระเป๋าเงิน</Text>
         </View>
 
         {/* Balance */}
@@ -335,12 +362,12 @@ export default function FortuneTellerWalletPage() {
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
               <MaterialIcons name="account-balance-wallet" size={24} color="white" />
-              <Text className="text-white font-sans-semibold text-xl">ยอดคงเหลือ</Text>
+              <Text className="text-white font-sans text-xl">ยอดคงเหลือ</Text>
             </View>
             {walletLoading ? (
               <ActivityIndicator />
             ) : (
-              <Text className="text-white font-sans-bold text-2xl">
+              <Text className="text-white font-sans text-2xl">
                 {formatTHB(wallet?.Balance_Number)}
               </Text>
             )}
@@ -352,24 +379,24 @@ export default function FortuneTellerWalletPage() {
               onPress={openDeposit}
               className="bg-accent-200 rounded-xl px-4 py-2"
             >
-              <Text className="text-blackpearl font-sans-medium">ฝากเงิน</Text>
+              <Text className="text-blackpearl font-sans">ฝากเงิน</Text>
             </Pressable>
             <Pressable
               onPress={openWithdraw}
               className="bg-primary-200 rounded-xl px-4 py-2"
             >
-              <Text className="text-white font-sans-medium">ถอนเงิน</Text>
+              <Text className="text-white font-sans">ถอนเงิน</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Payment History */}
         <View className="mx-4 mt-6 mb-8">
-          <Text className="text-white font-sans-bold text-xl mb-3">ประวัติธุรกรรม</Text>
+          <Text className="text-white font-sans text-xl mb-3">ประวัติธุรกรรม</Text>
           {paymentsLoading ? (
             <ActivityIndicator />
           ) : sortedPayments.length === 0 ? (
-            <Text className="text-white/80">ยังไม่มีธุรกรรม</Text>
+            <Text className="text-white/80 font-sans">ยังไม่มีธุรกรรม</Text>
           ) : (
             sortedPayments.map((p) => (
               <View
@@ -378,26 +405,37 @@ export default function FortuneTellerWalletPage() {
               >
                 <View className="flex-1">
                   <Text className="text-white font-sans-semibold">
-                    {p.Type === "DEPOSIT" ? "ฝากเข้า" : p.Type === "WITHDRAWAL" ? "ถอนออก" : p.Type}
+                    {p.Type === "DEPOSIT"
+                      ? "ฝากเข้า"
+                      : p.Type === "WITHDRAWAL"
+                        ? "ถอนออก"
+                        : p.Type === "REFUND"
+                          ? "คืนเงิน"
+                          : p.Type === "SPENDING"
+                            ? "ใช้จ่าย"
+                            : p.Type === "RECEIVED"
+                              ? "ได้รับ"
+                              : p.Type}
                   </Text>
-                  <Text className="text-white/80 text-sm">{formatDateTime(p.Transaction_Date)}</Text>
-                  <Text className="text-white/70 text-xs mt-1">{p.Method}</Text>
+                  <Text className="text-white/80 text-sm font-sans">
+                    {formatDateTime(p.Transaction_Date)}
+                  </Text>
+                  <Text className="text-white/70 text-xs mt-1 font-sans">วิธีชำระ: {p.Method}</Text>
                 </View>
                 <View className="items-end">
                   <Text className="text-white font-sans-bold">
-                    {p.Type === "DEPOSIT" ? "+" : "-"}
+                    {p.Type === "DEPOSIT" || p.Type === "REFUND" || p.Type === "RECEIVED" ? "+" : "-"}
                     {formatTHB(p.Amount)}
                   </Text>
                   <Text
-                    className={`text-xs mt-1 ${
-                      p.Transaction_Status === "COMPLETED"
-                        ? "text-green-300"
-                        : p.Transaction_Status === "FAILED"
+                    className={`text-xs mt-1 font-sans ${p.Transaction_Status === "COMPLETED"
+                      ? "text-green-300"
+                      : p.Transaction_Status === "FAILED"
                         ? "text-red-300"
                         : "text-yellow-200"
-                    }`}
+                      }`}
                   >
-                    {p.Transaction_Status}
+                    {mapStatusTH(p.Transaction_Status)}
                   </Text>
                 </View>
               </View>
@@ -425,9 +463,9 @@ export default function FortuneTellerWalletPage() {
             className="bg-primary-200"
             style={{ width: "85%", borderRadius: 16, padding: 16, gap: 12, position: "relative" }}
           >
-            <Text className="text-white font-sans-semibold text-xl">ฝากเงิน</Text>
+            <Text className="text-white font-sans text-xl">ฝากเงิน</Text>
 
-            {/* X button only when details are visible */}
+            {/* ปุ่ม X จะแสดงเฉพาะเมื่อมีรายละเอียดการฝากแล้ว */}
             {depositResult && (
               <Pressable
                 onPress={forceCloseDepositModal}
@@ -440,18 +478,18 @@ export default function FortuneTellerWalletPage() {
 
             {!depositResult ? (
               <>
-                <Text className="text-white/90">ระบุจำนวนเงิน (THB)</Text>
+                <Text className="text-white/90 font-sans">ระบุจำนวนเงิน (บาท)</Text>
                 <TextInput
                   value={depositAmount}
                   onChangeText={(t) => { setDepositAmount(t); setDepositError(""); }}
                   placeholder="เช่น 100"
                   placeholderTextColor="#ffffff99"
                   keyboardType="numeric"
-                  className="bg-primary-100 text-white rounded-xl px-4 py-3"
+                  className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
                 />
 
                 {!!depositError && (
-                  <Text className="text-red-300 mt-1">{depositError}</Text>
+                  <Text className="text-red-300 mt-1 font-sans">{depositError}</Text>
                 )}
 
                 <Pressable
@@ -462,31 +500,37 @@ export default function FortuneTellerWalletPage() {
                   {depositLoading ? (
                     <ActivityIndicator />
                   ) : (
-                    <Text className="text-blackpearl font-sans-semibold">สร้างคำขอฝากเงิน</Text>
+                    <Text className="text-blackpearl font-sans">สร้างคำขอฝากเงิน</Text>
                   )}
                 </Pressable>
 
-                {/* Allow cancel in input step */}
+                {/* ยกเลิกได้เฉพาะขั้นตอนกรอกจำนวน */}
                 <Pressable onPress={closeDepositModal} className="mt-2 items-center">
-                  <Text className="text-white/80">ยกเลิก</Text>
+                  <Text className="text-white/80 font-sans">ยกเลิก</Text>
                 </Pressable>
               </>
             ) : (
               <>
-                <Text className="text-white/90">ส่งคริปโตตามรายละเอียด แล้วกดยืนยัน</Text>
+                <Text className="text-white/90 font-sans">
+                  โปรดโอนคริปโตตามรายละเอียดด้านล่าง จากนั้นกด “ยืนยันการชำระเงิน”
+                </Text>
+
                 <View className="bg-primary-100 rounded-xl p-3">
-                  <Text className="text-white">PaymentId: {depositResult.PaymentId}</Text>
-                  <Text className="text-white">
-                    โทเคนที่ต้องโอน: {depositResult.Amount} {depositResult.Currency}
+                  <Text className="text-white font-sans">รหัสการชำระเงิน: {depositResult.PaymentId}</Text>
+                  <Text className="text-white font-sans">
+                    จำนวนโทเคนที่ต้องโอน: {depositResult.Amount} {depositResult.Currency}
                   </Text>
-                  <Text className="text-white" selectable>
-                    Address: {depositResult.Address}
+                  <Text className="text-white font-sans" selectable>
+                    ที่อยู่ปลายทาง (Contract Address):
                   </Text>
-                  <Text className="text-white/80 text-xs mt-1">Method: {depositResult.Method}</Text>
+                  <Text className="text-white font-sans" selectable>
+                    {depositResult.Address}
+                  </Text>
+                  <Text className="text-white/80 text-xs mt-1 font-sans">วิธีชำระ: {depositResult.Method}</Text>
                 </View>
 
                 {!!confirmError && (
-                  <Text className="text-red-300 mt-2">{confirmError}</Text>
+                  <Text className="text-red-300 mt-2 font-sans">{confirmError}</Text>
                 )}
 
                 <Pressable
@@ -497,7 +541,7 @@ export default function FortuneTellerWalletPage() {
                   {confirmLoading ? (
                     <ActivityIndicator />
                   ) : (
-                    <Text className="text-blackpearl font-sans-semibold">ยืนยันการชำระเงิน</Text>
+                    <Text className="text-blackpearl font-sans">ยืนยันการชำระเงิน</Text>
                   )}
                 </Pressable>
               </>
@@ -527,35 +571,35 @@ export default function FortuneTellerWalletPage() {
           }}
         >
           <Pressable
-            onPress={() => {}}
+            onPress={() => { }}
             className="bg-primary-200"
             style={{ width: "85%", borderRadius: 16, padding: 16, gap: 12 }}
           >
-            <Text className="text-white font-sans-semibold text-xl">ถอนเงิน</Text>
+            <Text className="text-white font-sans text-xl">ถอนเงิน</Text>
 
             {!withdrawResult ? (
               <>
-                <Text className="text-white/90">ระบุจำนวนเงิน (THB)</Text>
+                <Text className="text-white/90 font-sans">ระบุจำนวนเงิน (บาท)</Text>
                 <TextInput
                   value={withdrawAmount}
                   onChangeText={(t) => { setWithdrawAmount(t); setWithdrawError(""); }}
                   placeholder="เช่น 100"
                   placeholderTextColor="#ffffff99"
                   keyboardType="numeric"
-                  className="bg-primary-100 text-white rounded-xl px-4 py-3"
+                  className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
                 />
-                <Text className="text-white/90 mt-2">ที่อยู่กระเป๋าปลายทาง (Receiver)</Text>
+                <Text className="text-white/90 mt-2 font-sans">ที่อยู่กระเป๋าปลายทาง (Receiver)</Text>
                 <TextInput
                   value={withdrawAddress}
                   onChangeText={(t) => { setWithdrawAddress(t); setWithdrawError(""); }}
                   placeholder="0x..."
                   placeholderTextColor="#ffffff99"
                   autoCapitalize="none"
-                  className="bg-primary-100 text-white rounded-xl px-4 py-3"
+                  className="bg-primary-100 text-white rounded-xl px-4 py-3 font-sans"
                 />
 
                 {!!withdrawError && (
-                  <Text className="text-red-300 mt-1">{withdrawError}</Text>
+                  <Text className="text-red-300 mt-1 font-sans">{withdrawError}</Text>
                 )}
 
                 <Pressable
@@ -566,22 +610,22 @@ export default function FortuneTellerWalletPage() {
                   {withdrawLoading ? (
                     <ActivityIndicator />
                   ) : (
-                    <Text className="text-blackpearl font-sans-semibold">ยืนยันการถอน</Text>
+                    <Text className="text-blackpearl font-sans">ยืนยันการถอน</Text>
                   )}
                 </Pressable>
               </>
             ) : (
               <>
-                <Text className="text-white/90">คำขอถอนเงินถูกสร้างแล้ว</Text>
+                <Text className="text-white/90 font-sans">สร้างคำขอถอนเงินเรียบร้อย</Text>
                 <View className="bg-primary-100 rounded-xl p-3">
-                  <Text className="text-white">PaymentId: {withdrawResult.PaymentId}</Text>
-                  <Text className="text-white">
+                  <Text className="text-white font-sans">รหัสการชำระเงิน: {withdrawResult.PaymentId}</Text>
+                  <Text className="text-white font-sans">
                     จำนวนคริปโตโดยประมาณ: {withdrawResult.Amount} {withdrawResult.Currency}
                   </Text>
-                  <Text className="text-white" selectable>
-                    ส่งไปที่: {withdrawResult.Address}
+                  <Text className="text-white font-sans" selectable>
+                    ปลายทาง: {withdrawResult.Address}
                   </Text>
-                  <Text className="text-white/80 text-xs mt-1">Method: {withdrawResult.Method}</Text>
+                  <Text className="text-white/80 text-xs mt-1 font-sans">วิธีชำระ: {withdrawResult.Method}</Text>
                 </View>
 
                 <Pressable
@@ -594,7 +638,7 @@ export default function FortuneTellerWalletPage() {
                   }}
                   className="bg-primary-100 rounded-xl px-4 py-3 mt-2 items-center"
                 >
-                  <Text className="text-white font-sans-semibold">ปิด</Text>
+                  <Text className="text-white font-sans">ปิด</Text>
                 </Pressable>
               </>
             )}

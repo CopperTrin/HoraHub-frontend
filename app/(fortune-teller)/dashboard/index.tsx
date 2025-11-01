@@ -1,8 +1,8 @@
 import ScreenWrapper from "@/app/components/ScreenWrapper";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Text, TouchableOpacity, View , ScrollView , Image} from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import HeaderBar from "../../components/ui/HeaderBar";
-import { MaterialIcons } from "@expo/vector-icons"
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export default function DashboardPage() {
           resizeMode="cover"
         />
 
-        {/* เมนูปุ่มกด */}
         <TouchableOpacity
           className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4 mb-4"
           onPress={() => router.push("/(fortune-teller)/booking")}
@@ -46,17 +45,6 @@ export default function DashboardPage() {
           <View className="flex-row items-center">
             <MaterialIcons name="shopping-bag" size={20} color="white" />
             <Text className="text-alabaster text-base font-semibold ml-3">My Shop</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={22} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4"
-          onPress={() => router.push("/(fortune-teller)/dashboard/ranking")}
-        >
-          <View className="flex-row items-center">
-            <MaterialIcons name="bar-chart" size={20} color="white" />
-            <Text className="text-alabaster text-base font-semibold ml-3">Ranking</Text>
           </View>
           <MaterialIcons name="chevron-right" size={22} color="white" />
         </TouchableOpacity>

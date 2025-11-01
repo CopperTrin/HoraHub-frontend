@@ -19,9 +19,11 @@ export default function ReviewScreen() {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log(serviceId)
       try {
         const token = await fcomponent.getToken();
-        const res = await axios.get(`${API_URL}/reviews/${serviceId}`, {
+        console.log(token)
+        const res = await axios.get(`${API_URL}/services/${serviceId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data
