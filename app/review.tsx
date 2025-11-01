@@ -2,7 +2,7 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { navigate } from "expo-router/build/global-state/routing";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "./components/ui/HeaderBar";
@@ -52,9 +52,10 @@ export default function ReviewScreen() {
 
         if (response.status) {
           Alert.alert("สำเร็จ", "รีวิวของคุณถูกส่งแล้ว");
-          navigate("./(tabs)");
+          router.replace("./(tabs)/p2p/mybooking/mybooking");
         } else {
-          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้");
+          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้หรือคุณได้รีวิวไปแล้ว");
+          router.replace("./(tabs)/p2p/mybooking/mybooking");
         }
     }
     catch(error){

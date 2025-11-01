@@ -373,10 +373,13 @@ export default function HomePage() {
                       <Pressable
                         className="bg-secondary-100 rounded-md w-20 px-1"
                         onPress={() => {
-                          router.push({
-                            pathname: "/(tabs)/p2p/podium",
-                            params: { id: b.LeaderboardID },
-                          });
+                          router.push("/(tabs)/p2p");
+                          setTimeout(() => {
+                            router.push({
+                              pathname: "/(tabs)/p2p/podium",
+                              params: { id: b.LeaderboardID },
+                            });
+                          }, 10);
                         }}
                       >
                         <Text className="text-l text-white text-center py-2 font-sans">
