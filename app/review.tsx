@@ -54,13 +54,19 @@ export default function ReviewScreen() {
           Alert.alert("สำเร็จ", "รีวิวของคุณถูกส่งแล้ว");
           router.replace("./(tabs)/p2p/mybooking/mybooking");
         } else {
-          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้หรือคุณได้รีวิวไปแล้ว");
+          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้");
           router.replace("./(tabs)/p2p/mybooking/mybooking");
         }
     }
-    catch(error){
-      console.error("Report error:", error);
-      Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    catch (error) {
+      if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
+        console.error("Report error response:", error);
+        Alert.alert("ผิดพลาด", "ข้อมูลไม่ถูกต้องหรือคุณได้รีวิวบริการนี้แล้ว");
+        router.replace("./(tabs)/p2p/mybooking/mybooking");
+      } else {
+        console.error("Report error:", error);
+        Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      }
     }
   };
 
