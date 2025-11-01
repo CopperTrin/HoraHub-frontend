@@ -19,14 +19,14 @@ import {
 type WalletMe = {
   AccountingID: string;
   Balance_Number: number;
-  Label: string; // CUSTOMER
+  Label: string; 
   UserID: string;
 };
 
 type Payment = {
   PaymentID: string;
   Transaction_Status: "PENDING" | "COMPLETED" | "FAILED" | string;
-  Transaction_Date: string; // ISO
+  Transaction_Date: string; 
   Type: "DEPOSIT" | "WITHDRAWAL" | string;
   AccountingID: string;
   Amount: number;
@@ -48,7 +48,6 @@ export default function CustomerWalletPage() {
   const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  // Deposit modal state
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [depositLoading, setDepositLoading] = useState(false);
@@ -61,10 +60,9 @@ export default function CustomerWalletPage() {
     Address: string;
     Type: string;
   } | null>(null);
-  const [depositError, setDepositError] = useState<string>(""); // for create deposit step
-  const [confirmError, setConfirmError] = useState<string>(""); // for confirm step
+  const [depositError, setDepositError] = useState<string>(""); 
+  const [confirmError, setConfirmError] = useState<string>(""); 
 
-  // Withdraw modal state
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawAddress, setWithdrawAddress] = useState<string>("");
@@ -237,7 +235,6 @@ export default function CustomerWalletPage() {
           {
             text: "ตกลง",
             onPress: () => {
-              // ปิดและรีเซ็ตสถานะโมดัลฝากเงิน
               setDepositOpen(false);
               setDepositAmount("");
               setDepositResult(null);
@@ -251,13 +248,12 @@ export default function CustomerWalletPage() {
     } catch (e: any) {
       const msg = getErrMsg(e, "ยืนยันการชำระเงินไม่สำเร็จ");
       console.log("confirm error", e?.response?.data || String(e));
-      setConfirmError(msg); // เช่น "Payment not received at contract address"
+      setConfirmError(msg);
     } finally {
       setConfirmLoading(false);
     }
   }, [depositResult, fetchWallet, fetchPayments]);
 
-  // Create withdrawal
   const handleWithdraw = useCallback(async () => {
     setWithdrawError("");
     const val = parseFloat(withdrawAmount);
@@ -304,7 +300,7 @@ export default function CustomerWalletPage() {
     } catch (e: any) {
       const msg = getErrMsg(e, "ไม่สามารถถอนเงินได้");
       console.log("withdraw error", e?.response?.data || String(e));
-      setWithdrawError(msg); 
+      setWithdrawError(msg);
       setWithdrawResult(null);
     } finally {
       setWithdrawLoading(false);
@@ -411,24 +407,33 @@ export default function CustomerWalletPage() {
               >
                 <View className="flex-1">
                   <Text className="text-white font-sans-semibold">
-                    {p.Type === "DEPOSIT" ? "ฝากเข้า" : p.Type === "WITHDRAWAL" ? "ถอนออก" : p.Type}
+                    {p.Type === "DEPOSIT"
+                      ? "ฝากเข้า"
+                      : p.Type === "WITHDRAWAL"
+                        ? "ถอนออก"
+                        : p.Type === "REFUND"
+                          ? "คืนเงิน"
+                          : p.Type === "SPENDING"
+                            ? "ใช้จ่าย"
+                            : p.Type === "RECEIVED"
+                              ? "ได้รับ"
+                              : p.Type}
                   </Text>
                   <Text className="text-white/80 text-sm">{formatDateTime(p.Transaction_Date)}</Text>
                   <Text className="text-white/70 font-sans text-xs mt-1">วิธีชำระ: {p.Method}</Text>
                 </View>
                 <View className="items-end">
                   <Text className="text-white font-sans-bold">
-                    {p.Type === "DEPOSIT" ? "+" : "-"}
+                    {p.Type === "DEPOSIT" || p.Type === "REFUND" || p.Type === "RECEIVED" ? "a" : "-"}
                     {formatTHB(p.Amount)}
                   </Text>
                   <Text
-                    className={`text-xs mt-1 font-sans ${
-                      p.Transaction_Status === "COMPLETED"
-                        ? "text-green-300"
-                        : p.Transaction_Status === "FAILED"
+                    className={`text-xs mt-1 font-sans ${p.Transaction_Status === "COMPLETED"
+                      ? "text-green-300"
+                      : p.Transaction_Status === "FAILED"
                         ? "text-red-300"
                         : "text-yellow-200"
-                    }`}
+                      }`}
                   >
                     {mapStatusTH(p.Transaction_Status)}
                   </Text>
@@ -562,7 +567,7 @@ export default function CustomerWalletPage() {
           }}
         >
           <Pressable
-            onPress={() => {}}
+            onPress={() => { }}
             className="bg-primary-200"
             style={{ width: "85%", borderRadius: 16, padding: 16, gap: 12 }}
           >

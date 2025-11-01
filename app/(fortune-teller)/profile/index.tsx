@@ -1,4 +1,4 @@
-// app/(fortune-teller)/profile/index.tsx
+
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HistoryCardList from "@/app/components/profile/HistoryCardList";
 import profile_background from '@/assets/images/profile_background.png';
@@ -12,7 +12,6 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
-/** ===== Types ===== */
 type WalletMe = {
   AccountingID: string;
   Balance_Number: number;
@@ -62,7 +61,6 @@ type UserDetail = {
   };
 };
 
-/** ===== Utils ===== */
 const getBaseURL = () => (Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456");
 
 const toThaiStatus = (s?: string): "จองคิวแล้ว" | "สำเร็จ" | "ยกเลิก" => {
@@ -104,7 +102,6 @@ export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ประวัติที่แปลงแล้วสำหรับ HistoryCardList (รองรับ endTimeText)
   const [historyItems, setHistoryItems] = useState<
     {
       fortuneTellerName: string;
@@ -181,7 +178,6 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // >>> ใช้ /time-slots/me แทน /orders/me <<<
   const fetchTimeSlots = useCallback(async () => {
     setSlotsLoading(true);
     setSlotsError("");
@@ -195,18 +191,14 @@ export default function ProfilePage() {
       );
       const slots = Array.isArray(res.data) ? res.data : [];
 
-      // รับเฉพาะ BOOKED, COMPLETED, CANCEL (ตัด AVAILABLE และอื่น ๆ)
       const allowed = new Set(["BOOKED", "COMPLETED", "CANCEL"]);
       const filtered = slots.filter(s => allowed.has(String(s.Status)));
 
       const enriched = await Promise.all(
         filtered.map(async (ts) => {
           try {
-            // รายละเอียดบริการ
             const resService = await axios.get<ServiceDetail>(`${getBaseURL()}/services/${ts.ServiceID}`);
             const service = resService.data;
-
-            // ดึง user ของหมอดู (เพื่อใช้รูปโปรไฟล์จริงของเราเอง)
             let ftUser: UserDetail | null = null;
             const ftUserId = service?.FortuneTeller?.UserID || null;
             if (ftUserId) {
@@ -221,14 +213,12 @@ export default function ProfilePage() {
               service?.ImageURLs?.[0] ||
               "https://cdn-icons-png.flaticon.com/512/1077/1077012.png";
 
-            // ชื่อบนการ์ด (คง pattern เดิม: ใช้ชื่อหมอดูของเรา)
             const realName = [ftUser?.UserInfo?.FirstName, ftUser?.UserInfo?.LastName]
               .filter(Boolean).join(" ").trim();
             const fortuneTellerName = realName || ftUser?.Username || "ไม่ระบุชื่อ";
 
             const serviceName = service?.Service_name || "บริการดูดวง";
 
-            // แสดงช่วงเวลาเริ่ม + สิ้นสุด
             const dateTime = `${toThaiDate(ts.StartTime)} • ${toThaiTime(ts.StartTime)} น.`;
             const endTimeText = ts.EndTime ? `สิ้นสุด ${toThaiTime(ts.EndTime)} น.` : "สิ้นสุด —";
 

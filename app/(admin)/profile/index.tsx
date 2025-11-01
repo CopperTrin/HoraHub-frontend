@@ -28,23 +28,17 @@ export default function ProfilePage() {
 
   const googleSignOut = async () => {
     try {
-      // 1) Sign out from Google SDK
       await GoogleSignin.signOut();
 
-      // 2) Optional but recommended if you want to force account re-pick next time
-      // (removes granted scopes on Google side)
       try { await GoogleSignin.revokeAccess(); } catch { }
 
-      // 3) Remove your backend token
       await SecureStore.deleteItemAsync('access_token');
-
-      // 4) Clear local UI state and go to login
       setUserInfo(null);
       setOpen(false);
       await SecureStore.deleteItemAsync('access_token');
       await SecureStore.deleteItemAsync('user_role');
       await SecureStore.deleteItemAsync('last_id_token');
-      router.replace('/(tabs)/profile'); // or your auth screen, e.g. '/(auth)/login'
+      router.replace('/(tabs)/profile'); 
     } catch (e) {
       console.error('Sign out error', e);
       Alert.alert('Sign out failed', 'Please try again.');

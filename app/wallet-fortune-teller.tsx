@@ -19,14 +19,14 @@ import {
 type WalletMe = {
   AccountingID: string;
   Balance_Number: number;
-  Label: string; // FORTUNE_TELLER
+  Label: string; 
   UserID: string;
 };
 
 type Payment = {
   PaymentID: string;
   Transaction_Status: "PENDING" | "COMPLETED" | "FAILED" | string;
-  Transaction_Date: string; // ISO
+  Transaction_Date: string; 
   Type: "DEPOSIT" | "WITHDRAWAL" | string;
   AccountingID: string;
   Amount: number;
@@ -43,7 +43,6 @@ export default function FortuneTellerWalletPage() {
   const [wallet, setWallet] = useState<WalletMe | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  // Deposit modal state
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [depositLoading, setDepositLoading] = useState(false);
@@ -56,10 +55,10 @@ export default function FortuneTellerWalletPage() {
     Address: string;
     Type: string;
   } | null>(null);
-  const [depositError, setDepositError] = useState<string>(""); // for create deposit step
-  const [confirmError, setConfirmError] = useState<string>(""); // for confirm step
+  const [depositError, setDepositError] = useState<string>("");
+  const [confirmError, setConfirmError] = useState<string>(""); 
 
-  // Withdraw modal state
+
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawAddress, setWithdrawAddress] = useState<string>("");
@@ -152,7 +151,6 @@ export default function FortuneTellerWalletPage() {
     }
   }, []);
 
-  // initial load
   useState(() => {
     (async () => {
       setLoading(true);
@@ -171,7 +169,6 @@ export default function FortuneTellerWalletPage() {
     [payments]
   );
 
-  // Create deposit (FORTUNE_TELLER)
   const handleDeposit = useCallback(async () => {
     setDepositError("");
     const val = parseFloat(depositAmount);
@@ -197,7 +194,7 @@ export default function FortuneTellerWalletPage() {
           accept: "application/json",
         },
       });
-      setDepositResult(res.data); // {PaymentId, Amount, Currency, Address, Method, ...}
+      setDepositResult(res.data); 
       setConfirmError("");
     } catch (e: any) {
       console.log("deposit error", e?.response?.data || String(e));
@@ -208,7 +205,6 @@ export default function FortuneTellerWalletPage() {
     }
   }, [depositAmount]);
 
-  // Confirm payment for deposit
   const handleConfirmDeposit = useCallback(async () => {
     if (!depositResult?.PaymentId || !depositResult?.Address) return;
     setConfirmError("");
@@ -228,10 +224,8 @@ export default function FortuneTellerWalletPage() {
         },
       });
 
-      // refresh data
       await Promise.all([fetchWallet(), fetchPayments()]);
 
-      // Success feedback in Thai + close modal (like customer)
       Alert.alert(
         "ชำระเงินสำเร็จ",
         "ระบบได้รับการชำระเงินเรียบร้อยแล้ว",
@@ -252,13 +246,12 @@ export default function FortuneTellerWalletPage() {
     } catch (e: any) {
       const msg = getErrMsg(e, "ยืนยันการชำระเงินไม่สำเร็จ");
       console.log("confirm error", e?.response?.data || String(e));
-      setConfirmError(msg); // เช่น "Payment not received at contract address"
+      setConfirmError(msg); 
     } finally {
       setConfirmLoading(false);
     }
   }, [depositResult, fetchWallet, fetchPayments]);
 
-  // Create withdrawal (FORTUNE_TELLER)
   const handleWithdraw = useCallback(async () => {
     setWithdrawError("");
     const val = parseFloat(withdrawAmount);
@@ -305,7 +298,7 @@ export default function FortuneTellerWalletPage() {
     } catch (e: any) {
       const msg = getErrMsg(e, "ไม่สามารถถอนเงินได้");
       console.log("withdraw error", e?.response?.data || String(e));
-      setWithdrawError(msg); // เช่น "ยอดเงินคงเหลือไม่พอสำหรับการถอน"
+      setWithdrawError(msg);
       setWithdrawResult(null);
     } finally {
       setWithdrawLoading(false);
@@ -329,7 +322,6 @@ export default function FortuneTellerWalletPage() {
   };
 
   const closeDepositModal = () => {
-    // allow close only when no deposit request created yet
     if (!depositResult && !depositLoading) setDepositOpen(false);
   };
 
@@ -412,8 +404,18 @@ export default function FortuneTellerWalletPage() {
                 className="bg-primary-100 rounded-xl p-3 mb-3 flex-row items-center justify-between"
               >
                 <View className="flex-1">
-                  <Text className="text-white font-sans">
-                    {p.Type === "DEPOSIT" ? "ฝากเข้า" : p.Type === "WITHDRAWAL" ? "ถอนออก" : p.Type}
+                  <Text className="text-white font-sans-semibold">
+                    {p.Type === "DEPOSIT"
+                      ? "ฝากเข้า"
+                      : p.Type === "WITHDRAWAL"
+                        ? "ถอนออก"
+                        : p.Type === "REFUND"
+                          ? "คืนเงิน"
+                          : p.Type === "SPENDING"
+                            ? "ใช้จ่าย"
+                            : p.Type === "RECEIVED"
+                              ? "ได้รับ"
+                              : p.Type}
                   </Text>
                   <Text className="text-white/80 text-sm font-sans">
                     {formatDateTime(p.Transaction_Date)}
@@ -421,18 +423,17 @@ export default function FortuneTellerWalletPage() {
                   <Text className="text-white/70 text-xs mt-1 font-sans">วิธีชำระ: {p.Method}</Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-white font-sans">
-                    {p.Type === "DEPOSIT" ? "+" : "-"}
+                  <Text className="text-white font-sans-bold">
+                    {p.Type === "DEPOSIT" || p.Type === "REFUND" || p.Type === "RECEIVED" ? "+" : "-"}
                     {formatTHB(p.Amount)}
                   </Text>
                   <Text
-                    className={`text-xs mt-1 font-sans ${
-                      p.Transaction_Status === "COMPLETED"
-                        ? "text-green-300"
-                        : p.Transaction_Status === "FAILED"
+                    className={`text-xs mt-1 font-sans ${p.Transaction_Status === "COMPLETED"
+                      ? "text-green-300"
+                      : p.Transaction_Status === "FAILED"
                         ? "text-red-300"
                         : "text-yellow-200"
-                    }`}
+                      }`}
                   >
                     {mapStatusTH(p.Transaction_Status)}
                   </Text>
@@ -570,7 +571,7 @@ export default function FortuneTellerWalletPage() {
           }}
         >
           <Pressable
-            onPress={() => {}}
+            onPress={() => { }}
             className="bg-primary-200"
             style={{ width: "85%", borderRadius: 16, padding: 16, gap: 12 }}
           >
