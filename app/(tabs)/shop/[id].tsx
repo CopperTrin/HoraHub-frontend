@@ -14,10 +14,8 @@ import {
 import { useState } from "react";
 import HeaderBar from "../../components/ui/HeaderBar";
 
-// ขนาดหน้าจอ
 const { width: screenWidth } = Dimensions.get("window");
 
-// รูป mock
 import product_1 from "@/assets/images/product/1.png";
 import product_1_2 from "@/assets/images/product/1-2.jpg";
 import product_2 from "@/assets/images/product/2.png";
@@ -31,7 +29,6 @@ import product_9 from "@/assets/images/product/9.png";
 
 import prodile_img from "@/assets/images/product/fortune-teller/อาจารย์เเดง.jpg";
 
-// Mock data สินค้าทั้งหมด
 const products = [
   {
     id: "1",
@@ -122,7 +119,6 @@ export default function ProductDetailPage() {
   const { id } = useLocalSearchParams();
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // หาสินค้าตาม id
   const product = products.find((item) => item.id === id);
 
   if (!product) {
@@ -144,7 +140,6 @@ export default function ProductDetailPage() {
     <ScreenWrapper>
       <HeaderBar title={product.name} showBack showChat />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-        {/* รูปสินค้า */}
         <View className="mb-4">
           <ScrollView
             horizontal
@@ -172,7 +167,6 @@ export default function ProductDetailPage() {
             ))}
           </ScrollView>
 
-          {/* จุดบอกตำแหน่งรูป */}
           <View className="absolute bottom-3 left-0 right-0 flex-row justify-center">
             {product.image.map((_, index) => (
               <View
@@ -185,11 +179,9 @@ export default function ProductDetailPage() {
           </View>
         </View>
 
-        {/* ชื่อ + ราคา */}
         <Text className="text-alabaster text-xl font-bold mb-2">{product.name}</Text>
         <Text className="text-accent-200 text-2xl font-bold mb-3">฿{product.price}</Text>
 
-        {/* ปุ่มสั่งซื้อ */}
         <TouchableOpacity
           onPress={handleBuy}
           className="bg-accent-200 rounded-full py-4 items-center mb-3"
@@ -197,7 +189,6 @@ export default function ProductDetailPage() {
           <Text className="text-black text-lg font-bold">สั่งซื้อสินค้า</Text>
         </TouchableOpacity>
 
-        {/* โปรไฟล์หมอดู */}
         <TouchableOpacity
           onPress={() => router.push(`/fortune_teller_profile/mock?from_id=${product.id}`)}
           className="flex-row items-center bg-primary-100 p-3 rounded-full mb-3"
@@ -209,7 +200,6 @@ export default function ProductDetailPage() {
           <Entypo name="chevron-small-right" size={32} color="#F8F8F8" />
         </TouchableOpacity>
 
-        {/* รายละเอียดสินค้า */}
         <Text className="text-alabaster text-base leading-6 mb-10">{product.detail}</Text>
       </ScrollView>
     </ScreenWrapper>

@@ -19,7 +19,6 @@ import product_4 from "@/assets/images/product/4.png";
 import product_5 from "@/assets/images/product/5.png";
 import product_6 from "@/assets/images/product/6.png";
 
-// 🔹 mock data
 const mockProducts = [
   {
     id: "4",
@@ -72,7 +71,6 @@ export default function EditProductDetailPage() {
     }
   };
 
-  // ลบรูป
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     setImages(newImages);
@@ -88,7 +86,6 @@ export default function EditProductDetailPage() {
           paddingTop: 8,
         }}
       >
-        {/* รูปสินค้า */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {images.map((img, idx) => (
             <View key={idx} className="relative mr-2">
@@ -116,7 +113,6 @@ export default function EditProductDetailPage() {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Name */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Feather name="package" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ชื่อสินค้า</Text>
@@ -129,7 +125,6 @@ export default function EditProductDetailPage() {
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
 
-        {/* Price */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="pricetags" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ราคา</Text>
@@ -145,7 +140,6 @@ export default function EditProductDetailPage() {
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
 
-        {/* Link */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="link" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ลิงก์สินค้า</Text>
@@ -158,7 +152,6 @@ export default function EditProductDetailPage() {
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
 
-        {/* Detail */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="document-text" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">รายละเอียด</Text>

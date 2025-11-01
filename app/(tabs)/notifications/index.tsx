@@ -160,7 +160,6 @@ export default function NotificationsPage() {
       <HeaderBar title="Notifications" showChat />
 
       <View className="flex-1" style={{ backgroundColor: COLORS.bg }}>
-        {/* --- แถบฟิลเตอร์และปุ่ม Choose --- */}
         <View className="flex-row items-center justify-between px-4 pt-2 pb-2">
           <View className="flex-row gap-2">
             <Tab label="All" active={tab==="all"} onPress={()=>setTab("all")} />
@@ -194,7 +193,6 @@ export default function NotificationsPage() {
         />
       </View>
 
-      {/* --- แถวปุ่ม Delete ด้านล่าง เมื่อเลือก --- */}
       {selectMode && (
         <View
           pointerEvents="box-none"

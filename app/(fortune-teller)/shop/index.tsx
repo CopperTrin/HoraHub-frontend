@@ -32,7 +32,6 @@ export default function ShopDashboardPage() {
       >
       <View className="flex-1">
 
-        {/* เมนูปุ่มกด */}
         <TouchableOpacity
           className="bg-primary-100 flex-row items-center justify-between rounded-full px-5 py-4 mb-4"
           onPress={() => router.push("/(fortune-teller)/shop/create_product")}
@@ -44,7 +43,6 @@ export default function ShopDashboardPage() {
           <MaterialIcons name="chevron-right" size={22} color="white" />
         </TouchableOpacity>
 
-        {/* แสดงรายการสินค้า */}
         <View className="space-y-3">
           {products.map((product) => (
             <TouchableOpacity
@@ -59,7 +57,6 @@ export default function ShopDashboardPage() {
                 resizeMode="cover"
               />
               
-              {/* ข้อมูลสินค้า */}
               <View className="flex-1 ml-4 justify-center">
                 <Text
                   className="text-alabaster font-medium"

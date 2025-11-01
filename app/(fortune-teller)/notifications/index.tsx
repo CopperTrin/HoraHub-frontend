@@ -113,7 +113,6 @@ export default function NotificationsPage() {
       <HeaderBar title="Notification" />
 
       <View className="flex-1" style={{ backgroundColor: COLORS.bg }}>
-        {/* ส่วนหัว */}
         <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
           <View className="flex-row gap-2">
             <Tab label="All" active={tab === "all"} onPress={() => setTab("all")} />
@@ -124,7 +123,6 @@ export default function NotificationsPage() {
           </TouchableOpacity>
         </View>
 
-        {/* รายการแจ้งเตือน */}
         <FlatList
           data={list}
           keyExtractor={(i) => i.id}

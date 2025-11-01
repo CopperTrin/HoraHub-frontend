@@ -16,7 +16,6 @@ export default function CreateProductPage() {
     detail: "",
   });
 
-  // เลือกรูป
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsMultipleSelection: true,
@@ -30,7 +29,6 @@ export default function CreateProductPage() {
     }
   };
 
-  // ลบรูป
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     setImages(newImages);
@@ -46,7 +44,6 @@ export default function CreateProductPage() {
           paddingTop: 8,
         }}
       >
-        {/* Preview selected images */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {images.map((uri, idx) => (
             <View key={idx} className="relative mr-2">
@@ -54,7 +51,6 @@ export default function CreateProductPage() {
                 source={{ uri }}
                 className="w-24 h-24 rounded-2xl"
               />
-              {/* ปุ่มลบรูป */}
               <TouchableOpacity
                 onPress={() => removeImage(idx)}
                 className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
@@ -71,7 +67,6 @@ export default function CreateProductPage() {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Name */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Feather name="package" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ชื่อสินค้า</Text>
@@ -84,7 +79,6 @@ export default function CreateProductPage() {
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
 
-        {/* Price */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="pricetags" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ราคา</Text>
@@ -98,7 +92,6 @@ export default function CreateProductPage() {
           className="bg-primary-100 text-alabaster rounded-full px-4 py-3"
         />
 
-        {/* Link */}
         <View className="flex-row items-center mt-4 mb-1 gap-2">
           <Ionicons name="link" size={16} color="#F8F8F8" />
           <Text className="text-alabaster text-base">ลิงก์สินค้า</Text>
@@ -126,7 +119,6 @@ export default function CreateProductPage() {
           className="bg-primary-100 text-alabaster rounded-2xl px-4 py-3 h-60"
         />
 
-        {/* Submit Button */}
         <TouchableOpacity className="mt-6 bg-accent-200 py-3 rounded-full items-center">
           <Text className="font-bold text-lg">สร้างสินค้า</Text>
         </TouchableOpacity>

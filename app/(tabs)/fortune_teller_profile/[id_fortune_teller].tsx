@@ -64,7 +64,6 @@ export default function FortuneTellerProfilePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [showFullBio, setShowFullBio] = useState(false);
 
-  //  mock ของ "อาจารย์แดง"
   const mockProfile: FTProfile = {
     FortuneTellerID: "mock-red",
     UserID: "mock-user",
@@ -84,7 +83,6 @@ export default function FortuneTellerProfilePage() {
     },
   };
 
-  // สินค้าของอาจารย์แดง (mock เท่านั้น)
   const shopProducts = [
     { id: "4", name: "เครื่องรางของต่างประเทศ รวมชุด", price: 1800, image: product_4 },
     { id: "5", name: "น้ำเต้า", price: 299, image: product_5 },
@@ -125,7 +123,6 @@ export default function FortuneTellerProfilePage() {
       } catch (err: any) {
         console.log("Error fetching fortune teller:", err?.message);
         Alert.alert("ไม่สามารถโหลดข้อมูลหมอดูได้", "โปรดลองอีกครั้ง");
-        // ใช้ mock แทน
         setProfile(mockProfile);
       } finally {
         setLoading(false);
