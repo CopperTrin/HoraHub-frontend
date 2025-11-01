@@ -180,7 +180,7 @@ export default function ServicePrettyDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>(); // service id
 
-  const API_BASE = Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
+  const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
 
   const [loading, setLoading] = useState(true);
   const [service, setService] = useState<ServiceDetail | null>(null);

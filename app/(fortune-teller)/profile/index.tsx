@@ -61,7 +61,8 @@ type UserDetail = {
   };
 };
 
-const getBaseURL = () => (Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456");
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
+
 
 const toThaiStatus = (s?: string): "จองคิวแล้ว" | "สำเร็จ" | "ยกเลิก" => {
   if (s === "COMPLETED") return "สำเร็จ";

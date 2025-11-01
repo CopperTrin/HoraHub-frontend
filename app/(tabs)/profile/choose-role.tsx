@@ -12,8 +12,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from 'react
 
 type Role = 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN';
 
-const getBaseURL = () =>
-  Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 export default function ChooseRole() {
   const router = useRouter();

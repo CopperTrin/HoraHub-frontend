@@ -76,9 +76,8 @@ export default function CustomerWalletPage() {
     Type: string;
   } | null>(null);
   const [withdrawError, setWithdrawError] = useState<string>("");
-
-  const getBaseURL = () =>
-    Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
+  
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
   const formatTHB = (n?: number) => {
     if (typeof n !== "number") return "—";

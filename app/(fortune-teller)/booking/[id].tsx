@@ -35,12 +35,7 @@ const toLocalTimeLabel = (d: Date) =>
 const toISOZ = (d: Date) => d.toISOString();
 
 const ACCESS_TOKEN_KEY = "access_token";
-const computeBaseURL = () => {
-  const env = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (env) return env;
-  const { Platform } = require("react-native");
-  return Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://127.0.0.1:3456";
-};
+const computeBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 const api = axios.create({ baseURL: computeBaseURL(), timeout: 15000 });
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);

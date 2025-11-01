@@ -128,7 +128,7 @@ const ServiceCard = ({
   );
 };
 
-const API_BASE = Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://127.0.0.1:3456";
+  const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
 
 export default function P2PServiceHome() {
   const router = useRouter();

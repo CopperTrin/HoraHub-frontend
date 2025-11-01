@@ -34,13 +34,8 @@ type CategoryServer = {
 type ServiceCategory = { id: string; name: string };
 
 const ACCESS_TOKEN_KEY = "access_token";
-const computeBaseURL = () => {
-  const env = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (env) return env;
-  // @ts-ignore
-  const { Platform } = require("react-native");
-  return Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
-};
+
+const computeBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 const api = axios.create({
   baseURL: computeBaseURL(),

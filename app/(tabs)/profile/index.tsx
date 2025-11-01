@@ -22,8 +22,7 @@ import {
 
 type Role = 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN';
 
-const getBaseURL = () =>
-  Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 GoogleSignin.configure({
   webClientId:

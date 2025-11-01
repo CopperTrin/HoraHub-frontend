@@ -19,12 +19,7 @@ export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const getBaseURL = () => {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:3456";
-    }
-    return "http://localhost:3456";
-  };
+  const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
   const googleSignOut = async () => {
     try {

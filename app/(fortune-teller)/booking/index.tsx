@@ -17,16 +17,9 @@ import Constants from "expo-constants";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 
-function computeApiBase() {
-  const fromEnv =
-    process.env.EXPO_PUBLIC_API_BASE_URL ||
-    (Constants?.expoConfig as any)?.extra?.API_BASE_URL;
-  if (fromEnv) return String(fromEnv);
-  return Platform.OS === "android"
-    ? "http://10.0.2.2:3456"
-    : "http://localhost:3456";
-}
-const API_BASE = computeApiBase();
+
+const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
+
 const ACCESS_TOKEN_KEY = "access_token";
 
 type Service = {

@@ -2,12 +2,7 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from "react-native";
 
-const getBaseURL = () => {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:3456";
-    }
-    return "http://localhost:3456";
-  };
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 const getToken = async () => {
     const token = await SecureStore.getItemAsync('access_token');

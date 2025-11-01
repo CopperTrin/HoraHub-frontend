@@ -18,8 +18,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const getBaseURL = () =>
-  Platform.OS === "android" ? "http://10.0.2.2:3456" : "http://localhost:3456";
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
+
 
 const formatDateOnlyTH = (iso: string) =>
   new Date(iso)

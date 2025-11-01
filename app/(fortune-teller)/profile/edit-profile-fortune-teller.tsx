@@ -20,8 +20,8 @@ import {
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
-const getBaseURL = () =>
-  Platform.OS === 'android' ? 'http://10.0.2.2:3456' : 'http://localhost:3456';
+const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
+
 
 export default function EditProfileFortuneTeller() {
   const [loading, setLoading] = useState(true);
