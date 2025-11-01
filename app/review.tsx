@@ -2,7 +2,7 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { navigate } from "expo-router/build/global-state/routing";
+import { useRouter } from "expo-router"; // ✅ เพิ่ม useRouter
 import { useEffect, useState } from "react";
 import { Alert, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "./components/ui/HeaderBar";
@@ -13,24 +13,47 @@ export default function ReviewScreen() {
   const [rating, setRating] = useState<number>(0);
   const [serviceName, setServiceName] = useState<string>("");
   const [serviceImage, setServiceImage] = useState<string>("");
+  const [alreadyReviewed, setAlreadyReviewed] = useState<boolean>(false);
+
   const route = useRoute();
   const { serviceId } = route.params as { serviceId: string };
   const API_URL = fcomponent.getBaseURL();
+  const router = useRouter(); // ✅ ใช้ router แทน navigate
 
+  // 🟣 โหลดข้อมูล service และเช็กว่าเคยรีวิวไหม
   useEffect(() => {
     const fetchData = async () => {
-      console.log(serviceId)
       try {
         const token = await fcomponent.getToken();
-        console.log(token)
+
+        // ดึงข้อมูล service
         const res = await axios.get(`${API_URL}/services/${serviceId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = res.data
+        const data = res.data;
         setServiceName(data.Service_name);
-        setServiceImage(data.ImageURLs[0]);
+        setServiceImage(data.ImageURLs?.[0]);
+
+        // ดึงรีวิวของตัวเองทั้งหมด
+        const myReviews = await axios.get(`${API_URL}/reviews/my-reviews`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // ถ้าเคยรีวิว service นี้แล้ว
+        const found = myReviews.data?.find(
+          (r: any) => r.ServiceID === serviceId
+        );
+        if (found) {
+          setAlreadyReviewed(true);
+          Alert.alert("รีวิวไปแล้ว", "คุณได้รีวิวบริการนี้ไปแล้ว", [
+            {
+              text: "ตกลง",
+              onPress: () => router.push("/(tabs)/p2p"), 
+            },
+          ]);
+        }
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching data:", error);
         Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
       }
     };
@@ -39,51 +62,63 @@ export default function ReviewScreen() {
   }, []);
 
   const submitReview = async () => {
+    if (alreadyReviewed) {
+      Alert.alert("รีวิวไปแล้ว", "คุณได้รีวิวบริการนี้ไปแล้ว");
+      return router.push("/(tabs)/p2p"); 
+    }
+
     try {
       const token = await fcomponent.getToken();
-      const response = await axios.post(`${API_URL}/reviews`,
-        {Star: rating,
+      const response = await axios.post(
+        `${API_URL}/reviews`,
+        {
+          Star: rating,
           Comment: review,
-          ServiceID: serviceId},
-        {headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json" }
-        });
-
-        if (response.status) {
-          Alert.alert("สำเร็จ", "รีวิวของคุณถูกส่งแล้ว");
-          navigate("./(tabs)");
-        } else {
-          Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้");
+          ServiceID: serviceId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-    }
-    catch(error){
+      );
+
+      if (response.status === 201) {
+        Alert.alert("สำเร็จ", "รีวิวของคุณถูกส่งแล้ว", [
+          {
+            text: "ตกลง",
+            onPress: () => router.replace("/(tabs)/p2p/mybooking/mybooking"),
+          },
+        ]);
+      } else {
+        Alert.alert("ผิดพลาด", "ไม่สามารถส่งรีวิวได้");
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        Alert.alert("รีวิวไปแล้ว", "คุณได้รีวิวบริการนี้ไปแล้ว");
+        return router.replace("/(tabs)/p2p/mybooking/mybooking");
+      }
       console.error("Report error:", error);
       Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดในการเชื่อมต่อ");
     }
   };
 
-  const handleRating = (value: number) => {
-    setRating(value);
-  };
+  const handleRating = (value: number) => setRating(value);
 
   return (
     <ScreenWrapper>
-      <HeaderBar 
-      title="Review"
-      showBack
-      />
+      
+      <HeaderBar title="Review" showBack />
+
+
       <View className="flex-1 bg-primary-200 items-center p-5">
-        {/* Avatar */}
         <Image
           source={{ uri: serviceImage }}
           className="w-[90px] h-[90px] rounded-full mt-5"
         />
-
-        {/* Title */}
         <Text className="text-alabaster text-lg font-bold my-4">{serviceName}</Text>
 
-        {/* Stars */}
         <View className="flex-row mb-5">
           {[1, 2, 3, 4, 5].map((star) => (
             <TouchableOpacity key={star} onPress={() => handleRating(star)}>
@@ -97,26 +132,29 @@ export default function ReviewScreen() {
           ))}
         </View>
 
-        {/* Review */}
-        <Text className="self-start text-alabaster text-sm mb-2">เขียนรีวิวของคุณ</Text>
+        <Text className="self-start text-alabaster text-sm mb-2">
+          เขียนรีวิวของคุณ
+        </Text>
         <TextInput
           className="w-full h-[150px] border border-yellow-400 rounded-lg p-3 text-white mb-5"
           placeholder="เขียนรีวิวของคุณที่นี่..."
           placeholderTextColor="#aaa"
           value={review}
-          onChangeText={(text: string) => setReview(text)}
+          onChangeText={setReview}
           multiline
-          scrollEnabled={true}
+          scrollEnabled
           textAlign="left"
           textAlignVertical="top"
         />
 
-        {/* Submit */}
         <TouchableOpacity
           className="bg-accent-200 w-full py-3 rounded-lg items-center"
-          onPress={() => submitReview()}
+          onPress={submitReview}
+          disabled={alreadyReviewed}
         >
-          <Text className="font-bold text-blackpearl text-base">Submit</Text>
+          <Text className="font-bold text-blackpearl text-base">
+            {alreadyReviewed ? "รีวิวไปแล้ว" : "ส่งรีวิว"}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScreenWrapper>

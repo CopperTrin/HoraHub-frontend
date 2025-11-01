@@ -3,10 +3,13 @@ import HeadersBar from "@/app/components/ui/HeaderBar";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, Text, View ,TouchableOpacity} from "react-native";
 import fcomponent from "../../fcomponent";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const RankingScreen = () => {
+  const router = useRouter();
   const [leaderboardData, setLeaderboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const route = useRoute();
@@ -31,7 +34,27 @@ const RankingScreen = () => {
   if (loading) {
     return (
       <ScreenWrapper>
-        <HeadersBar title="Podium" showBack />
+        <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => router.replace('/(tabs)/p2p')} accessibilityLabel="ย้อนกลับ">
+              <MaterialIcons name="arrow-back-ios-new" size={24} color="#F8F8F8" />
+            </TouchableOpacity>
+  
+            <Text className="text-alabaster text-2xl font-semibold ml-2" numberOfLines={1}>
+              การจองของฉัน
+            </Text>
+          </View>
+  
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => router.push("/chat")}
+              className="ml-4"
+              accessibilityLabel="เปิดแชท"
+            >
+              <MaterialIcons name="chat-bubble-outline" size={24} color="#F8F8F8" />
+            </TouchableOpacity>
+          </View>
+        </View>
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#fff" />
           <Text className="text-alabaster mt-2">กำลังโหลดข้อมูล...</Text>
@@ -67,7 +90,27 @@ const RankingScreen = () => {
 
   return (
     <ScreenWrapper>
-      <HeadersBar title={leaderboardData.Description || "Podium"} showBack />
+      <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
+        <View className="flex-row items-center">
+          <TouchableOpacity onPress={() => router.replace('/(tabs)/p2p')} accessibilityLabel="ย้อนกลับ">
+            <MaterialIcons name="arrow-back-ios-new" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+
+          <Text className="text-alabaster text-2xl font-semibold ml-2" numberOfLines={1}>
+            {leaderboardData.Description || "Podium"}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => router.push("/chat")}
+            className="ml-4"
+            accessibilityLabel="เปิดแชท"
+          >
+            <MaterialIcons name="chat-bubble-outline" size={24} color="#F8F8F8" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View className="flex-row justify-center items-end p-4">
         {top3[1] && (

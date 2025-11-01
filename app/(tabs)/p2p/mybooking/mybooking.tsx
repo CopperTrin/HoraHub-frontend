@@ -18,6 +18,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
+
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 
@@ -362,11 +363,28 @@ export default function MyBookingPage() {
   if (loading)
     return (
       <ScreenWrapper>
-        <HeaderBar
-          title="การจองของฉัน"
-          showBack
-          onBackPress={() => router.back()}
-        />
+    
+        <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => router.replace('/(tabs)/p2p')} accessibilityLabel="ย้อนกลับ">
+              <MaterialIcons name="arrow-back-ios-new" size={24} color="#F8F8F8" />
+            </TouchableOpacity>
+  
+            <Text className="text-alabaster text-2xl font-semibold ml-2" numberOfLines={1}>
+              การจองของฉัน
+            </Text>
+          </View>
+  
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => router.push("/chat")}
+              className="ml-4"
+              accessibilityLabel="เปิดแชท"
+            >
+              <MaterialIcons name="chat-bubble-outline" size={24} color="#F8F8F8" />
+            </TouchableOpacity>
+          </View>
+        </View>
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#fff" />
           <Text className="text-white/70 mt-2">กำลังโหลดข้อมูล...</Text>
