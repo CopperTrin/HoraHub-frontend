@@ -9,7 +9,7 @@ import axios from 'axios';
 import { useRouter } from "expo-router";
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
 type WalletMe = {
@@ -206,7 +206,7 @@ export default function ProfilePage() {
               try {
                 const resUser = await axios.get<UserDetail>(`${getBaseURL()}/users/${ftUserId}`);
                 ftUser = resUser.data;
-              } catch {}
+              } catch { }
             }
 
             const profileURL =
@@ -337,6 +337,9 @@ export default function ProfilePage() {
 
               <Text className='text-white text-xl font-sans-medium'>
                 Bio : {fortuneTeller?.Bio ? fortuneTeller.Bio : '—'}
+              </Text>
+              <Text className="text-white text-xl font-sans-medium">
+                คะแนนสะสม: {fortuneTeller.Point?.toFixed(2)} คะแนน
               </Text>
 
               <Text className='text-white text-xl font-sans-bold'>ประวัติการใช้งาน :</Text>
