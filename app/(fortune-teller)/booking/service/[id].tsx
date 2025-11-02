@@ -150,7 +150,6 @@ export default function ServiceDetailPage() {
       setImages(Array.isArray(svc.ImageURLs) ? svc.ImageURLs.filter(Boolean) : []);
       setCategories(catRes.data ?? []);
 
-      // ✅ Filter เฉพาะ TimeSlot ที่ Status = AVAILABLE
       const onlyAvailable = (tsData || [])
         .filter((t) => t.ServiceID === id && t.Status === "AVAILABLE")
         .sort((a, b) => new Date(a.StartTime).getTime() - new Date(b.StartTime).getTime());

@@ -99,11 +99,9 @@ export default function HomePage() {
     (async () => {
       setLoadingFT(true);
       try {
-        // 1) ดึงบริการทั้งหมด
         const res = await axios.get<ServiceItem[]>(`${getBaseURL()}/services`);
         const services = Array.isArray(res.data) ? res.data : [];
 
-        // 2) รวมเป็นราย “หมอดู” (เลือกบริการที่มี Avg_Rating สูงสุดเป็นตัวแทน)
         const byFT = new Map<
           string,
           { best: ServiceItem; rating: number | null }
@@ -129,7 +127,6 @@ export default function HomePage() {
 
         const perFT = Array.from(byFT.values());
 
-        // 3) เลือก 10 คน ตามกติกา
         const hasAnyRating = perFT.some((x) => x.rating !== null);
         const selected = (hasAnyRating
           ? perFT
@@ -138,7 +135,7 @@ export default function HomePage() {
           : perFT.slice(0, 10)
         ).map((x) => x.best);
 
-        // 4) ดึงข้อมูล user ของหมอดูเพื่อเอา “ชื่อ-รูปจริง”
+
         const userLookups = await Promise.allSettled(
           selected.map((svc) => {
             const userId = svc?.FortuneTeller?.UserID;

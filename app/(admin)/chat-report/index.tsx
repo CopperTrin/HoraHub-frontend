@@ -18,7 +18,7 @@ const ReportList = () => {
       const token = await fcomponent.getToken();
       const response = await axios.get(`${fcomponent.getBaseURL()}/reports`, {headers: { Authorization: `Bearer ${token}` }});
       if (reportListRef.current === response.data) {
-        return; // ไม่มีการเปลี่ยนแปลง
+        return; 
       }
       reportListRef.current = response.data;
       setReport(response.data);
@@ -28,11 +28,11 @@ const ReportList = () => {
   };
   useEffect(() => {
     fetchChats();
-    const interval = setInterval(fetchChats, 10000); // 10 วินาที
+    const interval = setInterval(fetchChats, 10000); 
     return () => clearInterval(interval);
   }, []);
 
-  // Filter chats by searching participant usernames (checks any participant's username)
+
   const filteredChats = report.filter((c) => {
     if (!search) return true;
 

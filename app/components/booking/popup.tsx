@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Calendar, LocaleConfig, DateObject } from "react-native-calendars";
+import { Calendar, DateObject, LocaleConfig } from "react-native-calendars";
 
-// ----- Thai locale -----
 LocaleConfig.locales.th = {
   monthNames: ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"],
   monthNamesShort: ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."],
@@ -23,10 +22,9 @@ const monthThaiBE = (date: Date) =>
 type BookingModalProps = {
   visible: boolean;
   onClose: () => void;
-  // ส่งกลับวันที่แบบไทย (DD / MM / YYYY พ.ศ.) และ time = "" (ค่าว่าง)
+
   onSelect: (date: string, time: string) => void;
-  // เริ่มต้นที่วันไหน (ถ้าไม่ส่งมา จะเป็นวันนี้)
-  initialDateISO?: string; // รูปแบบ YYYY-MM-DD
+  initialDateISO?: string; 
 };
 
 export default function BookingModal({
@@ -35,7 +33,6 @@ export default function BookingModal({
   onSelect,
   initialDateISO,
 }: BookingModalProps) {
-  // default ISO วันนี้
   const todayISO = new Date().toISOString().slice(0, 10);
   const [selectedISO, setSelectedISO] = useState(initialDateISO ?? todayISO);
   const [showCalendar, setShowCalendar] = useState(true);
@@ -55,7 +52,7 @@ export default function BookingModal({
 
   const handleConfirm = () => {
     const dateDisplay = toThaiDisplay(selectedISO);
-    onSelect(dateDisplay, ""); // เวลาเป็นค่าว่าง
+    onSelect(dateDisplay, "");
     onClose();
   };
 

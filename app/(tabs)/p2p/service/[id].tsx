@@ -1,25 +1,24 @@
 // app/(tabs)/p2p/service/[id].tsx
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-  Dimensions,
-  Pressable,
-  Alert,
-  Modal,
-  FlatList,
-  Platform,
-} from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 import Entypo from "@expo/vector-icons/Entypo";
-import * as SecureStore from "expo-secure-store"; // ✅ เพิ่มสำหรับเช็ค login
+import axios from "axios";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -53,8 +52,8 @@ type User = {
 
 type TimeSlotItem = {
   TimeSlotID: string;
-  StartTime: string; // ISO
-  EndTime: string; // ISO
+  StartTime: string; 
+  EndTime: string; 
   LockAmount: number;
   Status: "AVAILABLE" | "BOOKED" | "CANCELLED";
   FortuneTellerID: string;
@@ -78,7 +77,7 @@ type ReviewItem = {
   User: string;
   Star: number;
   Comment: string;
-  Timestamp: string; // ISO
+  Timestamp: string; 
   ServiceID: string;
 };
 
@@ -196,7 +195,6 @@ export default function ServicePrettyDetail() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlotItem | null>(null);
 
-  // ฟิลเตอร์วัน
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const images = useMemo(
@@ -216,7 +214,7 @@ export default function ServicePrettyDetail() {
     if (!id) return;
     try {
       setLoading(true);
-      // 1) service + time slots
+
       const svcRes = await axios.get<ServiceDetail>(`${API_BASE}/services/${id}`);
       const svc = svcRes.data;
       const slots = (svc.TimeSlots || [])
@@ -224,7 +222,6 @@ export default function ServicePrettyDetail() {
         .sort((a, b) => new Date(a.StartTime).getTime() - new Date(b.StartTime).getTime());
       setService({ ...svc, TimeSlots: slots });
 
-      // 2) reviews + users + (optional) FT user profile
       const userId = svc?.FortuneTeller?.UserID;
       const reqs: Promise<any>[] = [
         axios.get<ReviewItem[]>(`${API_BASE}/reviews`, { params: { serviceId: id } }),
@@ -311,7 +308,7 @@ export default function ServicePrettyDetail() {
     }
 
     try {
-      // ✅ ดึงข้อมูลผู้ใช้ปัจจุบัน
+
       const userRes = await axios.get(`${API_BASE}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -328,11 +325,11 @@ export default function ServicePrettyDetail() {
             (ftUser?.UserInfo &&
               `${ftUser.UserInfo.FirstName || ""} ${ftUser.UserInfo.LastName || ""}`.trim()) ||
             "",
-          slotId: selectedSlot.TimeSlotID, // ✅ ส่ง timeslotId
+          slotId: selectedSlot.TimeSlotID, 
           startTime: selectedSlot.StartTime,
           endTime: selectedSlot.EndTime,
           returnTo: `/(tabs)/p2p/service/${service.ServiceID}`,
-          customerId: userId, // ✅ ส่ง userId
+          customerId: userId, 
         },
       });
 
@@ -495,11 +492,9 @@ export default function ServicePrettyDetail() {
             </View>
           ) : (
             <>
-              {/* แถบเลือกวัน (เฉพาะวันที่มี slot) */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3" contentContainerStyle={{ paddingHorizontal: 2 }}>
                 {dateOptions.map((d) => {
                   const active = selectedDate === d;
-                  // pretty (ไทย): 01 ต.ค. 2025
                   const D = parseDate(d + "T00:00:00");
                   const label = `${pad2(D.getDate())} ${thaiMonthsShort[D.getMonth()]} ${D.getFullYear()}`;
                   return (

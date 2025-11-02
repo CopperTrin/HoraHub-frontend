@@ -2,7 +2,7 @@ import ScreenWrapper from "@/app/components/ScreenWrapper";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { useRouter } from "expo-router"; // ✅ เพิ่ม useRouter
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import HeaderBar from "./components/ui/HeaderBar";
@@ -18,15 +18,13 @@ export default function ReviewScreen() {
   const route = useRoute();
   const { serviceId } = route.params as { serviceId: string };
   const API_URL = fcomponent.getBaseURL();
-  const router = useRouter(); // ✅ ใช้ router แทน navigate
+  const router = useRouter();
 
-  // 🟣 โหลดข้อมูล service และเช็กว่าเคยรีวิวไหม
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = await fcomponent.getToken();
 
-        // ดึงข้อมูล service
         const res = await axios.get(`${API_URL}/services/${serviceId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -34,12 +32,10 @@ export default function ReviewScreen() {
         setServiceName(data.Service_name);
         setServiceImage(data.ImageURLs?.[0]);
 
-        // ดึงรีวิวของตัวเองทั้งหมด
         const myReviews = await axios.get(`${API_URL}/reviews/my-reviews`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // ถ้าเคยรีวิว service นี้แล้ว
         const found = myReviews.data?.find(
           (r: any) => r.ServiceID === serviceId
         );

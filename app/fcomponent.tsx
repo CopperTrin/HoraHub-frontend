@@ -22,13 +22,11 @@ const formatChatTime = (dateString: string) => {
     date.getFullYear() === now.getFullYear();
 
   if (isToday) {
-    // ถ้าเป็นวันนี้ → แสดงเวลา เช่น "14:30"
     return date.toLocaleTimeString("th-TH", {
       hour: "2-digit",
       minute: "2-digit",
     });
   } else {
-    // ถ้าไม่ใช่วันนี้ → แสดงวันที่ เช่น "8 ต.ค. 2025"
     return date.toLocaleDateString("th-TH", {
       day: "2-digit",
       month: "2-digit",

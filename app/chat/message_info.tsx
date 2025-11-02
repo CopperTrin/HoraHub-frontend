@@ -21,7 +21,7 @@ export interface Message {
   ConversationID: string;
   SenderID: string;
   Content: string;
-  MessageType: 'TEXT' | 'IMAGE'; // เพิ่มประเภทได้
+  MessageType: 'TEXT' | 'IMAGE'; 
   FileURL?: string;
   FileName?: string;
   FileSize?: number;

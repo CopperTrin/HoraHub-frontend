@@ -33,7 +33,6 @@ const ChatScreen = () => {
   const myProfile = profile.useMyProfile();
   const [image, setImage] = useState<string | null>(null);
 
-  // โหลดแชทเก่า
   const fetchMessages = async () => {
     try {
       const token = await fcomponent.getToken();
@@ -47,7 +46,7 @@ const ChatScreen = () => {
       const newMessages = res.data;
       const lastMessageId = newMessages[newMessages.length - 1]?.MessageID;
       if (lastMessageIdRef.current === lastMessageId) {
-        return; // ไม่มีข้อความใหม่
+        return; 
       }
       lastMessageIdRef.current = lastMessageId;
       setMessages(newMessages);
@@ -59,7 +58,7 @@ const ChatScreen = () => {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000); // 5 วินาที
+    const interval = setInterval(fetchMessages, 5000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -223,7 +222,7 @@ const ChatScreen = () => {
           value={input}
           onChangeText={(text) => setInput(text.slice(0, 250))}
           multiline
-          scrollEnabled={inputHeight >= 96} // scroll เมื่อกล่องถึง max
+          scrollEnabled={inputHeight >= 96} 
           textAlign="left"
           textAlignVertical="center"
           style={{
@@ -233,7 +232,7 @@ const ChatScreen = () => {
           }}
           onContentSizeChange={(e) => {
             const newHeight = e.nativeEvent.contentSize.height;
-            setInputHeight(Math.min(newHeight, 96)); // สูงสุด 120px
+            setInputHeight(Math.min(newHeight, 96)); 
           }}
         />
 

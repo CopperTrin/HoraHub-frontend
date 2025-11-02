@@ -74,7 +74,7 @@ const ReportChat = () => {
           value={reason}
           onChangeText={setReason}
           textAlignVertical="top"
-          maxLength={45} // จำกัดจำนวนตัวอักษร
+          maxLength={45} 
         />
 
         <Text className="text-alabaster text-base mb-3">
@@ -90,7 +90,7 @@ const ReportChat = () => {
           multiline
           scrollEnabled
           textAlignVertical="top"
-          maxLength={500} // จำกัดจำนวนตัวอักษร
+          maxLength={500} 
         />
 
         <Text className="text-alabaster text-xs ml-2 mr-2 mb-2">

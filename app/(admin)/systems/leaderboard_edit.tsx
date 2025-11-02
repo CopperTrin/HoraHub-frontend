@@ -5,11 +5,11 @@ import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity
 } from "react-native";
 import fcomponent from "../../fcomponent";
 
@@ -115,7 +115,7 @@ const CreateLeaderboard = () => {
           multiline
           scrollEnabled
           textAlignVertical="top"
-          maxLength={500} // จำกัดจำนวนตัวอักษร
+          maxLength={500} 
         />
 
         <Text className="text-alabaster text-base mb-3">
@@ -126,7 +126,7 @@ const CreateLeaderboard = () => {
           className="w-full h-12 border border-accent-200 rounded-2xl p-3 text-alabaster mb-8"
           placeholder="กรอกจำนวนรางวัล..."
           placeholderTextColor="#aaa"
-          keyboardType="numeric" // ให้คีย์บอร์ดเป็นตัวเลข
+          keyboardType="numeric"
           value={prize ? prize.toString() : ""}
           onChangeText={(text) => {
             const numericValue = text.replace(/[^0-9.]/g, "");

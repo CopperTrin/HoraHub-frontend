@@ -17,7 +17,7 @@ const LeaderboardList = () => {
     try {
       const response = await axios.get(`${fcomponent.getBaseURL()}/leaderboards`);
       if (leaderboardListRef.current === response.data) {
-        return; // ไม่มีการเปลี่ยนแปลง
+        return; 
       }
       leaderboardListRef.current = response.data;
       setReport(response.data);
@@ -27,7 +27,7 @@ const LeaderboardList = () => {
   };
   useEffect(() => {
     fetchChats();
-    const interval = setInterval(fetchChats, 10000); // 10 วินาที
+    const interval = setInterval(fetchChats, 10000); 
     return () => clearInterval(interval);
   }, []);
 

@@ -207,7 +207,6 @@ export default function ApplyVerification() {
             {cvFile && renderUploadButton("ส่งเอกสารใหม่", true)}
           </View>
         ) : status === "INACTIVE" && cvUrl ? (
-          // 🔴 กรณี INACTIVE (ถูกปฏิเสธ)
           <View>
             <Text className="text-red-400 text-2xl font-bold mb-3">
               เอกสารถูกปฏิเสธ

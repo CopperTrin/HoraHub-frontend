@@ -1,21 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  Alert,
-  Platform,
-} from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
-import * as SecureStore from "expo-secure-store";
-import axios from "axios";
-import Constants from "expo-constants";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import axios from "axios";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 
 const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
@@ -235,7 +233,7 @@ const bookings = useMemo(() => {
     .filter(
       (t) =>
         t.Status === "BOOKED" ||
-        (t.Orders && t.Orders.length > 0) // มีการจองใน Orders ก็ถือว่ามี booking
+        (t.Orders && t.Orders.length > 0) 
     )
     .filter((t) => mine.has(t.ServiceID))
     .map((t) => {

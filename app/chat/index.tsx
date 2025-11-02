@@ -21,7 +21,7 @@ const ChatList = () => {
       const token = await fcomponent.getToken();
       const response = await axios.get(`${fcomponent.getBaseURL()}/chat-conversations`, {headers: { Authorization: `Bearer ${token}` }});
       if (chatListRef.current === response.data) {
-        return; // ไม่มีการเปลี่ยนแปลง
+        return; 
       }
       chatListRef.current = response.data;
       setChats(response.data);
@@ -31,7 +31,7 @@ const ChatList = () => {
   };
   useEffect(() => {
     fetchChats();
-    const interval = setInterval(fetchChats, 5000); // 5 วินาที
+    const interval = setInterval(fetchChats, 5000);
     return () => clearInterval(interval);
   }, []);
 

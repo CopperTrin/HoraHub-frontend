@@ -1,15 +1,20 @@
-import React, { useMemo, useState } from "react";
-import {
-  View, Text, FlatList, TouchableOpacity, Image,
-  ImageSourcePropType, Alert
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
-import HeaderBar from "../../components/ui/HeaderBar";
 import fortune_teller_1 from "@/assets/images/home/fortune_teller_1.png";
 import fortune_teller_2 from "@/assets/images/home/fortune_teller_2.png";
 import fortune_teller_3 from "@/assets/images/home/fortune_teller_3.png";
 import fortune_teller_4 from "@/assets/images/home/fortune_teller_4.png";
+import { useMemo, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Image,
+  ImageSourcePropType,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import HeaderBar from "../../components/ui/HeaderBar";
 
 type Noti = {
   id: string;
@@ -48,7 +53,7 @@ export default function NotificationsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // แยก admin กับหมอดู
+
   const isAdmin = (n: Noti) => n.title.trim().toLowerCase() === "admin";
 
   const list = useMemo(() => {

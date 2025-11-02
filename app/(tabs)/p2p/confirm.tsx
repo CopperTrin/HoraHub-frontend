@@ -46,7 +46,7 @@ export default function ConfirmWalletPayment() {
   const priceBaht = service?.Price || 0;
   const serviceName = service?.Service_name || "บริการ";
 
-  // ✅ โหลดข้อมูล service และ wallet
+
   useEffect(() => {
     (async () => {
       try {
@@ -59,7 +59,7 @@ export default function ConfirmWalletPayment() {
         }
         setToken(t);
 
-        // โหลดข้อมูล wallet และ service พร้อมกัน
+
         const [balRes, svcRes] = await Promise.all([
           axios.get(`${getBaseURL()}/accounting/customer/me`, {
             headers: { Authorization: `Bearer ${t}` },
@@ -79,7 +79,7 @@ export default function ConfirmWalletPayment() {
   }, [serviceId]);
 
 
-  // ✅ กดชำระเงิน
+
   const handleConfirmPayment = async () => {
     if (!token) return Alert.alert("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
     if (balance === null) return Alert.alert("กำลังโหลดข้อมูลบัญชี...");
@@ -89,7 +89,7 @@ export default function ConfirmWalletPayment() {
     try {
       setLoading(true);
 
-      // 1️⃣ สร้าง order ก่อน
+      
       await axios.post(
         `${getBaseURL()}/orders`,
         {
@@ -100,12 +100,12 @@ export default function ConfirmWalletPayment() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 2️⃣ ดึงข้อมูล service เพื่อนำ UserID ของหมอดู
+      
       const svcRes = await axios.get(`${getBaseURL()}/services/${serviceId}`);
       const fortuneTellerUserId = svcRes.data?.FortuneTeller?.UserID || null;
 
       if (fortuneTellerUserId) {
-        // 3️⃣ ดึงรายชื่อแชตทั้งหมดของผู้ใช้คนนี้
+        
         const chatRes = await axios.get(`${getBaseURL()}/chat-conversations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -116,20 +116,19 @@ export default function ConfirmWalletPayment() {
           )
         );
 
-        // 4️⃣ ถ้ายังไม่เคยคุยกับหมอดูนี้ → สร้างห้องใหม่
+        
         if (!existing) {
           await axios.post(
             `${getBaseURL()}/chat-conversations`,
             { participantUserIDs: [fortuneTellerUserId] },
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          //console.log("✅ ห้องแชตใหม่ถูกสร้างเรียบร้อย");
+          //console.log(" ห้องแชตใหม่ถูกสร้างเรียบร้อย");
         } else {
-          //console.log("ℹ️ พบห้องแชตเดิมอยู่แล้ว ไม่สร้างซ้ำ");
+          //console.log(" พบห้องแชตเดิมอยู่แล้ว ไม่สร้างซ้ำ");
         }
       }
 
-      // 5️⃣ แจ้งสำเร็จ
       Alert.alert("สำเร็จ", "การจองของคุณเสร็จสมบูรณ์", [
         { text: "ตกลง", onPress: () => router.replace("/(tabs)/p2p/mybooking/mybooking") },
       ]);
@@ -142,7 +141,7 @@ export default function ConfirmWalletPayment() {
   };
 
 
-  // ✅ กำลังโหลด
+
   if (loading)
     return (
       <View className="flex-1 bg-[#0E0B1B] justify-center items-center">

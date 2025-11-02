@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as SecureStore from "expo-secure-store";
 import axios from "axios";
+import { useFocusEffect, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "../../components/ui/HeaderBar";
@@ -139,7 +139,6 @@ export default function BookingDashboardPage() {
     }
   }, [fetchAll]);
 
-  // โหลดครั้งแรก
   useEffect(() => {
     (async () => {
       try {

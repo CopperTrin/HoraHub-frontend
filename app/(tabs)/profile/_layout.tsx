@@ -4,7 +4,7 @@ export default function ProfileLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false, // ปิด header เดิม เพื่อใช้ HeaderBar custom ของเราเอง
+        headerShown: false, 
         animation: "slide_from_right",
       }}
     >
