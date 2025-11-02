@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator , Platform} from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Platform, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
@@ -128,7 +128,7 @@ const ServiceCard = ({
   );
 };
 
-  const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
+const API_BASE = "https://softdev-horahub-backend-production.up.railway.app";
 
 export default function P2PServiceHome() {
   const router = useRouter();
@@ -166,7 +166,7 @@ export default function P2PServiceHome() {
     } catch (err: any) {
       console.error("โหลด services หรือ users ไม่ได้:", err);
       setError(err?.response?.data?.message || "โหลดข้อมูลไม่สำเร็จ");
-      setServices([]); // กัน null
+      setServices([]);
     } finally {
       setRefreshing(false);
     }
@@ -282,6 +282,7 @@ export default function P2PServiceHome() {
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
           ListHeaderComponent={
             <View className="mb-3">
+              {/* ส่วนค้นหา */}
               <View className="flex-row items-center justify-between mb-1">
                 {searchQuery ? (
                   <View className="flex-row items-center">
@@ -291,29 +292,28 @@ export default function P2PServiceHome() {
                     <TouchableOpacity
                       onPress={() => setSearchQuery("")}
                       className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15"
-                      accessibilityRole="button"
-                      accessibilityLabel="ยกเลิกการค้นหา"
                     >
                       <Text className="text-[10px] text-white/80 font-semibold">ยกเลิก</Text>
                     </TouchableOpacity>
                   </View>
                 ) : null}
-
-                {(searchQuery || selectedCategory !== "All") && (
-                  <TouchableOpacity
-                    onPress={clearFilters}
-                    className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15"
-                  >
-                    <Text className="text-xs text-white/90 font-bold">ล้างทั้งหมด</Text>
-                  </TouchableOpacity>
-                )}
               </View>
 
-              <View className="flex-row flex-wrap">
+              {/* หมวดหมู่แบบเลื่อนแนวนอน */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 4 }}
+              >
                 {categories.map((c) => (
-                  <CategoryChip key={c} label={c} selected={selectedCategory === c} onPress={() => setSelectedCategory(c)} />
+                  <CategoryChip
+                    key={c}
+                    label={c}
+                    selected={selectedCategory === c}
+                    onPress={() => setSelectedCategory(c)}
+                  />
                 ))}
-              </View>
+              </ScrollView>
             </View>
           }
           renderItem={({ item }) => (
@@ -342,7 +342,6 @@ export default function P2PServiceHome() {
                       ? "ยังไม่มีบริการในระบบ"
                       : "ไม่พบผลลัพธ์ตามเงื่อนไข"}
                   </Text>
-
                   {(searchQuery || selectedCategory !== "All") && (
                     <TouchableOpacity
                       onPress={clearFilters}
