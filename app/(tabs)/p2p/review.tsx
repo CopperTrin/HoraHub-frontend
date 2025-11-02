@@ -1,7 +1,6 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
+import { ScrollView, Text, View } from "react-native";
 
 type ReviewProps = {
   name: string;
@@ -60,7 +59,7 @@ export default function ReviewPage() {
       <HeaderBar
         title="P2P"
         rightIcons={[
-          { name: "calendar-month", onPress: () => console.log("Booking tapped") },
+          { name: "calendar-month", onPress: () => console.log("") },
         ]}
         showSearch
         showChat

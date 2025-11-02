@@ -1,19 +1,18 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "@/app/components/ui/HeaderBar";
 import axios from "axios";
-import * as SecureStore from "expo-secure-store";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
@@ -124,9 +123,9 @@ export default function ConfirmWalletPayment() {
             { participantUserIDs: [fortuneTellerUserId] },
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          console.log("✅ ห้องแชตใหม่ถูกสร้างเรียบร้อย");
+          //console.log("✅ ห้องแชตใหม่ถูกสร้างเรียบร้อย");
         } else {
-          console.log("ℹ️ พบห้องแชตเดิมอยู่แล้ว ไม่สร้างซ้ำ");
+          //console.log("ℹ️ พบห้องแชตเดิมอยู่แล้ว ไม่สร้างซ้ำ");
         }
       }
 

@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from "react-native";
 
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
 
 const getToken = async () => {
     const token = await SecureStore.getItemAsync('access_token');
     if (!token) {
-        console.log('No access token found');
+        // console.log('No access token found');
         router.replace("/(tabs)/profile");
         return;
     }

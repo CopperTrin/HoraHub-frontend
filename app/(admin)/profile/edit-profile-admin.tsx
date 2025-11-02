@@ -37,7 +37,7 @@ export default function EditProfileAdmin() {
       try {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
-          console.log('No access token — redirecting to /profile');
+          //console.log('No access token — redirecting to /profile');
           setLoading(false);
           router.replace('/profile');
           return;

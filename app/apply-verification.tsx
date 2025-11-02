@@ -11,10 +11,9 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
@@ -94,7 +93,7 @@ export default function ApplyVerification() {
         },
       });
 
-      console.log("CV uploaded:", response.data);
+      // console.log("CV uploaded:", response.data);
       Alert.alert("ส่งสำเร็จ!", "ทีมงานจะตรวจสอบภายใน 1–3 วันทำการ");
       setCvFile(null);
       setCvUrl("uploaded");

@@ -8,7 +8,7 @@ import axios from 'axios';
 import { useRouter } from "expo-router";
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
 type WalletMe = {
@@ -145,7 +145,7 @@ export default function ProfilePage() {
       const res = await axios.get(`${getBaseURL()}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(token);
+      //console.log(token);
       setUserInfo(res.data);
       setLoading(false);
     } catch (error: any) {

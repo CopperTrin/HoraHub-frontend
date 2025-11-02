@@ -17,7 +17,7 @@ import ranking_bg from "@/assets/images/home/ranking_bg.png";
 import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 /** ===== Utils ===== */
 const getBaseURL = () => "https://softdev-horahub-backend-production.up.railway.app";
@@ -111,7 +111,7 @@ export default function HomePage() {
 
         for (const s of services) {
           const ftId = s?.FortuneTeller?.FortuneTellerID || s.FortuneTellerID;
-          console.log("Service for FT:", ftId, s.Service_name, s.Avg_Rating);
+          //("Service for FT:", ftId, s.Service_name, s.Avg_Rating);
           if (!ftId) continue;
           const rating = typeof s.Avg_Rating === "number" ? s.Avg_Rating : null;
 

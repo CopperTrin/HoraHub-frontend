@@ -14,10 +14,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Platform,
   Pressable,
   Text,
-  View,
+  View
 } from 'react-native';
 
 type Role = 'CUSTOMER' | 'FORTUNE_TELLER' | 'ADMIN';
@@ -59,7 +58,7 @@ export default function ProfileSignIn() {
 
   const redirectByRole = useCallback(
     async (role: Role, token?: string) => {
-      console.log(token);
+      //console.log(token);
       if (role === 'CUSTOMER') return redirectCustomer();
       if (role === 'ADMIN') return redirectAdmin();
       if (role === 'FORTUNE_TELLER') {

@@ -37,7 +37,7 @@ export default function EditProfileCustomer() {
       try {
         const token = await SecureStore.getItemAsync('access_token');
         if (!token) {
-          console.log('No access token — redirecting to /profile');
+          //console.log('No access token — redirecting to /profile');
           setLoading(false);
           router.replace('/profile');
           return;
@@ -169,7 +169,7 @@ export default function EditProfileCustomer() {
         GoogleID: detail?.UserInfo?.GoogleID ?? userInfo?.GoogleID ?? '',
         Role: Array.isArray(detail?.Role) ? detail.Role : [],
       };
-      console.log('Saving profile with body:', body);
+      //console.log('Saving profile with body:', body);
       await axios.patch(`${getBaseURL()}/users/me`, body, {
         headers: {
           Authorization: `Bearer ${token}`,

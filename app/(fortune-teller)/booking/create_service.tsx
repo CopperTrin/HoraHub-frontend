@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import ScreenWrapper from "@/app/components/ScreenWrapper";
 import HeaderBar from "../../components/ui/HeaderBar";
@@ -84,7 +84,6 @@ export default function CreateServicePage() {
         name: c.Category_name,
       }));
       setCategories(list);
-      // ไม่ตั้งค่าเริ่มต้นอัตโนมัติ — ให้ผู้ใช้เลือกเอง
       if (list.length === 0) setCategoryId("");
     } catch (e: any) {
       console.log("Fetch categories error:", e?.message || e);

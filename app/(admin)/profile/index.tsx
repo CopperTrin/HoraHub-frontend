@@ -9,7 +9,7 @@ import axios from 'axios';
 import { useRouter } from "expo-router";
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import HeaderBar from "../../components/ui/HeaderBar";
 
 export default function ProfilePage() {
@@ -44,7 +44,7 @@ export default function ProfilePage() {
     try {
       const token = await SecureStore.getItemAsync('access_token');
       if (!token) {
-        console.log('No access token found');
+        //console.log('No access token found');
         setUserInfo(null);
         setLoading(false);
         return;
@@ -53,8 +53,8 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(res.data);
-      console.log(token)
-      console.log('Fetched profile:', res.data);
+      //console.log(token)
+      //console.log('Fetched profile:', res.data);
       setLoading(false);
     } catch (error: any) {
       if (error?.response) {
