@@ -32,7 +32,6 @@ export default function HeaderBar({
 
   return (
     <>
-      {/* Header ปกติ */}
       {!searchVisible && (
       <View className="bg-primary-200 flex-row items-center justify-between px-5 h-16">
         <View className="flex-row items-center">
@@ -74,7 +73,6 @@ export default function HeaderBar({
       </View>
       )}
 
-      {/* Overlay Search */}
       {searchVisible && (
         <Pressable
           onPress={() => setSearchVisible(false)}
