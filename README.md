@@ -1,50 +1,178 @@
-# Welcome to your Expo app 👋
+# HoraHub Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile application for HoraHub - an all-in-one Web3 platform that binds all projects within the Horaverse ecosystem together.
 
-## Get started
+## 📱 About
 
-1. Install dependencies
+HoraHub Frontend is a React Native mobile application built with Expo, designed to provide a seamless user experience for interacting with the HoraHub Web3 platform. The app serves as a unified interface for managing and accessing various projects within the Horaverse ecosystem.
 
-   ```bash
-   npm install
-   ```
+## 🚀 Tech Stack
 
-2. Start the app
+- **Framework:** [Expo](https://expo.dev) / React Native
+- **Language:** TypeScript
+- **Styling:** NativeWind (Tailwind CSS for React Native)
+- **Navigation:** Expo Router (file-based routing)
+- **Build System:** Metro Bundler
 
-   ```bash
-   npx expo start
-   ```
+## 📋 Prerequisites
 
-In the output, you'll find options to open the app in a
+Before you begin, ensure you have the following installed:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator (for Mac) or Android Emulator
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🛠️ Installation
 
-## Get a fresh project
-
-When you're ready, run:
-
+1. Clone the repository:
 ```bash
-npm run reset-project
+git clone https://github.com/CopperTrin/HoraHub-frontend.git
+cd HoraHub-frontend
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Learn more
+## 🏃 Running the App
 
-To learn more about developing your project with Expo, look at the following resources:
+Start the development server:
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This will open Expo Dev Tools in your browser. From there, you can:
 
-## Join the community
+- Press `i` to open iOS Simulator
+- Press `a` to open Android Emulator
+- Scan the QR code with the Expo Go app on your physical device
 
-Join our community of developers creating universal apps.
+### Development Builds
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+For a more native experience, you can create a development build:
+```bash
+npx expo run:ios
+# or
+npx expo run:android
+```
+
+## 📁 Project Structure
+
+```
+HoraHub-frontend/
+├── app/                    # App screens and navigation (file-based routing)
+├── assets/
+│   └── images/            # Image assets
+├── .cursor/               # Cursor IDE configuration
+├── .vscode/               # VS Code configuration
+├── app.json               # Expo app configuration
+├── babel.config.js        # Babel configuration
+├── eslint.config.js       # ESLint configuration
+├── metro.config.js        # Metro bundler configuration
+├── tailwind.config.js     # Tailwind CSS configuration
+├── tsconfig.json          # TypeScript configuration
+└── package.json           # Project dependencies
+```
+
+## 🎨 Styling
+
+This project uses NativeWind for styling, which brings the Tailwind CSS experience to React Native. Styles are written using Tailwind utility classes directly in your components:
+
+```tsx
+<View className="flex-1 items-center justify-center bg-white">
+  <Text className="text-2xl font-bold text-blue-600">Hello World</Text>
+</View>
+```
+
+## 🔧 Available Scripts
+
+- `npm start` - Start the Expo development server
+- `npm run android` - Run on Android emulator
+- `npm run ios` - Run on iOS simulator
+- `npm run web` - Run in web browser
+- `npm run reset-project` - Reset to a fresh project structure
+
+## 📦 Building for Production
+
+### Android
+```bash
+eas build --platform android
+```
+
+### iOS
+```bash
+eas build --platform ios
+```
+
+Make sure you have configured EAS (Expo Application Services) before building for production.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 Code Style
+
+This project uses ESLint for code linting. Make sure your code passes linting before submitting:
+
+```bash
+npm run lint
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Metro bundler cache issues:**
+```bash
+npx expo start -c
+```
+
+**Dependencies not installing correctly:**
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**iOS build issues:**
+```bash
+cd ios && pod install && cd ..
+```
+
+## 📚 Learn More
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [NativeWind Documentation](https://www.nativewind.dev/)
+- [Expo Router Documentation](https://docs.expo.dev/router/introduction/)
+
+## 🌐 Resources
+
+- [HoraHub Website](https://horahub.com)
+- [Expo GitHub](https://github.com/expo/expo)
+- [React Native Community](https://reactnative.dev/community/overview)
+
+## 👥 Contributors
+
+<a href="https://github.com/CopperTrin/HoraHub-frontend/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=CopperTrin/HoraHub-frontend" />
+</a>
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 💬 Support
+
+For support, please open an issue in the GitHub repository or contact the development team.
+
+---
+
+Built with ❤️ for the Horaverse ecosystem
