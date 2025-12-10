@@ -108,24 +108,6 @@ eas build --platform ios
 
 Make sure you have configured EAS (Expo Application Services) before building for production.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 Code Style
-
-This project uses ESLint for code linting. Make sure your code passes linting before submitting:
-
-```bash
-npm run lint
-```
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
